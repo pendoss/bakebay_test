@@ -2,7 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Facebook, Instagram, Twitter, Youtube, Mail, MapPin, Phone } from "lucide-react"
+import { Mail, MapPin, Phone } from "lucide-react"
 
 export function Footer() {
   return (
@@ -26,7 +26,7 @@ export function Footer() {
             <h3 className="font-semibold text-white mb-4">Быстрые ссылки</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/categories" className="text-white/80 hover:text-white text-sm">
+                <Link href="/catalog" className="text-white/80 hover:text-white text-sm">
                   Просмотр категорий
                 </Link>
               </li>
@@ -36,18 +36,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/deals" className="text-white/80 hover:text-white text-sm">
-                  Специальные предложения
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="text-white/80 hover:text-white text-sm">
+                <Link href="/" className="text-white/80 hover:text-white text-sm">
                   О нас
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="text-white/80 hover:text-white text-sm">
-                  Блог
                 </Link>
               </li>
             </ul>
