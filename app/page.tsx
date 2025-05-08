@@ -8,10 +8,10 @@ import { Clock, Star, ShieldCheck, ChevronRight, Cake, Utensils, Gift, Cookie } 
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-accent to-background">
+    <main className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative py-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary/95 to-primary/95 -z-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-secondary/70 to-primary/70 -z-10"></div>
         <div className="absolute inset-0 opacity-5 -z-10">
           <Image src="/placeholder.svg?height=800&width=1600" alt="Фоновый узор" fill className="object-cover" />
         </div>
@@ -39,7 +39,7 @@ export default function Home() {
                   size="lg"
                   variant="outline"
                   asChild
-                  className="border-primary/50 text-primary hover:bg-primary/5 transition-all"
+                  className="border-secondary border-2 text-secondary font-medium hover:bg-secondary hover:text-white hover:border-secondary transition-all shadow-sm"
                 >
                   <Link href="/sellers">Наши кондитеры</Link>
                 </Button>
@@ -162,7 +162,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all text-center">
-              <div className="w-16 h-16 rounded-full bg-primary text-accent font-bold flex items-center justify-center mx-auto mb-6 text-2xl">
+              <div className="w-16 h-16 rounded-full bg-primary text-white font-bold flex items-center justify-center mx-auto mb-6 text-2xl">
                 1
               </div>
               <h3 className="text-xl font-semibold mb-3 text-secondary">Просмотр и заказ</h3>
@@ -173,7 +173,7 @@ export default function Home() {
             </div>
 
             <div className="bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all text-center">
-              <div className="w-16 h-16 rounded-full bg-primary text-accent font-bold flex items-center justify-center mx-auto mb-6 text-2xl">
+              <div className="w-16 h-16 rounded-full bg-primary text-white font-bold flex items-center justify-center mx-auto mb-6 text-2xl">
                 2
               </div>
               <h3 className="text-xl font-semibold mb-3 text-secondary">Кондитер готовит</h3>
@@ -184,7 +184,7 @@ export default function Home() {
             </div>
 
             <div className="bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all text-center">
-              <div className="w-16 h-16 rounded-full bg-primary text-accent font-bold flex items-center justify-center mx-auto mb-6 text-2xl">
+              <div className="w-16 h-16 rounded-full bg-primary text-white font-bold flex items-center justify-center mx-auto mb-6 text-2xl">
                 3
               </div>
               <h3 className="text-xl font-semibold mb-3 text-secondary">Быстрая доставка</h3>
@@ -230,7 +230,7 @@ export default function Home() {
                   <div className="flex justify-between items-center p-6">
                     <div>
                       <h3 className="font-semibold text-secondary">{category.name}</h3>
-                      <p className="text-sm text-secondary/70">{category.count} товаров</p>
+                      <p className="text-sm text-secondary/90 font-medium">{category.count} товаров</p>
                     </div>
                     <Button variant="ghost" size="icon" className="rounded-full text-secondary">
                       <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -245,7 +245,7 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="py-10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/95 to-secondary/95 -z-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/70 to-secondary/70 -z-10"></div>
         <div className="absolute inset-0 opacity-5 -z-10">
           <Image src="/placeholder.svg?height=400&width=1600" alt="Фоновый узор" fill className="object-cover" />
         </div>

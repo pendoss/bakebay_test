@@ -25,16 +25,16 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "rgb(80, 110, 120)",
-          foreground: "rgb(235, 244, 246)",
+          DEFAULT: "rgb(224, 102, 128)", /* Strawberry pink - darker for better readability */
+          foreground: "rgb(255, 255, 255)", /* White text on primary */
         },
         secondary: {
-          DEFAULT: "rgb(42, 52, 61)",
-          foreground: "rgb(235, 244, 246)",
+          DEFAULT: "rgb(92, 184, 168)", /* Mint green - darker for better readability */
+          foreground: "rgb(102, 68, 51)", /* Chocolate */
         },
         accent: {
-          DEFAULT: "rgb(235, 244, 246)",
-          foreground: "rgb(42, 52, 61)",
+          DEFAULT: "rgb(92, 143, 204)", /* Blueberry - darker for better readability */
+          foreground: "rgb(255, 255, 255)", /* White text on accent */
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",

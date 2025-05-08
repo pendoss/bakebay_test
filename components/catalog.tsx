@@ -143,7 +143,19 @@ const initialProducts = [
   },
 ]
 
-export function Catalog({ initialCategory = null }:{ initialCategory: string | null }) {
+export function Catalog({ 
+  initialCategory = null,
+  initialFilters = null 
+}:{ 
+  initialCategory: string | null,
+  initialFilters?: {
+    priceRange: [number, number];
+    categories: string[];
+    dietary: string[];
+    rating: number;
+    sellers: string[];
+  } | null
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [products, setProducts] = useState(initialProducts)
   const [filters, setFilters] = useState<{
@@ -152,7 +164,7 @@ export function Catalog({ initialCategory = null }:{ initialCategory: string | n
     dietary: string[];
     rating: number;
     sellers: string[];
-  }>({
+  }>(initialFilters || {
     priceRange: [0, 30] as [number, number],
     categories: initialCategory ? [initialCategory] : [],
     dietary: [],
@@ -160,15 +172,11 @@ export function Catalog({ initialCategory = null }:{ initialCategory: string | n
     sellers: [],
   });
 
-  // Применяем начальный фильтр категории при монтировании компонента
+  // Применяем начальные фильтры при монтировании компонента
   useEffect(() => {
-    if (initialCategory) {
-      applyFiltersAction({
-        ...filters,
-        categories: [initialCategory],
-      })
-    }
-  }, [initialCategory])
+    // Apply filters when component mounts or when initialFilters changes
+    applyFiltersAction(filters)
+  }, [])
 
   // Применяем фильтры к продуктам
   const applyFiltersAction = (newFilters: {

@@ -41,10 +41,6 @@ export function MainNav({ className, ...props } : Props) {
       href: "/sellers",
       label: "Кондитеры",
     },
-    {
-      href: "/deals",
-      label: "Акции",
-    },
   ]
 
   return (

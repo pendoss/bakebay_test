@@ -1,8 +1,11 @@
+"use client"
+
 import Image from "next/image"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Star } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 // Пример данных о продавцах
 const sellers = [
@@ -76,6 +79,13 @@ const sellers = [
 ]
 
 export function SellersList() {
+  const router = useRouter()
+
+  const handleViewProducts = (sellerName: string) => {
+    // Navigate to catalog page with seller filter
+    router.push(`/catalog?seller=${encodeURIComponent(sellerName)}`)
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {sellers.map((seller) => (
@@ -83,7 +93,7 @@ export function SellersList() {
           <div className="aspect-[3/2] relative">
             <Image src={seller.image || "/placeholder.svg"} alt={seller.name} fill className="object-cover" />
           </div>
-          <CardHeader>
+          <CardHeader className="min-h-[150px]">
             <div className="flex justify-between items-start">
               <CardTitle>{seller.name}</CardTitle>
               <div className="flex items-center gap-1">
@@ -117,7 +127,12 @@ export function SellersList() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full">Посмотреть товары</Button>
+            <Button 
+              className="w-full" 
+              onClick={() => handleViewProducts(seller.name)}
+            >
+              Посмотреть товары
+            </Button>
           </CardFooter>
         </Card>
       ))}

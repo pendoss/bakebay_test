@@ -32,8 +32,8 @@ export function Overview() {
           <YAxis yAxisId="right" orientation="right" />
           <Tooltip />
           <Legend />
-          <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#8884d8" activeDot={{ r: 8 }} name="Доход" />
-          <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#82ca9d" name="Заказы" />
+          <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#E06680" activeDot={{ r: 8 }} name="Доход" />
+          <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#5CB8A8" name="Заказы" />
         </LineChart>
       </ResponsiveContainer>
     </div>

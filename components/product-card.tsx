@@ -74,45 +74,47 @@ export function ProductCard({ product } : {product : Product}) {
         className="overflow-hidden transition-all duration-200 hover:shadow-md group relative"
         onClick={() => setIsOpen(true)}
       >
-        <div className="aspect-square relative">
+        <div className="aspect-square relative items-end" >
           <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
-          <Button
-            size="sm"
-            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Добавить
-          </Button>
+          <div className="absolute bottom-1 left-1 p-2 flex flex-wrap gap-1 transition-opacity">
+            {product.dietary.slice(0, 2).map((diet, index) => (
+                <Badge key={index} variant="secondary" className="text-xs text-white">
+                  {dietaryTranslations[diet] || diet}
+                </Badge>
+            ))}
+            {product.dietary.length > 2 && (
+                <Badge variant="secondary" className="text-xs text-white">
+                  +{product.dietary.length - 2}
+                </Badge>
+            )}
+          </div>
         </div>
-        <CardContent className="p-4">
+        <CardContent className="p-4 min-h-[160px] flex flex-col justify-between">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-semibold text-lg line-clamp-1">{product.name}</h3>
             {/*<Badge variant="outline" className="ml-2 shrink-0">*/}
             {/*  {product.category}*/}
             {/*</Badge>*/}
           </div>
-          <p className="text-muted-foreground text-sm line-clamp-2 mb-2">{product.description}</p>
-          <div className="flex items-center gap-1 text-sm mb-1">
-            <Star className="h-4 w-4 fill-primary text-primary" />
-            <span>{product.rating}</span>
+          <div>
+            <p className="text-muted-foreground text-sm line-clamp-2 mb-2">{product.description}</p>
+            <div className="flex items-center gap-1 text-sm mb-1">
+              <Star className="h-4 w-4 fill-primary text-primary" />
+              <span>{product.rating}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Продавец: {product.seller}</p>
           </div>
-          <p className="text-sm text-muted-foreground">Продавец: {product.seller}</p>
         </CardContent>
-        <CardFooter className="p-4 pt-0 flex justify-between items-center">
+        <CardFooter className="p-4 pt-0 pr-6 pb-6 flex justify-between items-center">
           <div className="font-semibold">${product.price.toFixed(2)}</div>
-          <div className="flex flex-wrap gap-1">
-            {product.dietary.slice(0, 2).map((diet, index) => (
-              <Badge key={index} variant="secondary" className="text-xs">
-                {dietaryTranslations[diet] || diet}
-              </Badge>
-            ))}
-            {product.dietary.length > 2 && (
-              <Badge variant="secondary" className="text-xs">
-                +{product.dietary.length - 2}
-              </Badge>
-            )}
-          </div>
+          <Button
+              size="sm"
+              className="absolute bottom-4 right-4 opacity-100 transition-opacity"
+              onClick={handleAddToCart}
+          >
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Добавить
+          </Button>
         </CardFooter>
       </Card>
 
@@ -171,7 +173,7 @@ function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : Produ
                   <h4 className="font-medium mb-2">Диетическая информация</h4>
                   <div className="flex flex-wrap gap-2">
                     {product.dietary.map((diet, index) => (
-                      <Badge key={index} variant="secondary">
+                      <Badge key={index} variant="secondary" className="text-white">
                         {dietaryTranslations[diet] || diet}
                       </Badge>
                     ))}
