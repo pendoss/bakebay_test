@@ -60,32 +60,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items])
 
+  // Для предотвращения двойных вызовов
+  // const lastAddRef = useRef({ time: 0, id: null });
+  // const isProcessingAddRef = useRef(false);
+
   // Добавление товара в корзину
   const addItem = (product: any, quantity = 1) => {
-    setItems((prevItems) => {
-      // Проверяем, есть ли уже такой товар в корзине
-      const existingItemIndex = prevItems.findIndex((item) => item.id === product.id)
-
-      if (existingItemIndex !== -1) {
-        // Если товар уже есть, увеличиваем количество
-        const updatedItems = [...prevItems]
-        updatedItems[existingItemIndex].quantity += quantity
-        return updatedItems
-      } else {
-        // Если товара нет, добавляем новый
-        return [
-          ...prevItems,
-          {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            quantity: quantity,
-            seller: product.seller,
-          },
-        ]
-      }
-    })
+    console.log("addItem called", product.id, quantity);
+    
+    const item = items.find((v) => v.id === product.id )
+    if (item !== undefined) {
+      updateQuantity(product.id, item!.quantity + 1)
+      return
+    }
+    setItems([
+      ...items,
+      {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        quantity: quantity,
+        seller: product.seller,
+      },
+    ])
   }
 
   // Удаление товара из корзины

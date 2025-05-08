@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useRef } from "react"
 import Image from "next/image"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -47,10 +47,13 @@ export function ProductCard({ product } : {product : Product}) {
   const { toast } = useToast()
   const { addItem } = useCart()
   const [isOpen, setIsOpen] = useState(false)
+  const isAddingToCartRef = useRef(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation() // Предотвращаем открытие модального окна при нажатии на кнопку добавления в корзину
+    e.preventDefault(); // Предотвращаем любое стандартное поведение
 
+    console.log("handleAddToCart called", product)
     // Добавляем товар в корзину
     addItem(product)
 
@@ -58,6 +61,11 @@ export function ProductCard({ product } : {product : Product}) {
       title: "Добавлено в корзину",
       description: `${product.name} добавлен в вашу корзину.`,
     })
+
+    // Сбрасываем флаг через небольшую задержку
+    setTimeout(() => {
+      isAddingToCartRef.current = false;
+    }, 500);
   }
 
   return (
@@ -80,9 +88,9 @@ export function ProductCard({ product } : {product : Product}) {
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-semibold text-lg line-clamp-1">{product.name}</h3>
-            <Badge variant="outline" className="ml-2 shrink-0">
-              {product.category}
-            </Badge>
+            {/*<Badge variant="outline" className="ml-2 shrink-0">*/}
+            {/*  {product.category}*/}
+            {/*</Badge>*/}
           </div>
           <p className="text-muted-foreground text-sm line-clamp-2 mb-2">{product.description}</p>
           <div className="flex items-center gap-1 text-sm mb-1">
@@ -121,8 +129,13 @@ interface ProductDetailDialogProps {
     onAddToCart: (e: React.MouseEvent) => void
 }
 function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : ProductDetailDialogProps) {
+  const handleDialogOpenChange = (open: boolean) => {
+    console.log("Dialog onOpenChange called", open);
+    setIsOpen(open);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden">
         <DialogClose className="absolute right-4 top-4 z-10">
           <X className="h-4 w-4" />
@@ -258,7 +271,13 @@ function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : Produ
               </Tabs>
 
               <div className="mt-8 flex gap-4">
-                <Button className="flex-1" onClick={onAddToCart}>
+                <Button className="flex-1" onClick={(e) => {
+                  console.log("Dialog Add to Cart button clicked");
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log("ProductDetailDialog onAddToCart called", product);
+                  onAddToCart(e);
+                }}>
                   <ShoppingCart className="h-4 w-4 mr-2" />В корзину
                 </Button>
                 <Button variant="outline" className="flex-1">
