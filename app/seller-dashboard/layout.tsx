@@ -1,7 +1,10 @@
 import { SellerDashboardNav } from "@/components/seller-dashboard/seller-nav"
 import { Separator } from "@/components/ui/separator"
 
-export default function SellerDashboardLayout({ children }) {
+interface Props {
+  children?: React.ReactNode
+}
+export default function SellerDashboardLayout({ children } : Props) {
   return (
     <div className="container py-8 px-4 md:px-6">
       <div className="flex flex-col space-y-6">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -21,7 +21,7 @@ export default function NewProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [images, setImages] = useState(["/placeholder.svg?height=300&width=300"])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -40,7 +40,7 @@ export default function NewProductPage() {
     setImages([...images, "/placeholder.svg?height=300&width=300"])
   }
 
-  const handleRemoveImage = (index) => {
+  const handleRemoveImage = (index : number) => {
     setImages(images.filter((_, i) => i !== index))
   }
 

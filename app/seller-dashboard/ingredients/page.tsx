@@ -12,8 +12,39 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, Package, List, CheckCircle } from "lucide-react"
 
+interface Ingredient {
+  name: string;
+  amount: string;
+}
+
+interface OrderItem {
+  name: string;
+  quantity: number;
+  ingredients: Ingredient[];
+}
+
+interface Order {
+  id: string;
+  customer: string;
+  status: string;
+  items: OrderItem[];
+}
+
+interface IngredientDetail {
+  amounts: string[];
+  orders: Set<string>;
+}
+
+interface AllIngredientsType {
+  [key: string]: IngredientDetail;
+}
+
+interface CheckedIngredientsType {
+  [key: string]: boolean;
+}
+
 // Пример данных для заказов с ингредиентами
-const orders = [
+const orders: Order[] = [
   {
     id: "ЗКЗ-7652",
     customer: "София Тейлор",
@@ -107,9 +138,9 @@ const orders = [
 ]
 
 export default function IngredientsPage() {
-  const [activeOrders, setActiveOrders] = useState([])
-  const [allIngredients, setAllIngredients] = useState({})
-  const [checkedIngredients, setCheckedIngredients] = useState({})
+  const [activeOrders, setActiveOrders] = useState<Order[]>([])
+  const [allIngredients, setAllIngredients] = useState<AllIngredientsType>({})
+  const [checkedIngredients, setCheckedIngredients] = useState<CheckedIngredientsType>({})
   const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
@@ -118,7 +149,7 @@ export default function IngredientsPage() {
     setActiveOrders(processingOrders)
 
     // Рассчитываем все необходимые ингредиенты
-    const ingredients = {}
+    const ingredients: AllIngredientsType = {}
 
     processingOrders.forEach((order) => {
       order.items.forEach((item) => {
@@ -140,25 +171,25 @@ export default function IngredientsPage() {
     setAllIngredients(ingredients)
 
     // Инициализируем состояние проверки для всех ингредиентов
-    const initialCheckedState = {}
+    const initialCheckedState: CheckedIngredientsType = {}
     Object.keys(ingredients).forEach((ingredient) => {
       initialCheckedState[ingredient] = false
     })
     setCheckedIngredients(initialCheckedState)
   }, [])
 
-  const toggleIngredientCheck = (ingredient) => {
+  const toggleIngredientCheck = (ingredient: string) => {
     setCheckedIngredients((prev) => ({
       ...prev,
       [ingredient]: !prev[ingredient],
     }))
   }
 
-  const filteredIngredients = Object.keys(allIngredients)
+  const filteredIngredients: string[] = Object.keys(allIngredients)
     .filter((name) => name.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort()
 
-  const getCompletionPercentage = () => {
+  const getCompletionPercentage = (): number => {
     const total = Object.keys(checkedIngredients).length
     if (total === 0) return 0
     const checked = Object.values(checkedIngredients).filter(Boolean).length
@@ -218,7 +249,7 @@ export default function IngredientsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const newState = {}
+                    const newState: CheckedIngredientsType = {}
                     Object.keys(checkedIngredients).forEach((key) => {
                       newState[key] = true
                     })
@@ -231,7 +262,7 @@ export default function IngredientsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const newState = {}
+                    const newState: CheckedIngredientsType = {}
                     Object.keys(checkedIngredients).forEach((key) => {
                       newState[key] = false
                     })
@@ -265,13 +296,13 @@ export default function IngredientsPage() {
                           {ingredient}
                         </Label>
                         <div className="text-sm text-muted-foreground mt-1">
-                          <span>Необходимо для {allIngredients[ingredient].orders.size} заказов</span>
+                          <span>Необходимо для {allIngredients[ingredient]?.orders.size || 0} заказов</span>
                           <div className="mt-1">
-                            {allIngredients[ingredient].amounts.map((amount, i) => (
+                            {allIngredients[ingredient]?.amounts.map((amount, i) => (
                               <Badge key={i} variant="outline" className="mr-1 mb-1">
                                 {amount}
                               </Badge>
-                            ))}
+                            )) || []}
                           </div>
                         </div>
                       </div>
@@ -316,7 +347,7 @@ export default function IngredientsPage() {
                               <div className="text-xs text-muted-foreground">{ingredient.amount}</div>
                             </div>
                             <Checkbox
-                              checked={checkedIngredients[ingredient.name] || false}
+                              checked={checkedIngredients[ingredient.name] ?? false}
                               onCheckedChange={() => toggleIngredientCheck(ingredient.name)}
                             />
                           </div>

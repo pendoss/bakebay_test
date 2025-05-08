@@ -3,7 +3,12 @@ import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ChevronDown } from "lucide-react"
 
-export function MainNav({ className, ...props }) {
+
+interface Props {
+    className?: string
+    [key: string]: any
+}
+export function MainNav({ className, ...props } : Props) {
   // Категории для выпадающего меню
   const categories = [
     { name: "Торты", href: "/catalog?category=Cakes" },

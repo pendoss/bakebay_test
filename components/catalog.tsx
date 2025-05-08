@@ -143,21 +143,27 @@ const initialProducts = [
   },
 ]
 
-export function Catalog({ initialCategory = null }) {
+export function Catalog({ initialCategory = null }:{ initialCategory: string | null }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [products, setProducts] = useState(initialProducts)
-  const [filters, setFilters] = useState({
-    priceRange: [0, 30],
+  const [filters, setFilters] = useState<{
+    priceRange: [number, number];
+    categories: string[];
+    dietary: string[];
+    rating: number;
+    sellers: string[];
+  }>({
+    priceRange: [0, 30] as [number, number],
     categories: initialCategory ? [initialCategory] : [],
     dietary: [],
     rating: 0,
     sellers: [],
-  })
+  });
 
   // Применяем начальный фильтр категории при монтировании компонента
   useEffect(() => {
     if (initialCategory) {
-      applyFilters({
+      applyFiltersAction({
         ...filters,
         categories: [initialCategory],
       })
@@ -165,7 +171,13 @@ export function Catalog({ initialCategory = null }) {
   }, [initialCategory])
 
   // Применяем фильтры к продуктам
-  const applyFilters = (newFilters) => {
+  const applyFiltersAction = (newFilters: {
+    priceRange: [number,number];
+    categories: string[];
+    dietary: string[];
+    rating: number;
+    sellers: string[];
+  }) => {
     setFilters(newFilters)
 
     const filteredProducts = initialProducts.filter((product) => {
@@ -190,11 +202,9 @@ export function Catalog({ initialCategory = null }) {
       }
 
       // Фильтр по продавцу
-      if (newFilters.sellers.length > 0 && !newFilters.sellers.includes(product.seller)) {
-        return false
-      }
+      return !(newFilters.sellers.length > 0 && !newFilters.sellers.includes(product.seller));
 
-      return true
+
     })
 
     setProducts(filteredProducts)
@@ -221,13 +231,13 @@ export function Catalog({ initialCategory = null }) {
           <Button variant="ghost" className="absolute right-4 top-4" onClick={() => setSidebarOpen(false)}>
             ✕
           </Button>
-          <FilterSidebar filters={filters} applyFilters={applyFilters} />
+          <FilterSidebar filters={filters} applyFiltersAction={applyFiltersAction} />
         </div>
       </div>
 
       {/* Боковая панель фильтров - десктопная версия */}
       <div className="hidden md:block w-64 flex-shrink-0">
-        <FilterSidebar filters={filters} applyFilters={applyFilters} />
+        <FilterSidebar filters={filters} applyFiltersAction={applyFiltersAction} />
       </div>
 
       {/* Сетка продуктов */}
@@ -244,7 +254,7 @@ export function Catalog({ initialCategory = null }) {
                 className="mt-4"
                 onClick={() => {
                   setFilters({
-                    priceRange: [0, 30],
+                    priceRange: [0, 30] as [number, number],
                     categories: [],
                     dietary: [],
                     rating: 0,

@@ -7,6 +7,26 @@ import { Input } from "@/components/ui/input"
 import { formatDistanceToNow } from "date-fns"
 import { ru } from "date-fns/locale"
 
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  id: string;
+  date: Date;
+  customer: {
+    name: string;
+    email: string;
+  };
+  items: OrderItem[];
+  total: number;
+  status: string;
+  paymentStatus: string;
+  shippingAddress: string;
+}
+
 // Пример данных
 const orders = [
   {
@@ -172,7 +192,7 @@ export default function OrdersPage() {
   )
 }
 
-function OrderCard({ order }) {
+function OrderCard({ order }: { order: Order }) {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -213,7 +233,7 @@ function OrderCard({ order }) {
           <div>
             <h4 className="text-sm font-medium mb-1">Товары в заказе</h4>
             <ul className="text-sm space-y-1">
-              {order.items.map((item, index) => (
+              {order.items.map((item: OrderItem, index: number) => (
                 <li key={index} className="flex justify-between">
                   <div>
                     {item.quantity} x {item.name}

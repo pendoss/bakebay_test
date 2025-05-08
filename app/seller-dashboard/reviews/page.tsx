@@ -150,7 +150,20 @@ export default function ReviewsPage() {
   )
 }
 
-function ReviewCard({ review }) {
+interface reviewProps {
+    review: {
+        id: number
+        customer: { name: string; initials: string }
+        product: string
+        rating: number
+        date: Date | string | number
+        comment: string
+        replied?: boolean
+        reply?: string
+        replyDate?: Date | string | number
+    }
+}
+function ReviewCard({ review } : reviewProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -197,9 +210,16 @@ function ReviewCard({ review }) {
             <h4 className="text-sm font-medium">Ваш ответ:</h4>
             <div className="border rounded-lg p-3">
               <p className="text-sm">{review.reply}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Ответ дан {formatDistanceToNow(review.replyDate, { addSuffix: true, locale: ru })}
-              </p>
+              { review.replyDate ? (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Ответ дан {formatDistanceToNow(review.replyDate, { addSuffix: true, locale: ru })}
+                  </p>
+              ): (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Ответ не был дан
+                  </p>
+              )}
+
             </div>
           </div>
         ) : (

@@ -12,8 +12,23 @@ import { formatDistanceToNow } from "date-fns"
 import { ru } from "date-fns/locale"
 import { useToast } from "@/hooks/use-toast"
 
+// Define Question type
+interface Question {
+  id: number;
+  customer: {
+    name: string;
+    initials: string;
+  };
+  product: string;
+  question: string;
+  date: Date;
+  status: string;
+  answer?: string;
+  answerDate?: Date;
+}
+
 // Пример данных
-const initialQuestions = [
+const initialQuestions: Question[] = [
   {
     id: 1,
     customer: { name: "Сара Уилсон", initials: "СУ" },
@@ -65,11 +80,11 @@ const initialQuestions = [
 
 export default function QuestionsPage() {
   const { toast } = useToast()
-  const [questions, setQuestions] = useState(initialQuestions)
+  const [questions, setQuestions] = useState<Question[]>(initialQuestions)
   const [answerText, setAnswerText] = useState("")
-  const [selectedQuestion, setSelectedQuestion] = useState(null)
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
 
-  const handleAnswer = (questionId) => {
+  const handleAnswer = (questionId: number): void => {
     if (!answerText.trim()) return
 
     setQuestions(
@@ -170,7 +185,15 @@ export default function QuestionsPage() {
   )
 }
 
-function QuestionCard({ question, onAnswer, selectedQuestion, answerText, setAnswerText, handleAnswer }) {
+interface QuestionCardProps {
+  question: Question,
+  onAnswer: () => void,
+  selectedQuestion: Question | null,
+  answerText: string,
+  setAnswerText: (text: string) => void,
+  handleAnswer: (questionId: number) => void,
+}
+function QuestionCard({ question, onAnswer, selectedQuestion, answerText, setAnswerText, handleAnswer } : QuestionCardProps) {
   const isSelected = selectedQuestion && selectedQuestion.id === question.id
 
   return (
@@ -205,9 +228,16 @@ function QuestionCard({ question, onAnswer, selectedQuestion, answerText, setAns
             <h4 className="text-sm font-medium">Ваш ответ:</h4>
             <div className="border rounded-lg p-3">
               <p className="text-sm">{question.answer}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Отвечено {formatDistanceToNow(question.answerDate, { addSuffix: true, locale: ru })}
-              </p>
+              {question.answerDate ? (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Отвечено {formatDistanceToNow(question.answerDate, { addSuffix: true, locale: ru })}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ответ не отправлен
+                </p>
+              )}
+
             </div>
           </div>
         )}

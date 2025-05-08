@@ -45,14 +45,14 @@ const product = {
   images: ["/placeholder.svg?height=300&width=300", "/placeholder.svg?height=300&width=300"],
 }
 
-export default function EditProductPage({ params }) {
+export default function EditProductPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [productData, setProductData] = useState(product)
   const [newIngredient, setNewIngredient] = useState({ name: "", amount: "" })
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -74,7 +74,7 @@ export default function EditProductPage({ params }) {
     })
   }
 
-  const handleRemoveImage = (index) => {
+  const handleRemoveImage = (index: number) => {
     const newImages = [...productData.images]
     newImages.splice(index, 1)
     setProductData({
@@ -93,7 +93,7 @@ export default function EditProductPage({ params }) {
     setNewIngredient({ name: "", amount: "" })
   }
 
-  const handleRemoveIngredient = (index) => {
+  const handleRemoveIngredient = (index: number) => {
     const newIngredients = [...productData.ingredients]
     newIngredients.splice(index, 1)
     setProductData({
@@ -140,7 +140,7 @@ export default function EditProductPage({ params }) {
                   <Input
                     id="productName"
                     value={productData.name}
-                    onChange={(e) => setProductData({ ...productData, name: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, name: e.target.value })}
                     required
                   />
                 </div>
@@ -150,7 +150,7 @@ export default function EditProductPage({ params }) {
                   <Textarea
                     id="description"
                     value={productData.description}
-                    onChange={(e) => setProductData({ ...productData, description: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setProductData({ ...productData, description: e.target.value })}
                     className="min-h-[120px]"
                     required
                   />
@@ -217,12 +217,12 @@ export default function EditProductPage({ params }) {
                       "Содержит глютен",
                       "Содержит молочные продукты",
                       "Может содержать орехи",
-                    ].map((option) => (
+                    ].map((option: string) => (
                       <div key={option} className="flex items-center space-x-2">
                         <Checkbox
                           id={`diet-${option}`}
                           checked={productData.dietary.includes(option)}
-                          onCheckedChange={(checked) => {
+                          onCheckedChange={(checked: boolean) => {
                             if (checked) {
                               setProductData({
                                 ...productData,
@@ -231,7 +231,7 @@ export default function EditProductPage({ params }) {
                             } else {
                               setProductData({
                                 ...productData,
-                                dietary: productData.dietary.filter((item) => item !== option),
+                                dietary: productData.dietary.filter((item: string) => item !== option),
                               })
                             }
                           }}
@@ -254,7 +254,7 @@ export default function EditProductPage({ params }) {
                       type="number"
                       min="0"
                       value={productData.weight}
-                      onChange={(e) => setProductData({ ...productData, weight: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, weight: +e.target.value })}
                     />
                   </div>
 
@@ -281,7 +281,7 @@ export default function EditProductPage({ params }) {
                   <Input
                     id="storage"
                     value={productData.storage}
-                    onChange={(e) => setProductData({ ...productData, storage: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, storage: e.target.value })}
                   />
                 </div>
 
@@ -292,7 +292,7 @@ export default function EditProductPage({ params }) {
                     type="number"
                     min="1"
                     value={productData.shelfLife}
-                    onChange={(e) => setProductData({ ...productData, shelfLife: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, shelfLife: +e.target.value })}
                   />
                 </div>
               </CardContent>
@@ -314,7 +314,7 @@ export default function EditProductPage({ params }) {
                     </div>
 
                     <div className="divide-y">
-                      {productData.ingredients.map((ingredient, index) => (
+                      {productData.ingredients.map((ingredient: { name: string; amount: string }, index: number) => (
                         <div key={index} className="grid grid-cols-12 gap-4 p-4 items-center">
                           <div className="col-span-6">{ingredient.name}</div>
                           <div className="col-span-5">{ingredient.amount}</div>
@@ -341,7 +341,7 @@ export default function EditProductPage({ params }) {
                       <Input
                         id="ingredientName"
                         value={newIngredient.name}
-                        onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({ ...newIngredient, name: e.target.value })}
                         placeholder="например, Мука"
                       />
                     </div>
@@ -350,7 +350,7 @@ export default function EditProductPage({ params }) {
                       <Input
                         id="ingredientAmount"
                         value={newIngredient.amount}
-                        onChange={(e) => setNewIngredient({ ...newIngredient, amount: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({ ...newIngredient, amount: e.target.value })}
                         placeholder="например, 250г"
                       />
                     </div>
@@ -389,7 +389,7 @@ export default function EditProductPage({ params }) {
                       min="0.01"
                       step="0.01"
                       value={productData.price}
-                      onChange={(e) => setProductData({ ...productData, price: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, price: +e.target.value })}
                       required
                     />
                   </div>
@@ -402,7 +402,7 @@ export default function EditProductPage({ params }) {
                       min="0.01"
                       step="0.01"
                       value={productData.comparePrice}
-                      onChange={(e) => setProductData({ ...productData, comparePrice: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, comparePrice: +e.target.value })}
                     />
                   </div>
                 </div>
@@ -416,7 +416,7 @@ export default function EditProductPage({ params }) {
                       min="0.01"
                       step="0.01"
                       value={productData.cost}
-                      onChange={(e) => setProductData({ ...productData, cost: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, cost: +e.target.value })}
                     />
                   </div>
 
@@ -436,7 +436,7 @@ export default function EditProductPage({ params }) {
                       type="number"
                       min="0"
                       value={productData.inventory}
-                      onChange={(e) => setProductData({ ...productData, inventory: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, inventory: +e.target.value })}
                       required
                     />
                   </div>
@@ -446,7 +446,7 @@ export default function EditProductPage({ params }) {
                     <Input
                       id="sku"
                       value={productData.sku}
-                      onChange={(e) => setProductData({ ...productData, sku: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, sku: e.target.value })}
                     />
                   </div>
                 </div>
@@ -472,7 +472,7 @@ export default function EditProductPage({ params }) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {productData.images.map((image, index) => (
+                  {productData.images.map((image: string, index: number) => (
                     <div key={index} className="relative aspect-square border rounded-lg overflow-hidden group">
                       <Image
                         src={image || "/placeholder.svg"}

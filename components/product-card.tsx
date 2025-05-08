@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import Image from "next/image"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -21,7 +21,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 
 // Словарь для перевода диетических опций
-const dietaryTranslations = {
+const dietaryTranslations: { [key: string]: string } = {
   "Gluten-Free": "Без глютена",
   Vegan: "Веганское",
   "Dairy-Free": "Без молочных продуктов",
@@ -31,12 +31,24 @@ const dietaryTranslations = {
   "May Contain Nuts": "Может содержать орехи",
 }
 
-export function ProductCard({ product }) {
+type Product = {
+    id: number
+    name: string
+    description: string
+    price: number
+    image?: string
+    category: string
+    dietary: string[]
+    rating: number
+    seller: string
+}
+
+export function ProductCard({ product } : {product : Product}) {
   const { toast } = useToast()
   const { addItem } = useCart()
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation() // Предотвращаем открытие модального окна при нажатии на кнопку добавления в корзину
 
     // Добавляем товар в корзину
@@ -101,7 +113,14 @@ export function ProductCard({ product }) {
   )
 }
 
-function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart }) {
+
+interface ProductDetailDialogProps {
+    product: Product
+    isOpen: boolean
+    setIsOpen: (isOpen: boolean) => void
+    onAddToCart: (e: React.MouseEvent) => void
+}
+function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : ProductDetailDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden">

@@ -2,7 +2,10 @@ import { SiteHeader } from "@/components/site-header"
 import { CartProvider } from "@/contexts/cart-context"
 import "./globals.css"
 
-export default function RootLayout({ children }) {
+interface Props {
+    children?: React.ReactNode
+}
+export default function RootLayout({ children } : Props) {
   return (
     <html lang="ru">
       <body>
