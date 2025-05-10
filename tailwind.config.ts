@@ -29,8 +29,8 @@ const config = {
           foreground: "rgb(255, 255, 255)", /* White text on primary */
         },
         secondary: {
-          DEFAULT: "rgb(92, 184, 168)", /* Mint green - darker for better readability */
-          foreground: "rgb(102, 68, 51)", /* Chocolate */
+          DEFAULT: "rgb(43, 95, 85)", /* Darker mint green for better readability */
+          foreground: "rgb(255, 255, 255)", /* Chocolate */
         },
         accent: {
           DEFAULT: "rgb(92, 143, 204)", /* Blueberry - darker for better readability */

@@ -1,5 +1,4 @@
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Mail, MapPin, Phone } from "lucide-react"
@@ -11,9 +10,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="relative h-10 w-10 overflow-hidden rounded-full bg-primary">
-                <Image src="/placeholder.svg?text=CB" alt="Логотип BakeBay" fill className="object-cover" />
-              </div>
+
               <span className="font-bold text-xl text-white">BakeBay</span>
             </Link>
             <p className="text-white text-sm">

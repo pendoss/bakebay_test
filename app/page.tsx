@@ -24,7 +24,7 @@ export default function Home() {
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-secondary">
                 Авторские торты с доставкой
               </h1>
-              <p className="text-lg text-secondary/80">
+              <p className="text-lg text-secondary/100">
                 BakeBay соединяет вас с местными кондитерами для свежих, ручной работы десертов с быстрой доставкой.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -75,7 +75,7 @@ export default function Home() {
         <div className="container px-4 md:px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight mb-4 text-secondary">Почему выбирают BakeBay?</h2>
-            <p className="text-secondary/80 max-w-2xl mx-auto">
+            <p className="text-secondary max-w-2xl mx-auto">
               Мы переосмыслили процесс заказа и доставки десертов, делая его безупречным от клика до первого кусочка.
             </p>
           </div>

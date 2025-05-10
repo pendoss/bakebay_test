@@ -35,14 +35,14 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push("/profile")}>Профиль</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/orders")}>Заказы</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/wishlist")}>Избранное</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/seller-dashboard")}>Панель продавца</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/settings")}>Настройки</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/profile")} className="focus:bg-secondary focus:text-white">Профиль</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/orders")} className="focus:bg-secondary focus:text-white">Заказы</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/wishlist")} className="focus:bg-secondary focus:text-white">Избранное</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/seller-dashboard")} className="focus:bg-secondary focus:text-white">Панель продавца</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/settings")} className="focus:bg-secondary focus:text-white">Настройки</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Выйти</DropdownMenuItem>
+        <DropdownMenuItem className="focus:bg-secondary focus:text-white">Выйти</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

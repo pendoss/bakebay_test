@@ -33,7 +33,7 @@ export function Overview() {
           <Tooltip />
           <Legend />
           <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#E06680" activeDot={{ r: 8 }} name="Доход" />
-          <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#5CB8A8" name="Заказы" />
+          <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#2B5F55" name="Заказы" />
         </LineChart>
       </ResponsiveContainer>
     </div>
