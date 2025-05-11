@@ -282,9 +282,6 @@ function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : Produ
                 }}>
                   <ShoppingCart className="h-4 w-4 mr-2" />В корзину
                 </Button>
-                <Button variant="outline" className="flex-1">
-                  Купить сейчас
-                </Button>
               </div>
             </div>
           </div>

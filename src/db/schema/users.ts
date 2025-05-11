@@ -3,7 +3,7 @@ import {timestamp} from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum ('role', ['customer', 'admin', 'seller']);
 export const users = pgTable("users", {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    user_id: integer().primaryKey().generatedAlwaysAsIdentity(),
     email: varchar({length: 255}).notNull().unique(),
     first_name: varchar({length: 255}).notNull(),
     last_name: varchar({length: 255}).notNull(),

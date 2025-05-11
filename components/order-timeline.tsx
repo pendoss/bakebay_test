@@ -64,7 +64,7 @@ export function OrderTimeline({ statusHistory } : OrderTimelineProps) {
                 {allStatuses.map((status) => {
                     // Находим информацию о статусе в истории
                     const statusInfo = statusHistory.find((item) => item.status === status)
-                    const isCompleted = statusInfo?.completed || false
+                    const isCompleted = statusInfo?.completed
                     const isActive = currentStatus === status
 
                     // Если заказ отменен и текущий статус не "отменен" или "оформлен", пропускаем
@@ -80,12 +80,12 @@ export function OrderTimeline({ statusHistory } : OrderTimelineProps) {
                                     isCompleted
                                         ? statusColors[status]
                                         : isActive
-                                            ? "bg-background border-primary"
-                                            : "bg-background border-muted"
+                                            ? "bg-background text-primary"
+                                            : "bg-background text-secondary"
                                 }`}
                             >
                                 {isCompleted && React.cloneElement(statusIcons[status], {
-                                    className: `h-3.5 w-3.5 ${statusColors[status].includes("text-secondary") ? "text-secondary" : "text-muted-foreground"}`
+                                    className: `h-3.5 w-3.5 text-secondary`
                                 })}
                                 {isActive && !isCompleted && <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>}
                             </div>

@@ -12,9 +12,6 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative py-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-secondary/70 to-primary/70 -z-10"></div>
-        <div className="absolute inset-0 opacity-5 -z-10">
-          <Image src="/placeholder.svg?height=800&width=1600" alt="Фоновый узор" fill className="object-cover" />
-        </div>
         <div className="container relative z-10 px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 bg-white/90 backdrop-blur-md p-8 rounded-xl shadow-lg">

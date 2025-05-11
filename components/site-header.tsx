@@ -1,8 +1,6 @@
 import Link from "next/link"
 import { MainNav } from "@/components/main-nav"
 import { UserNav } from "@/components/user-nav"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
 import { CartIndicator } from "@/components/cart-indicator"
 
 export function SiteHeader() {
@@ -19,12 +17,6 @@ export function SiteHeader() {
           <MainNav />
         </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
-          <div className="w-full max-w-xs lg:max-w-md">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Поиск товаров..." className="w-full pl-8" />
-            </div>
-          </div>
           <CartIndicator />
           <UserNav />
         </div>

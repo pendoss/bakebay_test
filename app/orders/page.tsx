@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
 import { OrderCard } from "@/components/order-card"
-import { Search, Filter } from "lucide-react"
+import { Filter } from "lucide-react"
 
 // Определение типа для заказов
 type OrderStatus = 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'delivered' | 'cancelled';
@@ -189,15 +188,15 @@ export default function OrdersPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-end justify-between mb-6">
-                <div className="relative w-full sm:max-w-[360px]">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Поиск по номеру заказа..."
-                        className="pl-8"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+                {/*<div className="relative w-full sm:max-w-[360px]">*/}
+                {/*    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />*/}
+                {/*    <Input*/}
+                {/*        placeholder="Поиск по номеру заказа..."*/}
+                {/*        className="pl-8"*/}
+                {/*        value={searchTerm}*/}
+                {/*        onChange={(e) => setSearchTerm(e.target.value)}*/}
+                {/*    />*/}
+                {/*</div>*/}
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-[140px]">
@@ -211,15 +210,6 @@ export default function OrdersPage() {
                             <SelectItem value="shipping">Доставляется</SelectItem>
                             <SelectItem value="delivered">Доставлен</SelectItem>
                             <SelectItem value="cancelled">Отменен</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Select value={sortOrder} onValueChange={setSortOrder}>
-                        <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Сортировка" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="newest">Сначала новые</SelectItem>
-                            <SelectItem value="oldest">Сначала старые</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
