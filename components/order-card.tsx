@@ -11,52 +11,69 @@ import { OrderTimeline } from "@/components/order-timeline"
 import { ChevronDown, ChevronUp, Package, RefreshCw, XCircle, MessageSquare } from "lucide-react"
 import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
+import {OrderStatus} from "@/app/orders/page";
 
 // Define the OrderStatus type to match the one in other files
-type OrderStatus = 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'delivered' | 'cancelled';
 
 // Переводы статусов заказа
-const statusTranslations: Record<OrderStatus, string> = {
+export const statusTranslations: Record<OrderStatus, string> = {
     placed: "Оформлен",
     confirmed: "Подтвержден",
     preparing: "Готовится",
     shipping: "Доставляется",
     delivered: "Доставлен",
     cancelled: "Отменен",
+    ordering: "Оформляется",
+    processing: "Обрабатывается",
+    payed: "Оплачен",
+    processed: "Обработан",
+    in_progress: "В процессе",
+    delivering: "Доставляется",
 }
 
 // Цвета для статусов
-const statusColors: Record<OrderStatus, string> = {
+export const statusColors: Record<OrderStatus, string> = {
     placed: "bg-lemon-meringue text-secondary",
     confirmed: "bg-lavender-dessert text-secondary",
     preparing: "bg-mint-frosting text-secondary",
     shipping: "bg-caramel-light text-secondary",
     delivered: "bg-strawberry-cream text-secondary",
     cancelled: "bg-muted text-muted-foreground",
+    ordering: "bg-lemon-meringue text-secondary",
+    processing: "bg-lavender-dessert text-secondary",
+    payed: "bg-mint-frosting text-secondary",
+    processed: "bg-mint-frosting text-secondary",
+    in_progress: "bg-mint-frosting text-secondary",
+    delivering: "bg-caramel-light text-secondary",
 }
 
 
 interface OrderCardProps {
     order: {
-        id: string
-        date: string
-        total: number
-        items: Array<{
-            name: string
-            quantity: number
-            price: number
-            image?: string
-        }>
-        status: OrderStatus
-        statusHistory: Array<{
-            status: OrderStatus
-            completed?: boolean
-            date?: string | null
-        }>
-        address: string
-        paymentMethod: string
-        cancellationReason?: string
+    id: string;
+    date: string;
+    orderStatus: OrderStatus;
+    totalPrice: number;
+    address: string;
+    paymentMethod: string;
+    cancellationReason ? : string;
+    user_id: number;
+    items: Array <OrderItems> ;
+    statusHistory: Array < {
+        status: OrderStatus;
+        completed ? : boolean;
+        date ? : string | null;
+    } > ;
     }
+
+}
+
+export type OrderItems = {
+    id?: number;
+    name: string;
+    price: number;
+    image ? : string;
+    quantity: number;
 }
 export function OrderCard({ order } : OrderCardProps) {
     const [isOpen, setIsOpen] = useState(false)
@@ -95,13 +112,13 @@ export function OrderCard({ order } : OrderCardProps) {
                         <div className="flex flex-col">
                             <div className="flex items-center gap-2">
                                 <h3 className="font-semibold">Заказ {order.id}</h3>
-                                <Badge className={statusColors[order.status]}>{statusTranslations[order.status]}</Badge>
+                                <Badge className={statusColors[order.orderStatus]}>{statusTranslations[order.orderStatus]}</Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">Оформлен {order.date}</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="font-semibold">${order.total.toFixed(2)}</div>
+                        <div className="font-semibold">${order.totalPrice.toFixed(2)}</div>
                         <div className="text-sm text-muted-foreground">
                             {order.items.length} {order.items.length === 1 ? "товар" : order.items.length < 5 ? "товара" : "товаров"}
                         </div>
@@ -161,7 +178,7 @@ export function OrderCard({ order } : OrderCardProps) {
                             </div>
                         </div>
 
-                        {order.status === "cancelled" && (
+                        {order.orderStatus === "cancelled" && (
                             <div className="bg-muted/30 p-3 rounded-md">
                                 <h5 className="font-medium mb-1">Причина отмены</h5>
                                 <p className="text-muted-foreground">{order.cancellationReason}</p>
@@ -172,14 +189,14 @@ export function OrderCard({ order } : OrderCardProps) {
             </CardContent>
 
             <CardFooter className="p-4 pt-0 flex flex-wrap gap-2">
-                {order.status === "delivered" && (
+                {order.orderStatus === "delivered" && (
                     <Button variant="outline" className="gap-1" onClick={handleRepeatOrder}>
                         <RefreshCw className="h-4 w-4 mr-1" />
                         Повторить заказ
                     </Button>
                 )}
 
-                {["placed", "confirmed"].includes(order.status) && (
+                {["placed", "confirmed"].includes(order.orderStatus) && (
                     <Button variant="outline" className="text-destructive gap-1">
                         <XCircle className="h-4 w-4 mr-1" />
                         Отменить заказ
@@ -191,7 +208,7 @@ export function OrderCard({ order } : OrderCardProps) {
                     Связаться с поддержкой
                 </Button>
 
-                {["shipping", "preparing"].includes(order.status) && (
+                {["shipping", "preparing"].includes(order.orderStatus) && (
                     <Button variant="outline" className="gap-1">
                         <Package className="h-4 w-4 mr-1" />
                         Отследить доставку

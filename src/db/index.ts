@@ -17,8 +17,19 @@ const pool = new Pool({
 });
 
 // Create a Drizzle ORM instance
-const db = drizzle(pool);
-
+const db = drizzle(pool, {
+  schema: {
+    users,
+    roleEnum,
+    products,
+    orders,
+    orderStatusEnum,
+    orderItems,
+    categories,
+    sellers,
+    dietaryConstrains,
+  },
+});
 // Export the db instance and all schemas
 export {
   db,

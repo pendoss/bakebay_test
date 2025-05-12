@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db, categories, products } from '@/src/db';
 import { eq } from 'drizzle-orm';
 
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);

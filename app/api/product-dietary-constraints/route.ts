@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     // If constraintId is provided, return all products with that constraint
     if (constraintId) {
       const productsWithConstraint = await db.select({
-        constraint_id: dietaryConstrains.dietary_constraint_id,
+        constraint_id: dietaryConstrains.id,
         product: {
           id: products.product_id,
           name: products.product_name,
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
         products,
         eq(dietaryConstrains.product_id, products.product_id)
       )
-      .where(eq(dietaryConstrains.dietary_constraint_id, parseInt(constraintId)));
+      .where(eq(dietaryConstrains.id, parseInt(constraintId)));
       
       return NextResponse.json(productsWithConstraint);
     }
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       .where(
         and(
           eq(dietaryConstrains.product_id, body.product_id),
-          eq(dietaryConstrains.dietary_constraint_id, body.dietary_constraint_id)
+          eq(dietaryConstrains.id, body.dietary_constraint_id)
         )
       );
     
@@ -117,7 +117,8 @@ export async function POST(request: Request) {
     // Create new relationship
     const newRelationship = await db.insert(dietaryConstrains).values({
       product_id: body.product_id,
-      dietary_constraint_id: body.dietary_constraint_id,
+      id: body.id,
+      name: body.name,
     }).returning();
     
     return NextResponse.json(newRelationship[0]);
@@ -148,7 +149,7 @@ export async function DELETE(request: Request) {
       .where(
         and(
           eq(dietaryConstrains.product_id, parseInt(productId)),
-          eq(dietaryConstrains.dietary_constraint_id, parseInt(constraintId))
+          eq(dietaryConstrains.id, parseInt(constraintId))
         )
       )
       .returning();

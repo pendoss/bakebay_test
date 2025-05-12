@@ -1,21 +1,10 @@
 import { Check, Clock } from "lucide-react"
 import React, {JSX} from "react";
-
-// Define the OrderStatus type to match the one in other files
-type OrderStatus = 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'delivered' | 'cancelled';
-
-// Переводы статусов заказа
-const statusTranslations: Record<OrderStatus, string> = {
-    placed: "Оформлен",
-    confirmed: "Подтвержден",
-    preparing: "Готовится",
-    shipping: "Доставляется",
-    delivered: "Доставлен",
-    cancelled: "Отменен",
-}
+import {OrderStatus} from "@/app/orders/page";
+import { statusTranslations } from "@/components/order-card";
 
 // Иконки для статусов
-const statusIcons: Record<OrderStatus, JSX.Element> = {
+const statusIcons: Partial<Record<OrderStatus, JSX.Element>> = {
     placed: <Clock className="h-4 w-4" />,
     confirmed: <Check className="h-4 w-4" />,
     preparing: <Clock className="h-4 w-4" />,
@@ -25,7 +14,7 @@ const statusIcons: Record<OrderStatus, JSX.Element> = {
 }
 
 // Цвета для статусов
-const statusColors: Record<OrderStatus, string> = {
+const statusColors: Partial<Record<OrderStatus, string>> = {
     placed: "bg-lemon-meringue border-lemon-meringue text-secondary",
     confirmed: "bg-lavender-dessert border-lavender-dessert text-secondary",
     preparing: "bg-mint-frosting border-mint-frosting text-secondary",
@@ -84,7 +73,7 @@ export function OrderTimeline({ statusHistory } : OrderTimelineProps) {
                                             : "bg-background text-secondary"
                                 }`}
                             >
-                                {isCompleted && React.cloneElement(statusIcons[status], {
+                                {isCompleted && statusIcons[status] && React.cloneElement(statusIcons[status], {
                                     className: `h-3.5 w-3.5 text-secondary`
                                 })}
                                 {isActive && !isCompleted && <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>}

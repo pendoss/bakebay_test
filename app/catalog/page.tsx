@@ -36,6 +36,8 @@ export default function CatalogPage() {
           Просмотрите наш выбор вкусных сладостей
         </p>
       </div>
+
+
       <Catalog initialCategory={categoryParam} initialFilters={filters} />
     </div>
   )

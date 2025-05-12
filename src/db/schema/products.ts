@@ -15,4 +15,5 @@ export const products = pgTable ( "products", {
         category_id: integer().references(() => categories.id),
 
 
+
 })

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db, products, sellers, categories, productDietaryConstraints, dietaryConstrains } from '@/src/db';
+import { db, products, sellers, categories, dietaryConstrains } from '@/src/db';
 import { eq } from 'drizzle-orm';
 
 export async function GET(request: Request) {
@@ -20,23 +20,6 @@ export async function GET(request: Request) {
         },
       });
 
-      if (product) {
-        // Get dietary constraints for the product
-        const dietaryConstraints = await db.select({
-          id: dietaryConstrains.id,
-          name: dietaryConstrains.name,
-        })
-        .from(productDietaryConstraints)
-        .innerJoin(
-          dietaryConstrains,
-          eq(productDietaryConstraints.dietary_constraint_id, dietaryConstrains.id)
-        )
-        .where(eq(productDietaryConstraints.product_id, parseInt(id)));
-
-        // Add dietary constraints to the product
-        product.dietary_constraints = dietaryConstraints;
-      }
-
       if (!product) {
         return NextResponse.json(
           { error: 'Product not found' },
@@ -44,25 +27,28 @@ export async function GET(request: Request) {
         );
       }
 
-      return NextResponse.json(product);
+      // Get dietary constraints for the product
+      const dietaryConstraints = await db.select({
+        id: dietaryConstrains.id,
+        name: dietaryConstrains.name,
+      })
+      .from(dietaryConstrains)
+      .where(eq(dietaryConstrains.product_id, parseInt(id)));
+
+      // Add dietary constraints to the product object
+      const productWithConstraints = {
+        ...product,
+        dietary_constraints: dietaryConstraints
+      };
+
+      return NextResponse.json(productWithConstraints);
     }
 
     // Build query based on filters
-    let query = db.select().from(products);
-
-    // Apply category filter
-    if (categoryId) {
-      query = query.where(eq(products.category_id, parseInt(categoryId)));
-    }
-
-    // Apply seller filter
-    if (sellerId) {
-      query = query.where(eq(products.seller_id, parseInt(sellerId)));
-    }
+    let query = db.select().from(products).where( categoryId ? eq(products.category_id, parseInt(categoryId)) : sellerId ? eq(products.seller_id, parseInt(sellerId)) : undefined);
 
     // Execute query
-    const allProducts = await query.leftJoin(sellers, eq(products.seller_id, sellers.seller_id))
-                                  .leftJoin(categories, eq(products.category_id, categories.id));
+    const allProducts = await query.leftJoin(sellers, eq(products.seller_id, sellers.seller_id)).leftJoin(categories, eq(products.category_id, categories.id));
 
     // Format the response
     const formattedProducts = await Promise.all(allProducts.map(async row => {
@@ -71,12 +57,8 @@ export async function GET(request: Request) {
         id: dietaryConstrains.id,
         name: dietaryConstrains.name,
       })
-      .from(productDietaryConstraints)
-      .innerJoin(
-        dietaryConstrains,
-        eq(productDietaryConstraints.dietary_constraint_id, dietaryConstrains.id)
-      )
-      .where(eq(productDietaryConstraints.product_id, row.products.product_id));
+      .from(dietaryConstrains)
+      .where(eq(dietaryConstrains.product_id, row.products.product_id));
 
       return {
         id: row.products.product_id,

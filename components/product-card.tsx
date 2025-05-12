@@ -44,6 +44,14 @@ type Product = {
 }
 
 export function ProductCard({ product } : {product : Product}) {
+  console.log('ProductCard received:', product);
+
+  // Check if product is valid
+  if (!product || typeof product !== 'object') {
+    console.error('Invalid product object:', product);
+    return null;
+  }
+
   const { toast } = useToast()
   const { addItem } = useCart()
   const [isOpen, setIsOpen] = useState(false)

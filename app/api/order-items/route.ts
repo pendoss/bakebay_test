@@ -9,15 +9,11 @@ export async function GET(request: Request) {
     const orderId = url.searchParams.get('orderId');
     
     // Build query
+
     let query = db.select()
       .from(orderItems)
       .leftJoin(products, eq(orderItems.product_id, products.product_id))
-      .leftJoin(orders, eq(orderItems.order_id, orders.order_id));
-    
-    // Filter by order_id if provided
-    if (orderId) {
-      query = query.where(eq(orderItems.order_id, parseInt(orderId)));
-    }
+      .leftJoin(orders, eq(orderItems.order_id, orders.order_id)).where(orderId ? eq(orderItems.order_id, parseInt(orderId)) : undefined);
     
     // Execute query
     const items = await query;
@@ -33,7 +29,7 @@ export async function GET(request: Request) {
         price: item.products.price,
         description: item.products.short_desc
       } : null,
-      order_status: item.order?.order_status || null
+      order_status: item.orders?.order_status || null
     }));
     
     return NextResponse.json(formattedItems);

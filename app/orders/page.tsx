@@ -9,33 +9,38 @@ import { OrderCard } from "@/components/order-card"
 import { Filter } from "lucide-react"
 
 // Определение типа для заказов
-type OrderStatus = 'ordering' | 'processing' | 'payed' | 'processed' | 'in_progress' | 'delivering' | 'delivered' | 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'cancelled';
+export type OrderStatus = 'ordering' | 'processing' | 'payed' | 'processed' | 'in_progress' | 'delivering' | 'delivered' | 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'cancelled';
 
-type Order = {
+
+// order_id: integer().primaryKey().generatedAlwaysAsIdentity(),
+//     date: timestamp().notNull(),
+//     order_status: orderStatusEnum().default('ordering'),
+//     user_id: integer().references(() => users.user_id),
+//     total_price: integer(),
+//     address: text().notNull(),
+//     payment_method: text().notNull(),
+//     created_at: integer(),
+//     updated_at: integer(),
+type Order= {
     id: string;
     date: string;
-    status: OrderStatus;
-    statusHistory?: Array<{
-        status: OrderStatus;
-        date: string | null;
-        completed: boolean;
-    }>;
-    items: Array<{
-        id?: number;
-        name: string;
-        quantity: number;
-        price: number;
-        image?: string;
-    }>;
-    total: number;
+    orderStatus: OrderStatus;
+    totalPrice: number;
     address: string;
     paymentMethod: string;
-    cancellationReason?: string;
-    user?: {
+    cancellationReason ? : string;
+    user_id: number;
+    items: Array < {
         name: string;
-        email: string;
-        phone: string;
-    };
+        price: number;
+        image ? : string;
+        quantity: number;
+    } > ;
+    statusHistory: Array < {
+        status: OrderStatus;
+        completed ? : boolean;
+        date ? : string | null;
+    } > ;
 };
 
 export default function OrdersPage() {
@@ -54,7 +59,8 @@ export default function OrdersPage() {
                 const response = await fetch('/api/orders')
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch orders')
+                    setError('Failed to fetch orders')
+                    return
                 }
 
                 const data = await response.json()
@@ -64,10 +70,10 @@ export default function OrdersPage() {
                     ...order,
                     statusHistory: [
                         { status: 'placed', date: order.date, completed: true },
-                        { status: 'confirmed', date: order.status === 'ordering' ? null : order.date, completed: order.status !== 'ordering' },
-                        { status: 'preparing', date: order.status === 'ordering' || order.status === 'processing' ? null : order.date, completed: !['ordering', 'processing'].includes(order.status) },
-                        { status: 'shipping', date: ['delivering', 'delivered'].includes(order.status) ? order.date : null, completed: ['delivering', 'delivered'].includes(order.status) },
-                        { status: 'delivered', date: order.status === 'delivered' ? order.date : null, completed: order.status === 'delivered' },
+                        { status: 'confirmed', date: order.orderStatus === 'ordering' ? null : order.date, completed: order.orderStatus !== 'ordering' },
+                        { status: 'preparing', date: order.orderStatus === 'ordering' || order.orderStatus === 'processing' ? null : order.date, completed: !['ordering', 'processing'].includes(order.orderStatus) },
+                        { status: 'shipping', date: ['delivering', 'delivered'].includes(order.orderStatus) ? order.date : null, completed: ['delivering', 'delivered'].includes(order.orderStatus) },
+                        { status: 'delivered', date: order.orderStatus === 'delivered' ? order.date : null, completed: order.orderStatus === 'delivered' },
                     ]
                 }))
 
@@ -92,7 +98,7 @@ export default function OrdersPage() {
             }
 
             // Фильтр по статусу
-            return !(statusFilter !== "all" && order.status !== statusFilter);
+            return !(statusFilter !== "all" && order.orderStatus !== statusFilter);
         })
         .sort((a, b) => {
             // Сортировка по дате
@@ -215,7 +221,7 @@ export default function OrdersPage() {
 
                         <TabsContent value="active" className="space-y-6">
                             {filteredOrders
-                                .filter((order) => ["ordering", "processing", "payed", "processed", "in_progress", "delivering"].includes(order.status))
+                                .filter((order) => ["ordering", "processing", "payed", "processed", "in_progress", "delivering"].includes(order.orderStatus))
                                 .map((order) => (
                                     <OrderCard key={order.id} order={order} />
                                 ))}
@@ -223,7 +229,7 @@ export default function OrdersPage() {
 
                         <TabsContent value="completed" className="space-y-6">
                             {filteredOrders
-                                .filter((order) => ["delivered"].includes(order.status))
+                                .filter((order) => ["delivered"].includes(order.orderStatus))
                                 .map((order) => (
                                     <OrderCard key={order.id} order={order} />
                                 ))}

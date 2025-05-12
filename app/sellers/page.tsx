@@ -1,4 +1,3 @@
-import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SellersList } from "@/components/sellers-list"
 import { BecomeSellerForm } from "@/components/become-seller-form"
@@ -10,9 +9,6 @@ export default function SellersPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">Наши продавцы</h1>
           <p className="text-muted-foreground">Откройте для себя наш отобранный выбор мастеров-кондитеров</p>
-        </div>
-        <div className="w-full md:w-auto">
-          <Input placeholder="Поиск продавцов..." className="md:w-[250px]" />
         </div>
       </div>
 

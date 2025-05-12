@@ -22,6 +22,7 @@ export function Catalog({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [products, setProducts] = useState<any[]>([])
+  console.log('Initial products state:', [])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<{
@@ -40,6 +41,7 @@ export function Catalog({
 
   // Fetch products when component mounts
   useEffect(() => {
+    console.log('Component mounted, fetching products...')
     fetchProducts()
   }, [])
 
@@ -61,16 +63,27 @@ export function Catalog({
       }
 
       // Fetch products from API
-      const response = await fetch(`/api/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`)
+      const url = `/api/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      console.log('Fetching products from URL:', url);
+
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        throw new Error('Failed to fetch products')
+        throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
       }
 
-      const data = await response.json()
+      const data = await response.json();
+      console.log('API Response type:', typeof data);
+      console.log('API Response is array:', Array.isArray(data));
+      console.log('API Response length:', Array.isArray(data) ? data.length : 'not an array');
+      console.log('API Response:', data);
 
       // Apply client-side filtering
       const filteredProducts = applyClientSideFilters(data)
+      console.log('Filtered Products:', filteredProducts)
+
       setProducts(filteredProducts)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -89,14 +102,32 @@ export function Catalog({
 
   // Apply client-side filters
   const applyClientSideFilters = (productsData: any[]) => {
+    console.log('Applying client-side filters to:', productsData);
+    console.log('Current filters:', filters);
+
+    if (!Array.isArray(productsData)) {
+      console.error('productsData is not an array:', productsData);
+      return [];
+    }
+
+    // If no products, return empty array
+    if (productsData.length === 0) {
+      console.log('No products to filter');
+      return [];
+    }
+
     return productsData.filter((product) => {
+      console.log('Filtering product:', product.name);
+
       // Price filter
       if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
+        console.log(`Product ${product.name} filtered out by price: ${product.price} not in range [${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
         return false
       }
 
       // Rating filter
       if (filters.rating > 0 && (!product.rating || product.rating < filters.rating)) {
+        console.log(`Product ${product.name} filtered out by rating: ${product.rating} < ${filters.rating}`);
         return false
       }
 
@@ -104,16 +135,19 @@ export function Catalog({
       if (filters.dietary.length > 0) {
         // If product has no dietary_constraints or it's empty, filter it out
         if (!product.dietary_constraints || product.dietary_constraints.length === 0) {
+          console.log(`Product ${product.name} filtered out by dietary: no dietary constraints`);
           return false
         }
 
         // Check if any of the selected dietary constraints match the product's constraints
         const productDietaryNames = product.dietary_constraints.map((constraint: any) => constraint.name)
         if (!filters.dietary.some(diet => productDietaryNames.includes(diet))) {
+          console.log(`Product ${product.name} filtered out by dietary: ${productDietaryNames} does not include any of ${filters.dietary}`);
           return false
         }
       }
 
+      console.log(`Product ${product.name} passed all filters`);
       return true
     })
   }
@@ -141,6 +175,8 @@ export function Catalog({
       fetchProducts()
     }
   }
+
+  console.log('Products before rendering:', products);
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
@@ -192,26 +228,34 @@ export function Catalog({
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-            {products.length > 0 ? (
-              products.map((product) => (
-                <ProductCard 
-                  key={product.id} 
-                  product={{
-                    id: product.id,
-                    name: product.name,
-                    description: product.short_desc,
-                    price: product.price,
-                    image: product.image || "/placeholder.svg?height=200&width=200",
-                    category: product.category,
-                    dietary: product.dietary_constraints ? 
-                      product.dietary_constraints.map((constraint: any) => constraint.name) : 
-                      [],
-                    rating: product.rating || 4.5,
-                    seller: product.seller ? product.seller.name : "Unknown Seller",
-                  }} 
-                />
-              ))
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 p-4 relative z-10">
+            {products && products.length > 0 ? (
+              products.map((product, index) => {
+                // Skip invalid products
+                if (!product || typeof product !== 'object') {
+                  console.error('Invalid product:', product);
+                  return null;
+                }
+                // Use ProductCard component
+                return (
+                  <ProductCard 
+                    key={product.id || `product-${index}`} 
+                    product={{
+                      id: product.id || 0,
+                      name: product.name || "Unknown Product",
+                      description: product.short_desc || "",
+                      price: product.price || 0,
+                      image: product.image || "/placeholder.svg?height=200&width=200",
+                      category: product.category_info ? product.category_info.name : (product.category || "Uncategorized"),
+                      dietary: product.dietary_constraints ? 
+                        product.dietary_constraints.map((constraint: any) => constraint.name) : 
+                        [],
+                      rating: product.seller?.rating || 4.5,
+                      seller: product.seller ? product.seller.name : "Unknown Seller",
+                    }} 
+                  />
+                );
+              })
             ) : (
               <div className="col-span-full text-center py-12">
                 <h3 className="text-lg font-medium">Нет товаров, соответствующих вашим фильтрам</h3>

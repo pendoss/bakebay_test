@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db, orders, orderItems, products } from '@/src/db/schema';
 import { eq } from 'drizzle-orm';
+import {OrderItems} from "@/components/order-card";
+import {db, orders, orderItems, products} from "@/src/db";
 
 
 export async function GET(request: Request) {
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
     });
 
     // Transform the data to match the expected format in the frontend
-    const formattedOrders = allOrders.map(order => ({
+    const formattedOrders = allOrders.map((order: any) => ({
       id: order.order_id.toString(),
       date: new Date(order.date).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -34,10 +35,10 @@ export async function GET(request: Request) {
         day: 'numeric',
       }),
       status: order.order_status,
-      items: order.orderItems.map(item => ({
-        id: item.product.product_id,
-        name: item.product.product_name,
-        price: item.product.price,
+      items: order.orderItems.map((item: OrderItems) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
         quantity: item.quantity,
       })),
       total: order.total_price || 0,
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     // Validate required fields
     if (!body.user_id || !body.address || !body.payment_method || !body.items || body.items.length === 0) {
       return NextResponse.json(
@@ -71,24 +72,24 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Calculate total price
     let totalPrice = 0;
     for (const item of body.items) {
       const product = await db.query.products.findFirst({
         where: eq(products.product_id, item.product_id),
       });
-      
+
       if (!product) {
         return NextResponse.json(
           { error: `Product with ID ${item.product_id} not found` },
           { status: 404 }
         );
       }
-      
+
       totalPrice += product.price * item.quantity;
     }
-    
+
     // Create new order
     const newOrder = await db.insert(orders).values({
       date: new Date(),
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
       created_at: Math.floor(Date.now() / 1000),
       updated_at: Math.floor(Date.now() / 1000),
     }).returning();
-    
+
     // Create order items
     for (const item of body.items) {
       await db.insert(orderItems).values({
@@ -109,7 +110,7 @@ export async function POST(request: Request) {
         quantity: item.quantity,
       });
     }
-    
+
     return NextResponse.json(newOrder[0]);
   } catch (error) {
     console.error('Error creating order:', error);
@@ -123,7 +124,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    
+
     // Validate required fields
     if (!body.order_id) {
       return NextResponse.json(
@@ -131,7 +132,7 @@ export async function PUT(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Update order
     const updatedOrder = await db.update(orders)
       .set({
@@ -142,14 +143,14 @@ export async function PUT(request: Request) {
       })
       .where(eq(orders.order_id, body.order_id))
       .returning();
-    
+
     if (updatedOrder.length === 0) {
       return NextResponse.json(
         { error: 'Order not found' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(updatedOrder[0]);
   } catch (error) {
     console.error('Error updating order:', error);
@@ -164,29 +165,29 @@ export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Missing order ID' },
         { status: 400 }
       );
     }
-    
+
     // Delete order items first
     await db.delete(orderItems).where(eq(orderItems.order_id, parseInt(id)));
-    
+
     // Delete order
     const deletedOrder = await db.delete(orders)
       .where(eq(orders.order_id, parseInt(id)))
       .returning();
-    
+
     if (deletedOrder.length === 0) {
       return NextResponse.json(
         { error: 'Order not found' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting order:', error);
