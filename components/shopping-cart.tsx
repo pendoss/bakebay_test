@@ -162,7 +162,73 @@ export function ShoppingCart() {
 
               {promoApplied && <div className="text-sm text-green-600 mb-4">Промокод успешно применен!</div>}
 
-              <Button className="w-full">Перейти к оформлению</Button>
+              <Button 
+                className="w-full" 
+                onClick={async () => {
+                  try {
+                    // Check if there are items in the cart
+                    if (items.length === 0) {
+                      toast({
+                        title: "Корзина пуста",
+                        description: "Добавьте товары в корзину перед оформлением заказа.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+
+                    // Get user data from localStorage or session
+                    const userData = JSON.parse(localStorage.getItem('userData') || '{"id": 1}');
+
+                    // In a real app, this would come from a form
+                    // For now, we'll use a more realistic approach with default values
+                    const orderData = {
+                      user_id: userData.id,
+                      address: localStorage.getItem('userAddress') || "123 Main St, City",
+                      payment_method: localStorage.getItem('paymentMethod') || "Credit Card",
+                      items: items.map(item => ({
+                        product_id: item.id,
+                        quantity: item.quantity
+                      }))
+                    };
+
+                    // Send order to API
+                    const response = await fetch('/api/orders', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(orderData),
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Failed to create order');
+                    }
+
+                    const data = await response.json();
+
+                    // Clear cart after successful order
+                    clearCart();
+
+                    // Show success message
+                    toast({
+                      title: "Заказ успешно оформлен",
+                      description: `Ваш заказ #${data.order_id} был успешно создан.`,
+                    });
+
+                    // Redirect to orders page
+                    router.push('/orders');
+                  } catch (err) {
+                    console.error('Error creating order:', err);
+                    toast({
+                      title: "Ошибка при оформлении заказа",
+                      description: err instanceof Error ? err.message : "Произошла ошибка при оформлении заказа.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+              >
+                Перейти к оформлению
+              </Button>
             </div>
           </CardContent>
           <CardFooter className="text-xs text-muted-foreground">

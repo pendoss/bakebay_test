@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,144 +9,79 @@ import { OrderCard } from "@/components/order-card"
 import { Filter } from "lucide-react"
 
 // Определение типа для заказов
-type OrderStatus = 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'delivered' | 'cancelled';
+type OrderStatus = 'ordering' | 'processing' | 'payed' | 'processed' | 'in_progress' | 'delivering' | 'delivered' | 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'cancelled';
 
 type Order = {
     id: string;
     date: string;
     status: OrderStatus;
-    statusHistory: Array<{
+    statusHistory?: Array<{
         status: OrderStatus;
         date: string | null;
         completed: boolean;
     }>;
     items: Array<{
+        id?: number;
         name: string;
         quantity: number;
         price: number;
-        image: string;
+        image?: string;
     }>;
     total: number;
     address: string;
     paymentMethod: string;
     cancellationReason?: string;
+    user?: {
+        name: string;
+        email: string;
+        phone: string;
+    };
 };
 
-// Пример данных заказов
-const orders: Order[] = [
-    {
-        id: "ЗКЗ-7652",
-        date: "15 мая 2025",
-        status: "delivered",
-        statusHistory: [
-            { status: "placed", date: "15 мая 2025, 10:30", completed: true },
-            { status: "confirmed", date: "15 мая 2025, 10:45", completed: true },
-            { status: "preparing", date: "15 мая 2025, 11:15", completed: true },
-            { status: "shipping", date: "15 мая 2025, 12:30", completed: true },
-            { status: "delivered", date: "15 мая 2025, 14:15", completed: true },
-        ],
-        items: [
-            { name: "Шоколадный торт", quantity: 1, price: 24.99, image: "/placeholder.svg?height=80&width=80" },
-            { name: "Ассорти макарон", quantity: 2, price: 18.99, image: "/placeholder.svg?height=80&width=80" },
-        ],
-        total: 62.97,
-        address: "ул. Кленовая, 123, г. Москва, 123456",
-        paymentMethod: "Банковская карта",
-    },
-    {
-        id: "ЗКЗ-7651",
-        date: "12 мая 2025",
-        status: "shipping",
-        statusHistory: [
-            { status: "placed", date: "12 мая 2025, 15:20", completed: true },
-            { status: "confirmed", date: "12 мая 2025, 15:35", completed: true },
-            { status: "preparing", date: "12 мая 2025, 16:10", completed: true },
-            { status: "shipping", date: "12 мая 2025, 17:45", completed: true },
-            { status: "delivered", date: null, completed: false },
-        ],
-        items: [{ name: "Клубничный чизкейк", quantity: 1, price: 22.99, image: "/placeholder.svg?height=80&width=80" }],
-        total: 22.99,
-        address: "ул. Дубовая, 456, г. Санкт-Петербург, 234567",
-        paymentMethod: "Наличные при получении",
-    },
-    {
-        id: "ЗКЗ-7650",
-        date: "8 мая 2025",
-        status: "preparing",
-        statusHistory: [
-            { status: "placed", date: "8 мая 2025, 09:15", completed: true },
-            { status: "confirmed", date: "8 мая 2025, 09:30", completed: true },
-            { status: "preparing", date: "8 мая 2025, 10:00", completed: true },
-            { status: "shipping", date: null, completed: false },
-            { status: "delivered", date: null, completed: false },
-        ],
-        items: [
-            { name: "Тирамису в стаканчике", quantity: 2, price: 8.99, image: "/placeholder.svg?height=80&width=80" },
-            { name: "Булочки с корицей", quantity: 1, price: 16.99, image: "/placeholder.svg?height=80&width=80" },
-        ],
-        total: 34.97,
-        address: "ул. Сосновая, 789, г. Казань, 345678",
-        paymentMethod: "Банковская карта",
-    },
-    {
-        id: "ЗКЗ-7649",
-        date: "5 мая 2025",
-        status: "confirmed",
-        statusHistory: [
-            { status: "placed", date: "5 мая 2025, 18:45", completed: true },
-            { status: "confirmed", date: "5 мая 2025, 19:00", completed: true },
-            { status: "preparing", date: null, completed: false },
-            { status: "shipping", date: null, completed: false },
-            { status: "delivered", date: null, completed: false },
-        ],
-        items: [
-            { name: "Шоколадный торт", quantity: 1, price: 24.99, image: "/placeholder.svg?height=80&width=80" },
-            { name: "Клубничный чизкейк", quantity: 1, price: 22.99, image: "/placeholder.svg?height=80&width=80" },
-            { name: "Ассорти макарон", quantity: 2, price: 18.99, image: "/placeholder.svg?height=80&width=80" },
-        ],
-        total: 85.96,
-        address: "ул. Кедровая, 101, г. Екатеринбург, 456789",
-        paymentMethod: "Банковская карта",
-    },
-    {
-        id: "ЗКЗ-7648",
-        date: "1 мая 2025",
-        status: "placed",
-        statusHistory: [
-            { status: "placed", date: "1 мая 2025, 11:30", completed: true },
-            { status: "confirmed", date: null, completed: false },
-            { status: "preparing", date: null, completed: false },
-            { status: "shipping", date: null, completed: false },
-            { status: "delivered", date: null, completed: false },
-        ],
-        items: [
-            { name: "Веганское шоколадное печенье", quantity: 2, price: 12.99, image: "/placeholder.svg?height=80&width=80" },
-        ],
-        total: 25.98,
-        address: "ул. Березовая, 202, г. Сочи, 567890",
-        paymentMethod: "Наличные при получении",
-    },
-    {
-        id: "ЗКЗ-7647",
-        date: "28 апреля 2025",
-        status: "cancelled",
-        statusHistory: [
-            { status: "placed", date: "28 апреля 2025, 14:15", completed: true },
-            { status: "confirmed", date: "28 апреля 2025, 14:30", completed: true },
-            { status: "cancelled", date: "28 апреля 2025, 15:00", completed: true },
-        ],
-        items: [{ name: "Фруктовый тарт", quantity: 1, price: 19.99, image: "/placeholder.svg?height=80&width=80" }],
-        total: 19.99,
-        address: "ул. Липовая, 303, г. Новосибирск, 678901",
-        paymentMethod: "Банковская карта",
-        cancellationReason: "Клиент отменил заказ",
-    },
-]
-
 export default function OrdersPage() {
+    const [orders, setOrders] = useState<Order[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [sortOrder, setSortOrder] = useState("newest")
+
+    // Fetch orders from the API
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                setLoading(true)
+                const response = await fetch('/api/orders')
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch orders')
+                }
+
+                const data = await response.json()
+
+                // Add status history for each order (this would ideally come from the API)
+                const ordersWithHistory = data.map((order: Order) => ({
+                    ...order,
+                    statusHistory: [
+                        { status: 'placed', date: order.date, completed: true },
+                        { status: 'confirmed', date: order.status === 'ordering' ? null : order.date, completed: order.status !== 'ordering' },
+                        { status: 'preparing', date: order.status === 'ordering' || order.status === 'processing' ? null : order.date, completed: !['ordering', 'processing'].includes(order.status) },
+                        { status: 'shipping', date: ['delivering', 'delivered'].includes(order.status) ? order.date : null, completed: ['delivering', 'delivered'].includes(order.status) },
+                        { status: 'delivered', date: order.status === 'delivered' ? order.date : null, completed: order.status === 'delivered' },
+                    ]
+                }))
+
+                setOrders(ordersWithHistory)
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'An error occurred')
+                console.error('Error fetching orders:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchOrders()
+    }, [])
 
     // Фильтрация и сортировка заказов
     const filteredOrders = orders
@@ -158,8 +93,6 @@ export default function OrdersPage() {
 
             // Фильтр по статусу
             return !(statusFilter !== "all" && order.status !== statusFilter);
-
-
         })
         .sort((a, b) => {
             // Сортировка по дате
@@ -187,81 +120,117 @@ export default function OrdersPage() {
                 </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-end justify-between mb-6">
-                {/*<div className="relative w-full sm:max-w-[360px]">*/}
-                {/*    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />*/}
-                {/*    <Input*/}
-                {/*        placeholder="Поиск по номеру заказа..."*/}
-                {/*        className="pl-8"*/}
-                {/*        value={searchTerm}*/}
-                {/*        onChange={(e) => setSearchTerm(e.target.value)}*/}
-                {/*    />*/}
-                {/*</div>*/}
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Статус заказа" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Все заказы</SelectItem>
-                            <SelectItem value="placed">Оформлен</SelectItem>
-                            <SelectItem value="confirmed">Подтвержден</SelectItem>
-                            <SelectItem value="preparing">Готовится</SelectItem>
-                            <SelectItem value="shipping">Доставляется</SelectItem>
-                            <SelectItem value="delivered">Доставлен</SelectItem>
-                            <SelectItem value="cancelled">Отменен</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
+            {/* Show loading state */}
+            {loading && (
+                <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                        <div className="rounded-full bg-muted p-3 mb-4 animate-pulse">
+                            <div className="h-6 w-6 bg-muted-foreground rounded-full"></div>
+                        </div>
+                        <h3 className="text-lg font-medium mb-2">Загрузка заказов...</h3>
+                        <p className="text-muted-foreground text-center max-w-md">
+                            Пожалуйста, подождите, пока мы загружаем ваши заказы.
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
 
-            <Tabs defaultValue="all" className="w-full">
-                <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex mb-6">
-                    <TabsTrigger value="all" className="flex-1 sm:flex-auto">
-                        Все заказы
-                    </TabsTrigger>
-                    <TabsTrigger value="active" className="flex-1 sm:flex-auto">
-                        Активные
-                    </TabsTrigger>
-                    <TabsTrigger value="completed" className="flex-1 sm:flex-auto">
-                        Завершенные
-                    </TabsTrigger>
-                </TabsList>
+            {/* Show error state */}
+            {error && !loading && (
+                <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                        <div className="rounded-full bg-red-100 p-3 mb-4">
+                            <div className="h-6 w-6 text-red-500">!</div>
+                        </div>
+                        <h3 className="text-lg font-medium mb-2">Ошибка загрузки заказов</h3>
+                        <p className="text-muted-foreground text-center max-w-md">
+                            {error}. Пожалуйста, попробуйте обновить страницу.
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
 
-                <TabsContent value="all" className="space-y-6">
-                    {filteredOrders.length > 0 ? (
-                        filteredOrders.map((order) => <OrderCard key={order.id} order={order} />)
-                    ) : (
-                        <Card>
-                            <CardContent className="flex flex-col items-center justify-center py-12">
-                                <div className="rounded-full bg-muted p-3 mb-4">
-                                    <Filter className="h-6 w-6 text-muted-foreground" />
-                                </div>
-                                <h3 className="text-lg font-medium mb-2">Заказы не найдены</h3>
-                                <p className="text-muted-foreground text-center max-w-md">
-                                    Не найдено заказов, соответствующих вашим критериям поиска. Попробуйте изменить параметры фильтрации.
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
-                </TabsContent>
+            {/* Show content when not loading and no error */}
+            {!loading && !error && (
+                <>
+                    <div className="flex flex-col sm:flex-row gap-4 items-end justify-between mb-6">
+                        {/*<div className="relative w-full sm:max-w-[360px]">*/}
+                        {/*    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />*/}
+                        {/*    <Input*/}
+                        {/*        placeholder="Поиск по номеру заказа..."*/}
+                        {/*        className="pl-8"*/}
+                        {/*        value={searchTerm}*/}
+                        {/*        onChange={(e) => setSearchTerm(e.target.value)}*/}
+                        {/*    />*/}
+                        {/*</div>*/}
+                        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-[140px]">
+                                    <SelectValue placeholder="Статус заказа" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Все заказы</SelectItem>
+                                    <SelectItem value="ordering">Оформляется</SelectItem>
+                                    <SelectItem value="processing">Обрабатывается</SelectItem>
+                                    <SelectItem value="payed">Оплачен</SelectItem>
+                                    <SelectItem value="processed">Обработан</SelectItem>
+                                    <SelectItem value="in_progress">В процессе</SelectItem>
+                                    <SelectItem value="delivering">Доставляется</SelectItem>
+                                    <SelectItem value="delivered">Доставлен</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
 
-                <TabsContent value="active" className="space-y-6">
-                    {filteredOrders
-                        .filter((order) => ["placed", "confirmed", "preparing", "shipping"].includes(order.status))
-                        .map((order) => (
-                            <OrderCard key={order.id} order={order} />
-                        ))}
-                </TabsContent>
+                    <Tabs defaultValue="all" className="w-full">
+                        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex mb-6">
+                            <TabsTrigger value="all" className="flex-1 sm:flex-auto">
+                                Все заказы
+                            </TabsTrigger>
+                            <TabsTrigger value="active" className="flex-1 sm:flex-auto">
+                                Активные
+                            </TabsTrigger>
+                            <TabsTrigger value="completed" className="flex-1 sm:flex-auto">
+                                Завершенные
+                            </TabsTrigger>
+                        </TabsList>
 
-                <TabsContent value="completed" className="space-y-6">
-                    {filteredOrders
-                        .filter((order) => ["delivered", "cancelled"].includes(order.status))
-                        .map((order) => (
-                            <OrderCard key={order.id} order={order} />
-                        ))}
-                </TabsContent>
-            </Tabs>
+                        <TabsContent value="all" className="space-y-6">
+                            {filteredOrders.length > 0 ? (
+                                filteredOrders.map((order) => <OrderCard key={order.id} order={order} />)
+                            ) : (
+                                <Card>
+                                    <CardContent className="flex flex-col items-center justify-center py-12">
+                                        <div className="rounded-full bg-muted p-3 mb-4">
+                                            <Filter className="h-6 w-6 text-muted-foreground" />
+                                        </div>
+                                        <h3 className="text-lg font-medium mb-2">Заказы не найдены</h3>
+                                        <p className="text-muted-foreground text-center max-w-md">
+                                            Не найдено заказов, соответствующих вашим критериям поиска. Попробуйте изменить параметры фильтрации.
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="active" className="space-y-6">
+                            {filteredOrders
+                                .filter((order) => ["ordering", "processing", "payed", "processed", "in_progress", "delivering"].includes(order.status))
+                                .map((order) => (
+                                    <OrderCard key={order.id} order={order} />
+                                ))}
+                        </TabsContent>
+
+                        <TabsContent value="completed" className="space-y-6">
+                            {filteredOrders
+                                .filter((order) => ["delivered"].includes(order.status))
+                                .map((order) => (
+                                    <OrderCard key={order.id} order={order} />
+                                ))}
+                        </TabsContent>
+                    </Tabs>
+                </>
+            )}
         </div>
     )
 }

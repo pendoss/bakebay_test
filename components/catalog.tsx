@@ -7,142 +7,6 @@ import { Button } from "@/components/ui/button"
 import { SlidersHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-// Данные о сладких продуктах
-const initialProducts = [
-  {
-    id: 1,
-    name: "Шоколадный торт",
-    description: "Насыщенный шоколадный торт с помадкой",
-    price: 24.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Cakes",
-    dietary: ["Contains Gluten", "Contains Dairy"],
-    rating: 4.8,
-    seller: "Кондитерская Сладкие Радости",
-  },
-  {
-    id: 2,
-    name: "Клубничный чизкейк",
-    description: "Кремовый чизкейк со свежей клубничной начинкой",
-    price: 22.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Cakes",
-    dietary: ["Contains Gluten", "Contains Dairy"],
-    rating: 4.7,
-    seller: "Чизкейк Рай",
-  },
-  {
-    id: 3,
-    name: "Ассорти макарон",
-    description: "Коробка из 12 красочных французских макарон различных вкусов",
-    price: 18.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Cookies",
-    dietary: ["Contains Nuts", "Gluten-Free"],
-    rating: 4.9,
-    seller: "Парижские деликатесы",
-  },
-  {
-    id: 4,
-    name: "Булочки с корицей",
-    description: "Свежеиспеченные булочки с корицей и глазурью из сливочного сыра",
-    price: 16.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Pastries",
-    dietary: ["Contains Gluten", "Contains Dairy"],
-    rating: 4.6,
-    seller: "Утренняя пекарня",
-  },
-  {
-    id: 5,
-    name: "Веганское шоколадное печенье",
-    description: "Печенье с шоколадной крошкой на растительной основе",
-    price: 12.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Cookies",
-    dietary: ["Vegan", "Dairy-Free"],
-    rating: 4.5,
-    seller: "Зеленые угощения",
-  },
-  {
-    id: 6,
-    name: "Тирамису в стаканчике",
-    description: "Индивидуальные порции десерта тирамису",
-    price: 8.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Italian Desserts",
-    dietary: ["Contains Gluten", "Contains Dairy"],
-    rating: 4.7,
-    seller: "Итальянские сладости",
-  },
-  {
-    id: 7,
-    name: "Фруктовый тарт",
-    description: "Сливочная тарталетка с заварным кремом и свежими фруктами",
-    price: 19.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Tarts",
-    dietary: ["Contains Gluten", "Contains Dairy"],
-    rating: 4.8,
-    seller: "Дом тартов",
-  },
-  {
-    id: 8,
-    name: "Брауни без глютена",
-    description: "Сочные шоколадные брауни без глютена",
-    price: 14.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Brownies",
-    dietary: ["Gluten-Free", "Contains Dairy"],
-    rating: 4.6,
-    seller: "Пекарня без аллергенов",
-  },
-  {
-    id: 9,
-    name: "Медовая пахлава",
-    description: "Традиционная пахлава со слоями теста фило, орехами и медом",
-    price: 17.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "International Desserts",
-    dietary: ["Contains Gluten", "Contains Nuts"],
-    rating: 4.9,
-    seller: "Средиземноморские сладости",
-  },
-  {
-    id: 10,
-    name: "Лимонный пирог с безе",
-    description: "Пикантная лимонная начинка под воздушным безе",
-    price: 21.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Pies",
-    dietary: ["Contains Gluten", "Contains Dairy"],
-    rating: 4.7,
-    seller: "Пирожный рай",
-  },
-  {
-    id: 11,
-    name: "Шоколадные трюфели",
-    description: "Ассорти ручной работы шоколадных трюфелей",
-    price: 25.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Chocolates",
-    dietary: ["Contains Dairy", "May Contain Nuts"],
-    rating: 4.9,
-    seller: "Трюфельные мастера",
-  },
-  {
-    id: 12,
-    name: "Капкейки Красный бархат",
-    description: "Классические капкейки Красный бархат с глазурью из сливочного сыра",
-    price: 15.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Cupcakes",
-    dietary: ["Contains Gluten", "Contains Dairy"],
-    rating: 4.8,
-    seller: "Капкейк уголок",
-  },
-]
-
 export function Catalog({ 
   initialCategory = null,
   initialFilters = null 
@@ -157,7 +21,9 @@ export function Catalog({
   } | null
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [products, setProducts] = useState(initialProducts)
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<{
     priceRange: [number, number];
     categories: string[];
@@ -172,13 +38,87 @@ export function Catalog({
     sellers: [],
   });
 
-  // Применяем начальные фильтры при монтировании компонента
+  // Fetch products when component mounts
   useEffect(() => {
-    // Apply filters when component mounts or when initialFilters changes
-    applyFiltersAction(filters)
+    fetchProducts()
   }, [])
 
-  // Применяем фильтры к продуктам
+  // Fetch products from API
+  const fetchProducts = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Build query parameters based on filters
+      const queryParams = new URLSearchParams()
+
+      if (filters.categories.length > 0) {
+        queryParams.append('category', filters.categories[0])
+      }
+
+      if (filters.sellers.length > 0) {
+        queryParams.append('seller', filters.sellers[0])
+      }
+
+      // Fetch products from API
+      const response = await fetch(`/api/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch products')
+      }
+
+      const data = await response.json()
+
+      // Apply client-side filtering
+      const filteredProducts = applyClientSideFilters(data)
+      setProducts(filteredProducts)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Error fetching products:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Apply filters when filters change
+  useEffect(() => {
+    if (!loading) {
+      fetchProducts()
+    }
+  }, [filters.categories, filters.sellers])
+
+  // Apply client-side filters
+  const applyClientSideFilters = (productsData: any[]) => {
+    return productsData.filter((product) => {
+      // Price filter
+      if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
+        return false
+      }
+
+      // Rating filter
+      if (filters.rating > 0 && (!product.rating || product.rating < filters.rating)) {
+        return false
+      }
+
+      // Dietary constraints filter
+      if (filters.dietary.length > 0) {
+        // If product has no dietary_constraints or it's empty, filter it out
+        if (!product.dietary_constraints || product.dietary_constraints.length === 0) {
+          return false
+        }
+
+        // Check if any of the selected dietary constraints match the product's constraints
+        const productDietaryNames = product.dietary_constraints.map((constraint: any) => constraint.name)
+        if (!filters.dietary.some(diet => productDietaryNames.includes(diet))) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }
+
+  // Apply filters to products
   const applyFiltersAction = (newFilters: {
     priceRange: [number,number];
     categories: string[];
@@ -188,34 +128,18 @@ export function Catalog({
   }) => {
     setFilters(newFilters)
 
-    const filteredProducts = initialProducts.filter((product) => {
-      // Фильтр по цене
-      if (product.price < newFilters.priceRange[0] || product.price > newFilters.priceRange[1]) {
-        return false
-      }
-
-      // Фильтр по категории
-      if (newFilters.categories.length > 0 && !newFilters.categories.includes(product.category)) {
-        return false
-      }
-
-      // Фильтр по диетическим ограничениям
-      if (newFilters.dietary.length > 0 && !newFilters.dietary.some((diet) => product.dietary.includes(diet))) {
-        return false
-      }
-
-      // Фильтр по рейтингу
-      if (product.rating < newFilters.rating) {
-        return false
-      }
-
-      // Фильтр по продавцу
-      return !(newFilters.sellers.length > 0 && !newFilters.sellers.includes(product.seller));
-
-
-    })
-
-    setProducts(filteredProducts)
+    // If only client-side filters changed (price, rating, dietary), apply them without fetching
+    if (
+      newFilters.categories.toString() === filters.categories.toString() && 
+      newFilters.sellers.toString() === filters.sellers.toString()
+    ) {
+      const filteredProducts = applyClientSideFilters(products)
+      setProducts(filteredProducts)
+    }
+    // Otherwise, fetch products with new server-side filters
+    else {
+      fetchProducts()
+    }
   }
 
   return (
@@ -250,32 +174,68 @@ export function Catalog({
 
       {/* Сетка продуктов */}
       <div className="flex-1">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-          {products.length > 0 ? (
-            products.map((product) => <ProductCard key={product.id} product={product} />)
-          ) : (
-            <div className="col-span-full text-center py-12">
-              <h3 className="text-lg font-medium">Нет товаров, соответствующих вашим фильтрам</h3>
-              <p className="text-muted-foreground mt-2">Попробуйте изменить критерии фильтрации</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => {
-                  setFilters({
-                    priceRange: [0, 30] as [number, number],
-                    categories: [],
-                    dietary: [],
-                    rating: 0,
-                    sellers: [],
-                  })
-                  setProducts(initialProducts)
-                }}
-              >
-                Сбросить фильтры
-              </Button>
-            </div>
-          )}
-        </div>
+        {loading ? (
+          <div className="col-span-full text-center py-12">
+            <h3 className="text-lg font-medium">Загрузка продуктов...</h3>
+            <p className="text-muted-foreground mt-2">Пожалуйста, подождите</p>
+          </div>
+        ) : error ? (
+          <div className="col-span-full text-center py-12">
+            <h3 className="text-lg font-medium text-destructive">Ошибка загрузки продуктов</h3>
+            <p className="text-muted-foreground mt-2">{error}</p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => fetchProducts()}
+            >
+              Попробовать снова
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            {products.length > 0 ? (
+              products.map((product) => (
+                <ProductCard 
+                  key={product.id} 
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    description: product.short_desc,
+                    price: product.price,
+                    image: product.image || "/placeholder.svg?height=200&width=200",
+                    category: product.category,
+                    dietary: product.dietary_constraints ? 
+                      product.dietary_constraints.map((constraint: any) => constraint.name) : 
+                      [],
+                    rating: product.rating || 4.5,
+                    seller: product.seller ? product.seller.name : "Unknown Seller",
+                  }} 
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <h3 className="text-lg font-medium">Нет товаров, соответствующих вашим фильтрам</h3>
+                <p className="text-muted-foreground mt-2">Попробуйте изменить критерии фильтрации</p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    setFilters({
+                      priceRange: [0, 30] as [number, number],
+                      categories: [],
+                      dietary: [],
+                      rating: 0,
+                      sellers: [],
+                    });
+                    fetchProducts();
+                  }}
+                >
+                  Сбросить фильтры
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

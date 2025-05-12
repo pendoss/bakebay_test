@@ -56,7 +56,7 @@ export default function Home() {
             </div>
             <div className="relative h-[400px] md:h-[450px] rounded-2xl overflow-hidden shadow-xl flex items-center justify-center">
               <Image
-                src="https://fcqcyg8v9r.ufs.sh/f/XftHnGEAztMCZ2FbIh6iMKG1X7p5WIR0j28JA4QElqLsP6vn"
+                src="/images/cake-showcase.jpg" 
                 alt="Витрина вкусных тортов"
                 sizes="(max-width: 500px), 100vw, 33vw"
                 width={500}

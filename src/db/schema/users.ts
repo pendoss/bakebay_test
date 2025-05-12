@@ -12,7 +12,7 @@ export const users = pgTable("users", {
     city: varchar({length: 255}),
     postal_code: varchar({length: 255}),
     country: varchar({length: 255}),
-    role: roleEnum().default('customer'),
+    user_role: roleEnum().default('customer'),
     created_at: timestamp().notNull(),
     updated_at: timestamp().notNull()
 });
