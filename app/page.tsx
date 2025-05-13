@@ -3,7 +3,6 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Footer } from "@/components/footer"
 import { Clock, Star, ShieldCheck, ChevronRight, Cake, Utensils, Gift, Cookie } from "lucide-react"
 
 export default function Home() {
@@ -261,8 +260,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </main>
   )
 }

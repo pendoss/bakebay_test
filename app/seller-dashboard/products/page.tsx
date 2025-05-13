@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -15,9 +18,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { EllipsisVertical, Plus, Star } from "lucide-react"
+import { db, products as productsTable, productImages } from "@/src/db"
+import { eq } from "drizzle-orm"
 
-// Пример данных
-const products = [
+// Define interface for product objects
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  inventory: number;
+  category: string;
+  image: string;
+  status: string;
+  rating: number;
+  sales: number;
+}
+
+// Пример данных для резервного отображения
+const exampleProducts: Product[] = [
   {
     id: 1,
     name: "Шоколадный торт",
@@ -87,6 +105,86 @@ const products = [
 ]
 
 export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<string>("newest");
+
+  useEffect(() => {
+    async function fetchProducts(): Promise<void> {
+      try {
+        setIsLoading(true);
+        // Fetch products from the database
+        const dbProducts = await db.select().from(productsTable)
+          .leftJoin(productImages, eq(productsTable.product_id, productImages.product_id));
+
+        // Transform the data to match the expected format
+        const transformedProducts: Product[] = dbProducts.map(item => ({
+          id: item.products.product_id,
+          name: item.products.product_name,
+          price: item.products.price,
+          inventory: item.products.stock || 0,
+          category: item.products.category,
+          image: item.product_images?.url || "/placeholder.svg?height=200&width=200",
+          status: getStatusText(item.products.status),
+          rating: 4.5, // Default rating since we don't have this in the database yet
+          sales: 0, // Default sales since we don't have this in the database yet
+        }));
+
+        setProducts(transformedProducts);
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setError("Failed to load products. Please try again later.");
+        // Use example products as fallback
+        setProducts(exampleProducts);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchProducts();
+  }, []);
+
+  // Helper function to get status text
+  function getStatusText(status: string | null | undefined): string {
+    if (!status) return "Неизвестно";
+
+    switch(status) {
+      case "active": return "Активен";
+      case "draft": return "Черновик";
+      case "hidden": return "Скрыт";
+      default: return status;
+    }
+  }
+
+  // Filter products based on search term, status, and category
+  const filteredProducts: Product[] = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || 
+                         (statusFilter === "active" && product.status === "Активен") ||
+                         (statusFilter === "low" && product.status === "Мало на складе") ||
+                         (statusFilter === "out" && product.status === "Нет в наличии");
+    const matchesCategory = categoryFilter === "all" || 
+                           product.category.toLowerCase() === categoryFilter.toLowerCase();
+
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
+
+  // Sort products based on sort order
+  const sortedProducts: Product[] = [...filteredProducts].sort((a, b) => {
+    switch(sortOrder) {
+      case "newest": return b.id - a.id;
+      case "oldest": return a.id - b.id;
+      case "price-asc": return a.price - b.price;
+      case "price-desc": return b.price - a.price;
+      case "sales": return b.sales - a.sales;
+      default: return 0;
+    }
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -102,12 +200,28 @@ export default function ProductsPage() {
         </Link>
       </div>
 
+      {isLoading && (
+        <div className="flex justify-center items-center h-20 mb-4 bg-muted/20 rounded-md">
+          <p className="text-muted-foreground">Загрузка товаров...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="flex justify-center items-center h-20 mb-4 bg-destructive/10 rounded-md">
+          <p className="text-destructive">{error}</p>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-4 items-end justify-between">
         <div className="grid gap-2 w-full sm:max-w-[360px]">
-          <Input placeholder="Поиск товаров..." />
+          <Input 
+            placeholder="Поиск товаров..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          <Select defaultValue="all">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Статус" />
             </SelectTrigger>
@@ -118,19 +232,21 @@ export default function ProductsPage() {
               <SelectItem value="out">Нет в наличии</SelectItem>
             </SelectContent>
           </Select>
-          <Select defaultValue="all">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Категория" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Все категории</SelectItem>
-              <SelectItem value="cakes">Торты</SelectItem>
-              <SelectItem value="cookies">Печенье</SelectItem>
-              <SelectItem value="pastries">Выпечка</SelectItem>
-              <SelectItem value="desserts">Десерты</SelectItem>
+              <SelectItem value="Торты">Торты</SelectItem>
+              <SelectItem value="Печенье">Печенье</SelectItem>
+              <SelectItem value="Выпечка">Выпечка</SelectItem>
+              <SelectItem value="Итальянские десерты">Итальянские десерты</SelectItem>
+              <SelectItem value="Шоколад">Шоколад</SelectItem>
+              <SelectItem value="Капкейки">Капкейки</SelectItem>
             </SelectContent>
           </Select>
-          <Select defaultValue="newest">
+          <Select value={sortOrder} onValueChange={setSortOrder}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Сортировка" />
             </SelectTrigger>
@@ -155,8 +271,19 @@ export default function ProductsPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="grid" className="mt-4">
+          {!isLoading && sortedProducts.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-40 bg-muted/10 rounded-md mb-4">
+              <p className="text-muted-foreground mb-2">Нет товаров для отображения</p>
+              <Link href="/seller-dashboard/products/new">
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Добавить товар
+                </Button>
+              </Link>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => (
+            {sortedProducts.map((product) => (
               <Card key={product.id} className="overflow-hidden">
                 <div className="aspect-square relative">
                   <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
@@ -223,10 +350,21 @@ export default function ProductsPage() {
           </div>
         </TabsContent>
         <TabsContent value="list" className="mt-4">
+          {!isLoading && sortedProducts.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-40 bg-muted/10 rounded-md mb-4">
+              <p className="text-muted-foreground mb-2">Нет товаров для отображения</p>
+              <Link href="/seller-dashboard/products/new">
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Добавить товар
+                </Button>
+              </Link>
+            </div>
+          )}
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
-                {products.map((product) => (
+                {sortedProducts.map((product) => (
                   <div key={product.id} className="flex items-center p-4 gap-4">
                     <div className="w-16 h-16 relative flex-shrink-0">
                       <Image
