@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,56 +15,150 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Upload, X, Plus, Trash2 } from "lucide-react"
 
-// Пример данных о товаре
-const product = {
-  id: 1,
-  name: "Шоколадный торт",
-  description: "Насыщенный шоколадный торт с глазурью",
-  price: 24.99,
-  comparePrice: 29.99,
-  cost: 10.5,
-  inventory: 15,
-  sku: "ТОРТ-ШОК-001",
-  category: "Торты",
+// Default product structure
+const defaultProduct = {
+  id: 0,
+  name: "",
+  description: "",
+  price: 0,
+  comparePrice: 0,
+  cost: 0,
+  inventory: 0,
+  sku: "",
+  category: "",
   status: "Активен",
-  weight: 1200,
-  size: "Стандартный",
-  storage: "Хранить в холодильнике после вскрытия",
-  shelfLife: 5,
-  ingredients: [
-    { name: "Мука общего назначения", amount: "250г" },
-    { name: "Какао-порошок", amount: "75г" },
-    { name: "Сахар", amount: "300г" },
-    { name: "Масло", amount: "200г" },
-    { name: "Яйца", amount: "4" },
-    { name: "Молоко", amount: "120мл" },
-    { name: "Темный шоколад", amount: "150г" },
-    { name: "Ванильный экстракт", amount: "5мл" },
-  ],
-  dietary: ["Содержит глютен", "Содержит молочные продукты"],
-  images: ["/placeholder.svg?height=300&width=300", "/placeholder.svg?height=300&width=300"],
+  weight: 0,
+  size: "",
+  storage: "",
+  shelfLife: 0,
+  ingredients: [] as { name: string; amount: number; }[],
+  dietary: [] as string[],
+  images: [] as string[],
 }
 
 export default function EditProductPage() {
   const router = useRouter()
+  const params = useParams()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [productData, setProductData] = useState(product)
-  const [newIngredient, setNewIngredient] = useState({ name: "", amount: "" })
+  const [isLoading, setIsLoading] = useState(true)
+  const [productData, setProductData] = useState(defaultProduct)
+  const [newIngredient, setNewIngredient] = useState({ name: "", amount: 0 })
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Fetch product data when component mounts
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setIsLoading(true)
+        const productId = params.id
+        const response = await fetch(`/api/products?id=${productId}`)
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch product')
+        }
+
+        const productFromApi = await response.json()
+
+        // Fetch ingredients for this product
+        const ingredientsResponse = await fetch(`/api/product-ingredients?productId=${productId}`)
+        let ingredientsData = []
+
+        if (ingredientsResponse.ok) {
+          const ingredientsFromApi = await ingredientsResponse.json()
+          // Map API response to the format expected by the UI
+          ingredientsData = ingredientsFromApi.map((ing : any) => ({
+            name: ing.name,
+            amount: ing.unit
+          }))
+        }
+
+        // Map API response to component state
+        setProductData({
+          id: productFromApi.product_id,
+          name: productFromApi.product_name || "",
+          description: productFromApi.long_desc || "",
+          price: productFromApi.price || 0,
+          comparePrice: 0, // Not in API, set default
+          cost: productFromApi.cost || 0,
+          inventory: productFromApi.stock || 0,
+          sku: productFromApi.sku || "",
+          category: productFromApi.category || "",
+          status: productFromApi.status || "Активен",
+          weight: productFromApi.weight || 0,
+          size: productFromApi.size || "",
+          storage: productFromApi.storage_conditions || "",
+          shelfLife: productFromApi.shelf_life || 0,
+          ingredients: ingredientsData,
+          dietary: productFromApi.dietary_constraints?.map((c: {id: number, name: string}) => c.name) || [],
+          images: ["/placeholder.svg?height=300&width=300"], // Default image if none available
+        })
+      } catch (error) {
+        console.error('Error fetching product:', error)
+        toast({
+          title: "Ошибка",
+          description: "Не удалось загрузить данные товара.",
+          variant: "destructive"
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [params.id, toast])
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Имитация отправки формы
-    setTimeout(() => {
-      setIsSubmitting(false)
+    try {
+      // Prepare data for API
+      const productToUpdate = {
+        product_id: productData.id,
+        product_name: productData.name,
+        price: productData.price,
+        cost: productData.cost,
+        short_desc: productData.description.substring(0, 100), // First 100 chars as short description
+        long_desc: productData.description,
+        category: productData.category,
+        storage_conditions: productData.storage,
+        stock: productData.inventory,
+        sku: productData.sku,
+        weight: productData.weight,
+        size: productData.size,
+        shelf_life: productData.shelfLife,
+        status: productData.status
+      }
+
+      // Call API to update product
+      const response = await fetch('/api/products', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productToUpdate),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update product')
+      }
+
       toast({
         title: "Товар обновлен",
         description: "Ваш товар был успешно обновлен.",
       })
+
       router.push("/seller-dashboard/products")
-    }, 1500)
+    } catch (error) {
+      console.error('Error updating product:', error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить товар.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleAddImage = () => {
@@ -90,7 +184,7 @@ export default function EditProductPage() {
       ...productData,
       ingredients: [...productData.ingredients, { ...newIngredient }],
     })
-    setNewIngredient({ name: "", amount: "" })
+    setNewIngredient({ name: "", amount: 0 })
   }
 
   const handleRemoveIngredient = (index: number) => {
@@ -100,6 +194,17 @@ export default function EditProductPage() {
       ...productData,
       ingredients: newIngredients,
     })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold tracking-tight mb-2">Загрузка товара...</h2>
+          <p className="text-muted-foreground">Пожалуйста, подождите</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -314,7 +419,7 @@ export default function EditProductPage() {
                     </div>
 
                     <div className="divide-y">
-                      {productData.ingredients.map((ingredient: { name: string; amount: string }, index: number) => (
+                      {productData.ingredients.map((ingredient: { name: string; amount: number }, index: number) => (
                         <div key={index} className="grid grid-cols-12 gap-4 p-4 items-center">
                           <div className="col-span-6">{ingredient.name}</div>
                           <div className="col-span-5">{ingredient.amount}</div>
@@ -350,7 +455,7 @@ export default function EditProductPage() {
                       <Input
                         id="ingredientAmount"
                         value={newIngredient.amount}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({ ...newIngredient, amount: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({ ...newIngredient, amount: +e.target.value })}
                         placeholder="например, 250г"
                       />
                     </div>
@@ -383,46 +488,66 @@ export default function EditProductPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="price">Цена (₽)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={productData.price}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, price: +e.target.value })}
-                      required
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2">₽</span>
+                      <Input
+                        id="price"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        className="pl-7"
+                        value={productData.price}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, price: +e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="comparePrice">Сравнительная цена (Необязательно)</Label>
-                    <Input
-                      id="comparePrice"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={productData.comparePrice}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, comparePrice: +e.target.value })}
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2">₽</span>
+                      <Input
+                        id="comparePrice"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        className="pl-7"
+                        value={productData.comparePrice}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, comparePrice: +e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="cost">Себестоимость за единицу (₽)</Label>
-                    <Input
-                      id="cost"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={productData.cost}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, cost: +e.target.value })}
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2">₽</span>
+                      <Input
+                        id="cost"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        className="pl-7"
+                        value={productData.cost}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, cost: +e.target.value })}
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="profit">Прибыль</Label>
-                    <Input id="profit" disabled value={`₽${(productData.price - productData.cost).toFixed(2)}`} />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2">₽</span>
+                      <Input 
+                        id="profit" 
+                        className="pl-7" 
+                        disabled 
+                        value={(productData.price - productData.cost).toFixed(2)} 
+                      />
+                    </div>
                   </div>
                 </div>
 

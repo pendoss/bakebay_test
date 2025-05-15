@@ -114,7 +114,7 @@ export function ProductCard({ product } : {product : Product}) {
           </div>
         </CardContent>
         <CardFooter className="p-4 pt-0 pr-6 pb-6 flex justify-between items-center">
-          <div className="font-semibold">${product.price.toFixed(2)}</div>
+          <div className="font-semibold">{product.price.toFixed(2)} руб.</div>
           <Button
               size="sm"
               className="absolute bottom-4 right-4 opacity-100 transition-opacity"
@@ -172,7 +172,7 @@ function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : Produ
             </DialogHeader>
 
             <div className="mt-6">
-              <div className="text-2xl font-bold mb-4">${product.price.toFixed(2)}</div>
+              <div className="text-2xl font-bold mb-4">{product.price.toFixed(2)} руб.</div>
 
               <p className="text-muted-foreground mb-6">{product.description}</p>
 

@@ -7,7 +7,7 @@ import { Clock, Star, ShieldCheck, ChevronRight, Cake, Utensils, Gift, Cookie } 
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-[#e1ece7]">
       {/* Hero Section */}
       <section className="relative py-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-secondary/70 to-primary/70 -z-10"></div>

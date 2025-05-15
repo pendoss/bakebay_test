@@ -18,8 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { EllipsisVertical, Plus, Star } from "lucide-react"
-import { db, products as productsTable, productImages } from "@/src/db"
-import { eq } from "drizzle-orm"
+import { fetchProducts } from "@/app/actions/fetchProducts"
+import { ProductEditDialog } from "@/components/product-edit-dialog"
 
 // Define interface for product objects
 interface Product {
@@ -112,29 +112,23 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("newest");
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    async function fetchProducts(): Promise<void> {
+    async function loadProducts(): Promise<void> {
       try {
         setIsLoading(true);
-        // Fetch products from the database
-        const dbProducts = await db.select().from(productsTable)
-          .leftJoin(productImages, eq(productsTable.product_id, productImages.product_id));
+        // Use the server action to fetch products
+        const result = await fetchProducts();
 
-        // Transform the data to match the expected format
-        const transformedProducts: Product[] = dbProducts.map(item => ({
-          id: item.products.product_id,
-          name: item.products.product_name,
-          price: item.products.price,
-          inventory: item.products.stock || 0,
-          category: item.products.category,
-          image: item.product_images?.url || "/placeholder.svg?height=200&width=200",
-          status: getStatusText(item.products.status),
-          rating: 4.5, // Default rating since we don't have this in the database yet
-          sales: 0, // Default sales since we don't have this in the database yet
-        }));
-
-        setProducts(transformedProducts);
+        if (result.error) {
+          setError(result.error);
+          // Use example products as fallback
+          setProducts(exampleProducts);
+        } else {
+          setProducts(result.products);
+        }
       } catch (err) {
         console.error("Error fetching products:", err);
         setError("Failed to load products. Please try again later.");
@@ -145,20 +139,9 @@ export default function ProductsPage() {
       }
     }
 
-    fetchProducts();
+    loadProducts();
   }, []);
 
-  // Helper function to get status text
-  function getStatusText(status: string | null | undefined): string {
-    if (!status) return "Неизвестно";
-
-    switch(status) {
-      case "active": return "Активен";
-      case "draft": return "Черновик";
-      case "hidden": return "Скрыт";
-      default: return status;
-    }
-  }
 
   // Filter products based on search term, status, and category
   const filteredProducts: Product[] = products.filter(product => {
@@ -297,7 +280,10 @@ export default function ProductsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                        <DropdownMenuItem>Редактировать товар</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setEditingProductId(product.id);
+                          setIsEditDialogOpen(true);
+                        }}>Редактировать товар</DropdownMenuItem>
                         <DropdownMenuItem>Обновить запасы</DropdownMenuItem>
                         <DropdownMenuItem>Просмотреть отзывы</DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -339,11 +325,16 @@ export default function ProductsPage() {
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
-                  <Link href={`/seller-dashboard/products/${product.id}`} className="w-full">
-                    <Button variant="outline" className="w-full">
-                      Управление товаром
-                    </Button>
-                  </Link>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      setEditingProductId(product.id);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
+                    Управление товаром
+                  </Button>
                 </CardFooter>
               </Card>
             ))}
@@ -392,7 +383,7 @@ export default function ProductsPage() {
                       <div className="flex flex-col sm:flex-row items-start sm:items-center text-sm gap-2 sm:gap-6 mt-1">
                         <div className="flex items-center gap-1">
                           <span className="text-muted-foreground">Цена:</span>
-                          <span className="font-medium">${product.price}</span>
+                          <span className="font-medium">{product.price} руб.</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-muted-foreground">Запасы:</span>
@@ -420,7 +411,10 @@ export default function ProductsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                          <DropdownMenuItem>Редактировать товар</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setEditingProductId(product.id);
+                            setIsEditDialogOpen(true);
+                          }}>Редактировать товар</DropdownMenuItem>
                           <DropdownMenuItem>Обновить запасы</DropdownMenuItem>
                           <DropdownMenuItem>Просмотреть отзывы</DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -435,6 +429,13 @@ export default function ProductsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Product Edit Dialog */}
+      <ProductEditDialog 
+        productId={editingProductId} 
+        isOpen={isEditDialogOpen} 
+        onOpenChangeAction={setIsEditDialogOpen}
+      />
     </div>
   )
 }

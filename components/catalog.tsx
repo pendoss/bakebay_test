@@ -71,7 +71,7 @@ export function Catalog({
       console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
+        throw new Error(`Failed to fetch products11: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json();

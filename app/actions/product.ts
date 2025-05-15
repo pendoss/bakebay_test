@@ -37,6 +37,7 @@ interface Product {
 export async function createProduct(formData: Partial<Product>) {
   try {
     // Insert product into database
+    console.log("formData",formData);
     const [productResult] = await db.insert(products).values({
       product_name: formData.name || '',
       price: formData.price || 0,
@@ -76,6 +77,7 @@ export async function createProduct(formData: Partial<Product>) {
         unit: ingredient.unit,
         stock: 0, // Default value
       }));
+      console.log("ongridients",ingredientValues);
 
       await db.insert(productIngredients).values(ingredientValues);
     }

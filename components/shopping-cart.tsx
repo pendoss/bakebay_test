@@ -59,7 +59,7 @@ export function ShoppingCart() {
                     <h3 className="font-semibold text-lg">{item.name}</h3>
                     <p className="text-sm text-muted-foreground">Продавец: {item.seller}</p>
                   </div>
-                  <div className="text-lg font-semibold">${(item.price * item.quantity).toFixed(2)}</div>
+                  <div className="text-lg font-semibold">{(item.price * item.quantity).toFixed(2)} руб.</div>
                 </div>
                 <div className="flex justify-between items-center mt-4">
                   <div className="flex items-center">
@@ -120,31 +120,31 @@ export function ShoppingCart() {
           <CardContent className="space-y-4">
             <div className="flex justify-between text-sm">
               <span>Подытог ({items.reduce((sum, item) => sum + item.quantity, 0)} товаров)</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{subtotal.toFixed(2)} руб.</span>
             </div>
 
             {promoApplied && (
               <div className="flex justify-between text-sm text-green-600">
                 <span>Скидка (10%)</span>
-                <span>-${discount.toFixed(2)}</span>
+                <span>-{discount.toFixed(2)} руб.</span>
               </div>
             )}
 
             <div className="flex justify-between text-sm">
               <span>Доставка</span>
-              <span>{shipping === 0 ? "Бесплатно" : `$${shipping.toFixed(2)}`}</span>
+              <span>{shipping === 0 ? "Бесплатно" : `${shipping.toFixed(2)} руб.`}</span>
             </div>
 
             <div className="flex justify-between text-sm">
               <span>Налог</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>{tax.toFixed(2)} руб.</span>
             </div>
 
             <Separator />
 
             <div className="flex justify-between font-semibold">
               <span>Итого</span>
-              <span>${total.toFixed(2)}</span>
+              <span>{total.toFixed(2)} руб.</span>
             </div>
 
             <div className="pt-4">

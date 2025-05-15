@@ -196,14 +196,14 @@ export function FilterSidebar({filters, applyFiltersAction}: {
           <Slider
             defaultValue={priceRange}
             value={priceRange}
-            max={30}
-            step={1}
+            max={10000}
+            step={50}
             onValueChange={handlePriceChange}
             className="mb-2"
           />
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
+            <span>{priceRange[0]} руб.</span>
+            <span>{priceRange[1]} руб.</span>
           </div>
         </div>
 

@@ -10,7 +10,7 @@ export default function CatalogPage() {
   const sellerParam = searchParams.get("seller")
 
   const [filters, setFilters] = useState({
-    priceRange: [0, 30] as [number, number],
+    priceRange: [0, 10000] as [number, number],
     categories: categoryParam ? [categoryParam] : [],
     dietary: [],
     rating: 0,

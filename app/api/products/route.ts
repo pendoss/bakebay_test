@@ -11,37 +11,51 @@ export async function GET(request: Request) {
 
     // If ID is provided, return a single product
     if (id) {
-      // Get the product with related data
-      const product = await db.query.products.findFirst({
-        where: eq(products.product_id, parseInt(id)),
-        with: {
-          seller: true,
-          category: true,
-        },
-      });
+      try {
+        // Get the product with related data
+        const product = await db.query.products.findFirst({
+          where: eq(products.product_id, parseInt(id)),
+          with: {
+            seller: true,
+            category: true,
+          },
+        });
 
-      if (!product) {
+        if (!product) {
+          return NextResponse.json(
+            { error: 'Product not found' },
+            { status: 404 }
+          );
+        }
+
+        // Get dietary constraints for the product
+        let dietaryConstraints : {id: number, name: string}[] = [];
+        try {
+          dietaryConstraints = await db.select({
+            id: dietaryConstrains.id,
+            name: dietaryConstrains.name,
+          })
+          .from(dietaryConstrains)
+          .where(eq(dietaryConstrains.product_id, parseInt(id)));
+        } catch (constraintsError) {
+          console.error('Error fetching dietary constraints:', constraintsError);
+          // Continue with empty constraints rather than failing the whole request
+        }
+
+        // Add dietary constraints to the product object
+        const productWithConstraints = {
+          ...product,
+          dietary_constraints: dietaryConstraints
+        };
+
+        return NextResponse.json(productWithConstraints);
+      } catch (error) {
+        console.error('Error fetching product by ID:', error);
         return NextResponse.json(
-          { error: 'Product not found' },
-          { status: 404 }
+          { error: 'Failed to fetch product', details: error.message },
+          { status: 500 }
         );
       }
-
-      // Get dietary constraints for the product
-      const dietaryConstraints = await db.select({
-        id: dietaryConstrains.id,
-        name: dietaryConstrains.name,
-      })
-      .from(dietaryConstrains)
-      .where(eq(dietaryConstrains.product_id, parseInt(id)));
-
-      // Add dietary constraints to the product object
-      const productWithConstraints = {
-        ...product,
-        dietary_constraints: dietaryConstraints
-      };
-
-      return NextResponse.json(productWithConstraints);
     }
 
     // Build query based on filters
