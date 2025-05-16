@@ -52,7 +52,7 @@ export async function GET(request: Request) {
       } catch (error) {
         console.error('Error fetching product by ID:', error);
         return NextResponse.json(
-          { error: 'Failed to fetch product', details: error.message },
+          { error: 'Failed to fetch product', details: error },
           { status: 500 }
         );
       }
