@@ -68,7 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = (product: any, quantity = 1) => {
     console.log("addItem called", product.id, quantity);
     
-    const item = items.find((v) => v.id === product.id )
+    const item = items.find((v) => v.id === product.product_id )
     if (item !== undefined) {
       updateQuantity(product.id, item!.quantity + 1)
       return
@@ -76,7 +76,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([
       ...items,
       {
-        id: product.id,
+        id: product.product_id,
         name: product.name,
         price: product.price,
         image: product.image,

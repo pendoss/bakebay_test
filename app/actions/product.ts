@@ -1,11 +1,12 @@
 'use server'
 
 import { db, products, productImages, productIngredients, dietaryConstrains } from "@/src/db";
+import {UploadFile} from "@/src/s3";
 
 interface ProductImage {
   url: string;
+  file?: File;
   name: string;
-  // file is not needed on the server side
 }
 
 interface ProductIngredient {
@@ -84,15 +85,22 @@ export async function createProduct(formData: Partial<Product>) {
 
     // Handle image uploads
     if (formData.images && formData.images.length > 0) {
-      // In a real application, you would upload the images to a storage service
-      // and then store the URLs in the database
-      const imageValues = formData.images.map((image, index) => ({
-        product_id: productId,
-        url: image.url || '/placeholder.svg',
-        name: image.name || `Изображение ${index + 1}`,
-        is_main: index === 0, // First image is the main image
-        display_order: index,
-      }));
+      // Upload images to S3 and get the URLs
+      const imagePromises = formData.images.map(async (image, index) => {
+        const key = productId+"_"+index
+        const imageUrl = await UploadFile(key, image.file);
+        return {
+          product_id: productId,
+          image_url: imageUrl,
+          name: image.name || `Изображение ${index + 1}`,
+          is_main: index === 0, // First image is the main image
+          display_order: index,
+          s3_key: key,
+        };
+      });
+
+      // Wait for all uploads to complete
+      const imageValues = await Promise.all(imagePromises);
 
       await db.insert(productImages).values(imageValues);
     }

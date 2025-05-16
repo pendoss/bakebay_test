@@ -303,7 +303,7 @@ export default function ProductsPage() {
                 <CardContent className="p-4">
                   <h3 className="font-semibold line-clamp-1">{product.name}</h3>
                   <div className="flex justify-between items-center mt-1">
-                    <span className="font-medium">${product.price}</span>
+                    <span className="font-medium">{product.price} руб.</span>
                     <div className="flex items-center gap-1 text-sm">
                       <Star className="h-3.5 w-3.5 fill-primary text-primary" />
                       <span>{product.rating}</span>

@@ -31,20 +31,31 @@ function getStatusText(status: string | null | undefined): string {
 export async function fetchProducts(): Promise<{ products: Product[], error: string | null }> {
   try {
     // Fetch products from the database
-    const dbProducts = await db.select().from(productsTable)
-      .leftJoin(productImages, eq(productsTable.product_id, productImages.product_id));
+    const dbProducts = await db.select().from(productsTable);
 
     // Transform the data to match the expected format
-    const transformedProducts: Product[] = dbProducts.map(item => ({
-      id: item.products.product_id,
-      name: item.products.product_name,
-      price: item.products.price,
-      inventory: item.products.stock || 0,
-      category: item.products.category,
-      image: item.product_images?.url || "/placeholder.svg?height=200&width=200",
-      status: getStatusText(item.products.status),
-      rating: 4.5,
-      sales: 0,
+    const transformedProducts: Product[] = await Promise.all(dbProducts.map(async product => {
+      // Get product images
+      const images = await db.select()
+        .from(productImages)
+        .where(eq(productImages.product_id, product.product_id))
+        .orderBy(productImages.is_main, productImages.display_order);
+
+      // Find main image or use first image
+      const mainImage = images.find(img => img.is_main)?.image_url || 
+                        (images.length > 0 ? images[0].image_url : null);
+
+      return {
+        id: product.product_id,
+        name: product.product_name,
+        price: product.price,
+        inventory: product.stock || 0,
+        category: product.category,
+        image: mainImage || "/placeholder.svg?height=200&width=200",
+        status: getStatusText(product.status),
+        rating: 4.5,
+        sales: 0,
+      };
     }));
 
     return { products: transformedProducts, error: null };

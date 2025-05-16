@@ -170,14 +170,14 @@ export function FilterSidebar({filters, applyFiltersAction}: {
 
   const handleReset = () => {
     const resetFilters: Filters = {
-      priceRange: [0, 30] as [number, number],
+      priceRange: [0, 10000] as [number, number],
       categories: [],
       dietary: [],
       rating: 0,
       sellers: [],
     }
     setLocalFilters(resetFilters)
-    setPriceRange([0, 30])
+    setPriceRange([0, 10000])
     applyFiltersAction(resetFilters)
   }
 

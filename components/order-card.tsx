@@ -139,10 +139,10 @@ export function OrderCard({ order } : OrderCardProps) {
                                 <div className="flex-1 min-w-0">
                                     <h5 className="font-medium truncate">{item.name}</h5>
                                     <p className="text-sm text-muted-foreground">
-                                        Количество: {item.quantity} × ${item.price.toFixed(2)}
+                                        Количество: {item.quantity} × {item.price.toFixed(2)} руб.
                                     </p>
                                 </div>
-                                <div className="font-medium">${(item.quantity * item.price).toFixed(2)}</div>
+                                <div className="font-medium">{(item.quantity * item.price).toFixed(2)} руб.</div>
                             </div>
                         ))}
                     </div>

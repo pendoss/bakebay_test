@@ -1,24 +1,24 @@
 import { NextResponse } from 'next/server';
 import { db, products, sellers, categories, dietaryConstrains } from '@/src/db';
+import { productImages } from '@/src/db/schema/product_images';
 import { eq } from 'drizzle-orm';
 
 export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
+  const categoryId = url.searchParams.get('category');
+  const sellerId = url.searchParams.get('seller');
+  console.log('url', url);
+  console.log('id', id);
   try {
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-    const categoryId = url.searchParams.get('category');
-    const sellerId = url.searchParams.get('seller');
 
     // If ID is provided, return a single product
     if (id) {
       try {
         // Get the product with related data
+        console.log(id)
         const product = await db.query.products.findFirst({
           where: eq(products.product_id, parseInt(id)),
-          with: {
-            seller: true,
-            category: true,
-          },
         });
 
         if (!product) {
@@ -28,27 +28,22 @@ export async function GET(request: Request) {
           );
         }
 
-        // Get dietary constraints for the product
-        let dietaryConstraints : {id: number, name: string}[] = [];
-        try {
-          dietaryConstraints = await db.select({
-            id: dietaryConstrains.id,
-            name: dietaryConstrains.name,
-          })
-          .from(dietaryConstrains)
-          .where(eq(dietaryConstrains.product_id, parseInt(id)));
-        } catch (constraintsError) {
-          console.error('Error fetching dietary constraints:', constraintsError);
-          // Continue with empty constraints rather than failing the whole request
-        }
+        // Get product images
+        const images = await db.select()
+          .from(productImages)
+          .where(eq(productImages.product_id, parseInt(id)))
+          .orderBy(productImages.is_main, productImages.display_order);
 
-        // Add dietary constraints to the product object
-        const productWithConstraints = {
+        // Create response with images
+        const productWithImages = {
           ...product,
-          dietary_constraints: dietaryConstraints
+          images: images,
+          // Use the main image as the primary image, or the first image if no main image is set
+          image: images.find(img => img.is_main)?.image_url || 
+                 (images.length > 0 ? images[0].image_url : null)
         };
 
-        return NextResponse.json(productWithConstraints);
+        return NextResponse.json(productWithImages);
       } catch (error) {
         console.error('Error fetching product by ID:', error);
         return NextResponse.json(
@@ -74,6 +69,16 @@ export async function GET(request: Request) {
       .from(dietaryConstrains)
       .where(eq(dietaryConstrains.product_id, row.products.product_id));
 
+      // Get product images
+      const images = await db.select()
+        .from(productImages)
+        .where(eq(productImages.product_id, row.products.product_id))
+        .orderBy(productImages.is_main, productImages.display_order);
+
+      // Find main image or use first image
+      const mainImage = images.find(img => img.is_main)?.image_url || 
+                        (images.length > 0 ? images[0].image_url : null);
+
       return {
         id: row.products.product_id,
         name: row.products.product_name,
@@ -93,12 +98,14 @@ export async function GET(request: Request) {
           name: row.categories.name,
         } : null,
         dietary_constraints: dietaryConstraints,
+        images: images,
+        image: mainImage,
       };
     }));
 
     return NextResponse.json(formattedProducts);
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error fetching products: ', error);
     return NextResponse.json(
       { error: 'Failed to fetch products' },
       { status: 500 }

@@ -32,20 +32,19 @@ export function Catalog({
     rating: number;
     sellers: string[];
   }>(initialFilters || {
-    priceRange: [0, 30] as [number, number],
+    priceRange: [0, 10000] as [number, number],
     categories: initialCategory ? [initialCategory] : [],
     dietary: [],
     rating: 0,
     sellers: [],
   });
 
-  // Fetch products when component mounts
+  // Fetch products when component mounts or filters change
   useEffect(() => {
-    console.log('Component mounted, fetching products...')
     fetchProducts()
-  }, [])
+  }, [filters.categories, filters.sellers]) // Fetch when these filters change
 
-  // Fetch products from API
+  // Improved fetchProducts function
   const fetchProducts = async () => {
     try {
       setLoading(true)
@@ -67,22 +66,27 @@ export function Catalog({
       console.log('Fetching products from URL:', url);
 
       const response = await fetch(url);
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('API response status:', response.status, response.statusText);
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch products11: ${response.status} ${response.statusText}`)
+        throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
       }
 
-      const data = await response.json();
-      console.log('API Response type:', typeof data);
-      console.log('API Response is array:', Array.isArray(data));
-      console.log('API Response length:', Array.isArray(data) ? data.length : 'not an array');
-      console.log('API Response:', data);
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        throw new Error('Failed to parse response as JSON')
+      }
+
+      // Ensure data is always an array
+      console.log('API response data:', data);
+      const productsArray = Array.isArray(data) ? data :
+          (data && typeof data === 'object' && data.products && Array.isArray(data.products)) ?
+              data.products : [];
 
       // Apply client-side filtering
-      const filteredProducts = applyClientSideFilters(data)
-      console.log('Filtered Products:', filteredProducts)
+      const filteredProducts = applyClientSideFilters(productsArray)
 
       setProducts(filteredProducts)
     } catch (err) {
@@ -93,12 +97,6 @@ export function Catalog({
     }
   }
 
-  // Apply filters when filters change
-  useEffect(() => {
-    if (!loading) {
-      fetchProducts()
-    }
-  }, [filters.categories, filters.sellers])
 
   // Apply client-side filters
   const applyClientSideFilters = (productsData: any[]) => {
@@ -114,6 +112,11 @@ export function Catalog({
     if (productsData.length === 0) {
       console.log('No products to filter');
       return [];
+    }
+
+    // Log the first product to see its structure
+    if (productsData.length > 0) {
+      console.log('First product structure:', JSON.stringify(productsData[0], null, 2));
     }
 
     return productsData.filter((product) => {
@@ -237,6 +240,7 @@ export function Catalog({
                   return null;
                 }
                 // Use ProductCard component
+                console.log('Rendering product:', product.id, product.name, 'Image:', product.image);
                 return (
                   <ProductCard 
                     key={product.id || `product-${index}`} 

@@ -55,7 +55,7 @@ export default function Home() {
             </div>
             <div className="relative h-[400px] md:h-[450px] rounded-2xl overflow-hidden shadow-xl flex items-center justify-center">
               <Image
-                src="/images/cake-showcase.jpg" 
+                src={"https://" + process.env.S3_ENDPOINT + "/" + process.env.S3_BUCKET_NAME + "/" + "BakeBay_logo.png"}
                 alt="Витрина вкусных тортов"
                 sizes="(max-width: 500px), 100vw, 33vw"
                 width={500}
@@ -124,7 +124,7 @@ export default function Home() {
         <div className="container px-4 md:px-6 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-xl">
-              <Image src="/placeholder.svg?height=400&width=600" alt="История BakeBay" fill className="object-cover" />
+              <Image src={"https://" + process.env.S3_ENDPOINT + "/" + process.env.S3_BUCKET_NAME + "/" + "main_page_team.jpg"} alt="История BakeBay" fill className="object-cover" />
             </div>
             <div className="space-y-6">
               <h2 className="text-3xl font-bold tracking-tight text-secondary">Наша история</h2>

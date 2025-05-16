@@ -126,14 +126,16 @@ export default function NewProductPage() {
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    console.log(e);
     e.preventDefault()
     setIsSubmitting(true)
 
     // Update form state with current images and ingredients
-    // Convert images to a format suitable for the server (without the file property)
+    // Include the file property for server-side processing
     const serverImages = images.map(image => ({
       url: image.url,
-      name: image.name
+      name: image.name,
+      file: image.file
     }));
 
     const updatedFormState: Partial<Product> = {
@@ -707,6 +709,7 @@ export default function NewProductPage() {
                       <h3 className="font-medium">Перетащите изображения сюда</h3>
                       <p className="text-sm text-muted-foreground mb-2">или нажмите кнопку ниже для выбора файлов</p>
                       <input
+                          name="images"
                           ref={fileInputRef}
                           type="file"
                           accept="image/*"
