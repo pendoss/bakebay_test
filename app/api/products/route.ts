@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     }
 
     // Build query based on filters
-    let query = db.select().from(products).where( categoryId ? eq(products.category_id, parseInt(categoryId)) : sellerId ? eq(products.seller_id, parseInt(sellerId)) : undefined);
+    let query = db.select().from(products).where( categoryId ? eq(products.category,categoryId) : sellerId ? eq(products.seller_id, parseInt(sellerId)) : undefined);
 
     // Execute query
     const allProducts = await query.leftJoin(sellers, eq(products.seller_id, sellers.seller_id)).leftJoin(categories, eq(products.category_id, categories.id));

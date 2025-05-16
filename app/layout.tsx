@@ -22,6 +22,4 @@ export default function RootLayout({ children } : Props) {
   )
 }
 
-export const metadata = {
-      generator: 'v0.dev'
-    };
+

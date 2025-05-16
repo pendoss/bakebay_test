@@ -14,5 +14,6 @@ export const users = pgTable("users", {
     country: varchar({length: 255}),
     user_role: roleEnum().default('customer'),
     created_at: timestamp().notNull(),
-    updated_at: timestamp().notNull()
+    updated_at: timestamp().notNull(),
+    password: varchar({length: 255}).notNull(),
 });

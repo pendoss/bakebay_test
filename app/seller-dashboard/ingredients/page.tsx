@@ -11,6 +11,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, Package, List, CheckCircle } from "lucide-react"
+import { NextRequest, NextResponse } from 'next/server';
+import { userMiddleware, AuthenticatedRequest, isAuthenticated, isAdmin } from '@/app/api/middleware/user';
+
 
 interface Ingredient {
   name: string;
@@ -137,6 +140,26 @@ const orders: Order[] = [
   },
 ]
 
+
+async function handler(req: AuthenticatedRequest): Promise<NextResponse>{
+  if (!isAuthenticated(req)) {
+    return NextResponse.json(
+      {error: 'Ошибка прав доступа'},
+      { status : 401}
+    )
+  }
+
+  const user = req.user;
+
+  if (req.method === 'POST' && !isAdmin(req)){
+    return NextResponse.json(
+      { error: 'Требуются права администратора'},
+      { status: 401}
+    )
+  }
+  return NextResponse.json({error: "Нет разререшен"}, {status: 401})
+}
+
 export default function IngredientsPage() {
   const [activeOrders, setActiveOrders] = useState<Order[]>([])
   const [allIngredients, setAllIngredients] = useState<AllIngredientsType>({})
@@ -197,12 +220,14 @@ export default function IngredientsPage() {
   }
 
   return (
+    
     <div className="space-y-6">
+      
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Управление ингредиентами</h2>
         <p className="text-muted-foreground">Отслеживайте ингредиенты, необходимые для ваших ожидающих заказов</p>
       </div>
-
+      {/* {localStorage.getItem('auth') ? ( */}
       <Tabs defaultValue="shopping-list" className="w-full">
         <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
           <TabsTrigger value="shopping-list" className="flex items-center gap-2">
@@ -441,6 +466,9 @@ export default function IngredientsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* ) :(
+        <p> Чтобы получить доступ к разделу, нужно стать продавцом</p>
+      )} */}
     </div>
   )
 }

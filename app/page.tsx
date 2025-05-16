@@ -124,17 +124,21 @@ export default function Home() {
         <div className="container px-4 md:px-6 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-xl">
-              <Image src={"https://" + process.env.S3_ENDPOINT + "/" + process.env.S3_BUCKET_NAME + "/" + "main_page_team.jpg"} alt="История BakeBay" fill className="object-cover" />
+              <Image
+                src={`https://${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET_NAME}/BakeBay_logo.png`}
+                alt="Витрина вкусных тортов"
+                fill
+                className="object-contain"
+                sizes="(max-width: 500px) 100vw, 33vw"
+              />
             </div>
             <div className="space-y-6">
               <h2 className="text-3xl font-bold tracking-tight text-secondary">Наша история</h2>
               <p className="text-secondary/80">
-              BakeBay мог бы начаться в 2018 году с вдохновляющей истории про маму, торт и детский праздник, но нет — всё было куда прозаичнее. Никаких слёз, случайностей и магии. Просто идея: упростить заказ домашних десертов без лишнего пафоса и сложностей.
-
-
+                BakeBay мог бы начаться в 2018 году с вдохновляющей истории про маму, торт и детский праздник, но нет — всё было куда прозаичнее. Никаких слёз, случайностей и магии. Просто идея: упростить заказ домашних десертов без лишнего пафоса и сложностей.
               </p>
               <p className="text-secondary/80">
-              Сегодня BakeBay — это сообщество из более чем 500 кондитеров по всей стране. Каждый из них умеет готовить по-настоящему вкусно и делает это по-своему. У нас нет легенды — есть результат. Наша миссия — не сочинять сказки, а делать сладкое доступным, свежим и вовремя. Иногда этого вполне достаточно.
+                Сегодня BakeBay — это сообщество из более чем 500 кондитеров по всей стране. Каждый из них умеет готовить по-настоящему вкусно и делает это по-своему. У нас нет легенды — есть результат. Наша миссия — не сочинять сказки, а делать сладкое доступным, свежим и вовремя. Иногда этого вполне достаточно.
               </p>
               <Button variant="outline" className="group text-secondary border-secondary/30 hover:bg-secondary/5">
                 Узнать больше о нас{" "}

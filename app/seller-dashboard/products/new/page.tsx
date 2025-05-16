@@ -336,12 +336,12 @@ export default function NewProductPage() {
                           <SelectValue placeholder="Выберите категорию" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cakes">Торты</SelectItem>
-                          <SelectItem value="cookies">Печенье</SelectItem>
-                          <SelectItem value="pastries">Выпечка</SelectItem>
-                          <SelectItem value="italian-desserts">Итальянские десерты</SelectItem>
-                          <SelectItem value="chocolates">Шоколад</SelectItem>
-                          <SelectItem value="cupcakes">Капкейки</SelectItem>
+                          <SelectItem value="Cakes">Торты</SelectItem>
+                          <SelectItem value="Cookies">Печенье</SelectItem>
+                          <SelectItem value="Castries">Выпечка</SelectItem>
+                          <SelectItem value="Ctalian-desserts">Итальянские десерты</SelectItem>
+                          <SelectItem value="Chocolates">Шоколад</SelectItem>
+                          <SelectItem value="Cupcakes">Капкейки</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

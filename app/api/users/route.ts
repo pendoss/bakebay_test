@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db, users } from '@/src/db';
+import bcrypt from "bcryptjs";
+import { Decode, Encode } from '../jwt';
+
 
 export async function GET(request: Request) {
   try {
@@ -29,34 +32,62 @@ export async function GET(request: Request) {
   }
 }
 
+
+
+
+interface registerData{
+  name: string
+  email: string
+  password:string
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body:registerData = await request.json();
     
     // Validate required fields
-    if (!body.email || !body.first_name || !body.last_name || !body.phone_number) {
+    if (body.name.split(" ").length != 2){
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        {error: "name and last name is required"},
+        {status: 400}
+      )
+    }
+    const names = body.name.split(" ")
+    if (names[0] == "" || names[1]==""){
+        return NextResponse.json(
+        {error: "name and last name is required"},
+        {status: 400}
+      )
+    }
+    
+    if (!body.email ||  !body.password ) {
+      return NextResponse.json(
+        { error: 'email and password are required' },
         { status: 400 }
       );
     }
-    
-    // Create new user
+
+    const hashedPassword = bcrypt.hashSync(body.password, Number(process.env.SECRET));
+
+
     const newUser = await db.insert(users).values({
       email: body.email,
-      first_name: body.first_name,
-      last_name: body.last_name,
-      phone_number: body.phone_number,
-      address: body.address || null,
-      city: body.city || null,
-      postal_code: body.postal_code || null,
-      country: body.country || null,
-      user_role: body.user_role || 'customer',
+      first_name: names[0],
+      last_name: names[1],
+      phone_number: "+79999999999",
+      address: "",
+      city:  null,
+      postal_code:  null,
+      country:  null,
+      user_role: 'customer',
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
+      password: hashedPassword,
     }).returning();
     
-    return NextResponse.json(newUser[0]);
+    return NextResponse.json({
+      "token": Encode({userId: newUser[0].user_id, role: newUser[0].user_role!})
+      });
   } catch (error) {
     console.error('Error creating user:', error);
     return NextResponse.json(
