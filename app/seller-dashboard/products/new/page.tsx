@@ -19,7 +19,7 @@ import { createProduct } from "@/app/actions/product"
 // Define interfaces for the product page
 interface ProductImage {
   url: string;
-  file?: File;
+  file: File;
   name: string;
 }
 

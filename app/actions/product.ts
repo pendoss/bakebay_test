@@ -5,7 +5,7 @@ import {UploadFile} from "@/src/s3";
 
 interface ProductImage {
   url: string;
-  file?: File;
+  file: File;
   name: string;
 }
 
