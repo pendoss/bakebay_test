@@ -12,6 +12,7 @@ import { ru } from "date-fns/locale"
 
 // Import translations
 import { statusTranslations } from "@/components/order-card"
+import { OrderStatus } from "@/app/orders/page"
 
 interface OrderItem {
   id: number;
@@ -244,7 +245,7 @@ function OrderCard({ order, onStatusChange }: { order: Order; onStatusChange: (o
       "delivering": "secondary",
       "shipping": "secondary",
       "delivered": "default",
-      "cancelled": "destructive"
+      "cancelled": "secondary"
     };
     
     return statusMap[status] || "outline";
@@ -305,7 +306,7 @@ function OrderCard({ order, onStatusChange }: { order: Order; onStatusChange: (o
             <div>
               <h4 className="text-sm font-medium mb-1">Статус оплаты</h4>
               <Badge variant="outline" className="font-normal">
-                {order.paymentStatus}
+                {"Оплачен"}
               </Badge>
             </div>
           </div>

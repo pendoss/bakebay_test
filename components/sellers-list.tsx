@@ -51,7 +51,7 @@ export function SellersList() {
         const formattedSellers = data.map((seller: Seller) => ({
           ...seller,
           // Format created_at timestamp to a readable date if available, or use placeholder
-          joinedDate: formatJoinedDate(seller.created_at) || "Неизвестно",
+          joinedDate: "Недавно",
           image: "/placeholder.svg?height=300&width=300",
           specialties: getSpecialties(seller),
           productsCount: 0 // Will be updated after fetching product counts
