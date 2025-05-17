@@ -74,8 +74,10 @@ export function SellerDashboardNav() {
             Посетите наш Центр поддержки продавцов для руководств и помощи.
           </p>
           <Button variant="link" size="sm" className="px-0 text-xs mt-1">
-            <Link href='https://t.me/tarasov_vasili1'></Link>
+            <Link href='https://t.me/tarasov_vasili1'>
             Перейти в Центр поддержки
+            </Link>
+            
           </Button>
         </div>
       </div>
