@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef, DragEvent, ChangeEvent } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import { Upload, X, Plus, Trash2 } from "lucide-react"
+import { Upload, X, Plus, Trash2, GripVertical, ImagePlus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,12 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 
+
+interface ProductImage {
+  url: string;
+  file: File;
+  name: string;
+}
 // Default product structure
 const defaultProduct = {
   id: 0,
@@ -56,6 +62,10 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
   const [isLoading, setIsLoading] = useState(true)
   const [productData, setProductData] = useState(defaultProduct)
   const [newIngredient, setNewIngredient] = useState({ name: "", amount: 0 })
+  const [images, setImages] = useState<ProductImage[]>([])
+  const [isDragging, setIsDragging] = useState<boolean>(false)
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch product data when dialog opens and productId changes
   useEffect(() => {
@@ -199,21 +209,82 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
     }
   }
 
-  const handleAddImage = () => {
-    setProductData({
-      ...productData,
-      images: [...productData.images, "/placeholder.svg?height=300&width=300"],
-    })
-  }
-
-  const handleRemoveImage = (index: number) => {
-    const newImages = [...productData.images]
-    newImages.splice(index, 1)
-    setProductData({
-      ...productData,
-      images: newImages,
-    })
-  }
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
+      const files = e.target.files
+      if (files && files.length > 0) {
+        addImageFiles(Array.from(files))
+      }
+    }
+  
+    const addImageFiles = (files: File[]): void => {
+      const newImages: ProductImage[] = [...images]
+  
+      files.forEach((file) => {
+        if (file.type.startsWith("image/")) {
+          const imageUrl = URL.createObjectURL(file)
+          newImages.push({
+            url: imageUrl,
+            file: file,
+            name: file.name,
+          })
+        }
+      })
+  
+      setImages(newImages)
+    }
+  
+    const handleDragOver = (e: DragEvent<HTMLDivElement>): void => {
+      e.preventDefault()
+      setIsDragging(true)
+    }
+  
+    const handleDragLeave = (): void => {
+      setIsDragging(false)
+    }
+  
+    const handleDrop = (e: DragEvent<HTMLDivElement>): void => {
+      e.preventDefault()
+      setIsDragging(false)
+  
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        addImageFiles(Array.from(e.dataTransfer.files))
+      }
+    }
+  
+    const handleRemoveImage = (index: number): void => {
+      const newImages: ProductImage[] = [...images]
+  
+      // If the image has a URL.createObjectURL, free up memory
+      if (newImages[index].url && newImages[index].url.startsWith("blob:")) {
+        URL.revokeObjectURL(newImages[index].url)
+      }
+  
+      newImages.splice(index, 1)
+      setImages(newImages)
+    }
+  
+    const handleDragStart = (index: number): void => {
+      setDraggedImageIndex(index)
+    }
+  
+    const handleDragEnter = (index: number): void => {
+      if (draggedImageIndex === null || draggedImageIndex === index) return
+  
+      const newImages: ProductImage[] = [...images]
+      const draggedImage = newImages[draggedImageIndex]
+  
+      // Remove image from current position
+      newImages.splice(draggedImageIndex, 1)
+      // Insert at new position
+      newImages.splice(index, 0, draggedImage)
+  
+      setImages(newImages)
+      setDraggedImageIndex(index)
+    }
+  
+    const handleDragEnd = (): void => {
+      setDraggedImageIndex(null)
+    }
 
   const handleAddIngredient = () => {
     if (!newIngredient.name || !newIngredient.amount) return
@@ -618,46 +689,95 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
 
               <TabsContent value="images" className="mt-4 space-y-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Изображения товара</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {productData.images.map((image: string, index: number) => (
-                        <div key={index} className="relative aspect-square border rounded-lg overflow-hidden group">
-                          <Image
-                            src={image || "/placeholder.svg"}
-                            alt={`Изображение товара ${index + 1}`}
-                            fill
-                            className="object-cover"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveImage(index)}
-                            className="absolute top-2 right-2 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-4 w-4" />
-                            <span className="sr-only">Удалить изображение</span>
-                          </button>
-                          {index === 0 && (
-                            <div className="absolute bottom-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
-                              Главное изображение
-                            </div>
-                          )}
-                        </div>
-                      ))}
-
-                      <button
-                        type="button"
-                        onClick={handleAddImage}
-                        className="aspect-square border rounded-lg border-dashed flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors"
-                      >
-                        <Upload className="h-8 w-8 text-muted-foreground" />
-                        <span className="text-sm font-medium">Добавить изображение</span>
-                      </button>
+                <CardHeader>
+                  <CardTitle>Изображения товара</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div
+                      className={`border-2 border-dashed rounded-lg p-6 mb-6 transition-colors ${
+                          isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2 text-center">
+                      <ImagePlus className="h-10 w-10 text-muted-foreground" />
+                      <h3 className="font-medium">Перетащите изображения сюда</h3>
+                      <p className="text-sm text-muted-foreground mb-2">или нажмите кнопку ниже для выбора файлов</p>
+                      <input
+                          name="images"
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleFileChange}
+                      />
+                      <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                        Выбрать изображения
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  {images.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-medium">Загруженные изображения</h3>
+                          <p className="text-sm text-muted-foreground">Перетаскивайте изображения для изменения порядка</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {images.map((image, index) => (
+                              <div
+                                  key={index}
+                                  className={`relative border rounded-lg overflow-hidden group ${
+                                      draggedImageIndex === index ? "opacity-50" : ""
+                                  }`}
+                                  draggable
+                                  onDragStart={() => handleDragStart(index)}
+                                  onDragEnter={() => handleDragEnter(index)}
+                                  onDragEnd={handleDragEnd}
+                                  onDragOver={(e) => e.preventDefault()}
+                              >
+                                <div className="aspect-square relative">
+                                  <Image
+                                      src={image.url || "/placeholder.svg?height=300&width=300"}
+                                      alt={image.name || `Изображение товара ${index + 1}`}
+                                      fill
+                                      className="object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute top-2 right-2 flex gap-1">
+                                      <button
+                                          type="button"
+                                          onClick={() => handleRemoveImage(index)}
+                                          className="bg-white rounded-full p-1 shadow-sm hover:bg-red-50"
+                                      >
+                                        <X className="h-4 w-4 text-red-500" />
+                                        <span className="sr-only">Удалить изображение</span>
+                                      </button>
+                                    </div>
+                                    <div className="absolute top-2 left-2">
+                                      <GripVertical className="h-5 w-5 text-white drop-shadow-md cursor-move" />
+                                    </div>
+                                  </div>
+                                </div>
+                                {index === 0 && (
+                                    <div className="absolute bottom-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded shadow-sm">
+                                      Главное изображение
+                                    </div>
+                                )}
+                                <div className="absolute bottom-2 right-2 text-xs bg-black/60 text-white px-2 py-1 rounded">
+                                  {index + 1} / {images.length}
+                                </div>
+                              </div>
+                          ))}
+                        </div>
+                      </div>
+                  )}
+                </CardContent>
+              </Card>
               </TabsContent>
 
               <div className="mt-6 flex justify-end gap-4">
