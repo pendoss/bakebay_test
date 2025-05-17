@@ -136,14 +136,14 @@ export async function POST(request: Request) {
     } catch (dbError) {
       console.error("Database error when creating order:", dbError);
       return NextResponse.json(
-        { error: 'Database error when creating order', details: dbError.message },
+        { error: 'Database error when creating order', details: dbError },
         { status: 500 }
       );
     }
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json(
-      { error: 'Failed to create order', details: error.message },
+      { error: 'Failed to create order', details: error },
       { status: 500 }
     );
   }
