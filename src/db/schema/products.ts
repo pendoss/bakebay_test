@@ -1,6 +1,9 @@
 import {integer, pgTable, real, text, varchar, boolean} from "drizzle-orm/pg-core";
 import {sellers} from "@/src/db/schema/sellers";
 import {categories} from "@/src/db/schema/categories";
+import { relations } from "drizzle-orm/relations";
+import { orderItems } from "./order_items";
+import { productIngredients } from "./product_ingredients";
 
 export const products = pgTable ( "products", {
         product_id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -22,3 +25,14 @@ export const products = pgTable ( "products", {
         low_stock_alert: boolean().default(false),
         status: varchar().default("active"),
 })
+
+
+// Define relations for products
+export const productsRelations = relations(products, ({ one, many }) => ({
+  seller: one(sellers, {
+    fields: [products.seller_id],
+    references: [sellers.seller_id],
+  }),
+  orderItems: many(orderItems),
+  ingredients: many(productIngredients),
+}));

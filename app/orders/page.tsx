@@ -56,28 +56,40 @@ export default function OrdersPage() {
         const fetchOrders = async () => {
             try {
                 setLoading(true)
-                const response = await fetch('/api/orders')
+                
+                // Get the current user ID from localStorage or other auth mechanism
+                const userData = JSON.parse(localStorage.getItem('userData') || '{"id": 2}');
+                const userId = userData.id;
+                
+                // Fetch orders for the specific user
+                const response = await fetch(`/api/orders?userId=${userId}`)
 
                 if (!response.ok) {
-                    setError('Failed to fetch orders')
-                    return
+                    throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText}`)
                 }
 
                 const data = await response.json()
-
-                // Add status history for each order (this would ideally come from the API)
-                const ordersWithHistory = data.map((order: Order) => ({
-                    ...order,
+                
+                // Transform API data to match our component's expected format
+                const formattedOrders = data.map((order: any) => ({
+                    id: order.id,
+                    date: order.date,
+                    orderStatus: order.status,
+                    totalPrice: order.total || 0,
+                    address: order.address,
+                    paymentMethod: order.paymentMethod,
+                    user_id: userId,
+                    items: order.items || [],
                     statusHistory: [
                         { status: 'placed', date: order.date, completed: true },
-                        { status: 'confirmed', date: order.orderStatus === 'ordering' ? null : order.date, completed: order.orderStatus !== 'ordering' },
-                        { status: 'preparing', date: order.orderStatus === 'ordering' || order.orderStatus === 'processing' ? null : order.date, completed: !['ordering', 'processing'].includes(order.orderStatus) },
-                        { status: 'shipping', date: ['delivering', 'delivered'].includes(order.orderStatus) ? order.date : null, completed: ['delivering', 'delivered'].includes(order.orderStatus) },
-                        { status: 'delivered', date: order.orderStatus === 'delivered' ? order.date : null, completed: order.orderStatus === 'delivered' },
+                        { status: 'confirmed', date: order.status === 'ordering' ? null : order.date, completed: order.status !== 'ordering' },
+                        { status: 'preparing', date: ['ordering', 'processing'].includes(order.status) ? null : order.date, completed: !['ordering', 'processing'].includes(order.status) },
+                        { status: 'shipping', date: ['delivering', 'delivered'].includes(order.status) ? order.date : null, completed: ['delivering', 'delivered'].includes(order.status) },
+                        { status: 'delivered', date: order.status === 'delivered' ? order.date : null, completed: order.status === 'delivered' },
                     ]
                 }))
 
-                setOrders(ordersWithHistory)
+                setOrders(formattedOrders)
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'An error occurred')
                 console.error('Error fetching orders:', err)

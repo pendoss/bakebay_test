@@ -68,22 +68,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = (product: any, quantity = 1) => {
     console.log("addItem called", product.id, quantity);
     
-    const item = items.find((v) => v.id === product.product_id )
+    const productId = product.product_id || product.id;
+    
+    const item = items.find((v) => v.id === productId);
     if (item !== undefined) {
-      updateQuantity(product.id, item!.quantity + 1)
-      return
+      updateQuantity(productId, item.quantity + 1);
+      return;
     }
+    
     setItems([
       ...items,
       {
-        id: product.product_id,
+        id: productId,
         name: product.name,
         price: product.price,
         image: product.image,
         quantity: quantity,
         seller: product.seller,
       },
-    ])
+    ]);
   }
 
   // Удаление товара из корзины

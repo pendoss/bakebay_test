@@ -75,6 +75,7 @@ export async function createProduct(formData: Partial<Product>) {
       const ingredientValues = formData.ingredients.map(ingredient => ({
         product_id: productId,
         name: ingredient.name,
+        amount: parseFloat(ingredient.amount) || 0,
         unit: ingredient.unit,
         stock: 0, // Default value
       }));

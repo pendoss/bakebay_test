@@ -62,3 +62,7 @@ export function isAuthenticated(req: AuthenticatedRequest): boolean {
 export function isAdmin(req: AuthenticatedRequest): boolean {
     return req.user?.role === 'admin';
 }
+
+export function isSeller(req: AuthenticatedRequest): boolean {
+    return req.user?.role === 'seller'
+}

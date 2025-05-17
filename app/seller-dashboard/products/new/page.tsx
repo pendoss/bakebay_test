@@ -259,6 +259,7 @@ export default function NewProductPage() {
   }
 
   const handleAddIngredient = (): void => {
+    console.log(ingredients)
     if (!newIngredient.name || !newIngredient.amount || !newIngredient.unit) return
 
     setIngredients([...ingredients, { ...newIngredient }])

@@ -85,7 +85,7 @@ export function OrderCard({ order } : OrderCardProps) {
         order.items.forEach((item, index) => {
             // Create a product object that matches what addItem expects
             const product = {
-                id: Date.now() + index, // Generate a unique ID using timestamp + index
+                id: typeof item.id === 'number' ? item.id : Date.now() + index, // Use actual product ID if available
                 name: item.name,
                 price: item.price,
                 image: item.image || "/placeholder.svg",
@@ -118,7 +118,7 @@ export function OrderCard({ order } : OrderCardProps) {
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="font-semibold">${order.totalPrice.toFixed(2)}</div>
+                        <div className="font-semibold">{order.totalPrice.toFixed(2)} руб.</div>
                         <div className="text-sm text-muted-foreground">
                             {order.items.length} {order.items.length === 1 ? "товар" : order.items.length < 5 ? "товара" : "товаров"}
                         </div>

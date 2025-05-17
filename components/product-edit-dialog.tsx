@@ -44,7 +44,7 @@ const defaultProduct = {
   size: "",
   storage: "",
   shelfLife: 0,
-  ingredients: [] as { name: string; amount: number }[],
+  ingredients: [] as { name: string; amount: number, unit: string }[],
   dietary: [] as string[],
   images: [] as string[],
 }
@@ -61,7 +61,7 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [productData, setProductData] = useState(defaultProduct)
-  const [newIngredient, setNewIngredient] = useState({ name: "", amount: 0 })
+  const [newIngredient, setNewIngredient] = useState({ name: "", amount: 0, unit: "г"})
   const [images, setImages] = useState<ProductImage[]>([])
   const [isDragging, setIsDragging] = useState<boolean>(false)
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null)
@@ -90,7 +90,8 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
             // Map API response to the format expected by the UI
             ingredientsData = ingredientsFromApi.map((ing : any) => ({
               name: ing.name,
-              amount: ing.unit
+              amount: ing.amount,
+              unit: ing.unit
             }))
           }
 
@@ -287,13 +288,13 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
     }
 
   const handleAddIngredient = () => {
-    if (!newIngredient.name || !newIngredient.amount) return
+    if (!newIngredient.name || !newIngredient.amount || !newIngredient.unit) return
 
     setProductData({
       ...productData,
       ingredients: [...productData.ingredients, { ...newIngredient }],
     })
-    setNewIngredient({ name: "", amount: 0 })
+    setNewIngredient({ name: "", amount: 0, unit: "г" })
   }
 
   const handleRemoveIngredient = (index: number) => {
@@ -526,16 +527,19 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
                     <div className="space-y-4">
                       <div className="rounded-md border">
                         <div className="grid grid-cols-12 gap-4 p-4 font-medium border-b">
-                          <div className="col-span-6">Ингредиент</div>
-                          <div className="col-span-5">Количество</div>
+                          <div className="col-span-3">Ингредиент</div>
+                          <div className="col-span-3">Количество</div>
+                          <div className="col-span-3">Ед. измерения</div>
                           <div className="col-span-1"></div>
                         </div>
 
                         <div className="divide-y">
-                          {productData.ingredients.map((ingredient: { name: string; amount: number }, index: number) => (
+                          {productData.ingredients.map((ingredient: { name: string; amount: number, unit: string }, index: number) => (
                             <div key={index} className="grid grid-cols-12 gap-4 p-4 items-center">
-                              <div className="col-span-6">{ingredient.name}</div>
-                              <div className="col-span-5">{ingredient.amount}</div>
+                              <div className="col-span-3">{ingredient.name}</div>
+                              <div className="col-span-3">{ingredient.amount}</div>
+                              <div className="col-span-3">{ingredient.unit}</div>
+                              
                               <div className="col-span-1">
                                 <Button
                                   variant="ghost"

@@ -1,54 +1,65 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import {OrderItems} from "@/components/order-card";
-import {db, orders, orderItems, products} from "@/src/db";
+import {db, orders, orderItems, products, users} from "@/src/db";
 
 
 export async function GET(request: Request) {
   try {
-    // Get all orders with related data
-    const allOrders = await db.query.orders.findMany({
-      with: {
-        user: {
-          columns: {
-            user_id: true,
-            first_name: true,
-            last_name: true,
-            email: true,
-            phone_number: true,
-          },
-        },
-        orderItems: {
-          with: {
-            product: true,
-          },
-        },
-      },
-    });
-
-    // Transform the data to match the expected format in the frontend
-    const formattedOrders = allOrders.map((order: any) => ({
-      id: order.order_id.toString(),
-      date: new Date(order.date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-      status: order.order_status,
-      items: order.orderItems.map((item: OrderItems) => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-      total: order.total_price || 0,
-      address: order.address,
-      paymentMethod: order.payment_method,
-      user: order.user ? {
-        name: `${order.user.first_name} ${order.user.last_name}`,
-        email: order.user.email,
-        phone: order.user.phone_number,
-      } : undefined,
+    const url = new URL(request.url);
+    const userId = url.searchParams.get('userId');
+    
+    // 1. Get orders
+    const orderQuery = userId 
+      ? db.select().from(orders).where(eq(orders.user_id, parseInt(userId)))
+      : db.select().from(orders);
+      
+    const allOrders = await orderQuery;
+    
+    // 2. For each order, get the items separately
+    const formattedOrders = await Promise.all(allOrders.map(async (order) => {
+      // Get order items
+      const items = await db.select()
+        .from(orderItems)
+        .where(eq(orderItems.order_id, order.order_id))
+        .leftJoin(products, eq(orderItems.product_id, products.product_id));
+      
+      // Get user info if needed
+      let user = null;
+      if (order.user_id) {
+        const userResult = await db.select()
+          .from(users)
+          .where(eq(users.user_id, order.user_id));
+        
+        if (userResult.length > 0) {
+          user = userResult[0];
+        }
+      }
+      
+      // Return formatted order
+      return {
+        id: order.order_id.toString(),
+        date: new Date(order.date).toLocaleDateString('ru-RU', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        status: order.order_status,
+        items: items.map(item => ({
+          id: item.products?.product_id,
+          name: item.products?.product_name || "Unknown Product",
+          price: item.products?.price || 0,
+          quantity: item.order_items.quantity,
+        })),
+        total: order.total_price || 0,
+        address: order.address,
+        paymentMethod: order.payment_method,
+        user: user ? {
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email,
+          phone: user.phone_number,
+        } : undefined,
+      };
     }));
 
     return NextResponse.json(formattedOrders);
@@ -64,6 +75,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    
+    // Add detailed logging to see what's coming in
+    console.log("Received order request with body:", body);
 
     // Validate required fields
     if (!body.user_id || !body.address || !body.payment_method || !body.items || body.items.length === 0) {
@@ -72,15 +86,19 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
+    
     // Calculate total price
     let totalPrice = 0;
     for (const item of body.items) {
+      // Log each lookup attempt to debug product ID issues
+      console.log(`Looking up product with ID: ${item.product_id}`);
+      
       const product = await db.query.products.findFirst({
         where: eq(products.product_id, item.product_id),
       });
 
       if (!product) {
+        console.log(`Product with ID ${item.product_id} not found in database`);
         return NextResponse.json(
           { error: `Product with ID ${item.product_id} not found` },
           { status: 404 }
@@ -90,32 +108,42 @@ export async function POST(request: Request) {
       totalPrice += product.price * item.quantity;
     }
 
-    // Create new order
-    const newOrder = await db.insert(orders).values({
-      date: new Date(),
-      order_status: body.order_status || 'ordering',
-      user_id: body.user_id,
-      total_price: totalPrice,
-      address: body.address,
-      payment_method: body.payment_method,
-      created_at: Math.floor(Date.now() / 1000),
-      updated_at: Math.floor(Date.now() / 1000),
-    }).returning();
+    // Create new order with proper error handling
+    try {
+      const newOrder = await db.insert(orders).values({
+        date: new Date(),
+        order_status: body.order_status || 'ordering',
+        user_id: body.user_id,
+        total_price: totalPrice,
+        address: body.address,
+        payment_method: body.payment_method,
+        created_at: Math.floor(Date.now() / 1000),
+        updated_at: Math.floor(Date.now() / 1000),
+      }).returning();
+      
+      console.log("Order created:", newOrder[0]);
+      
+      // Create order items
+      for (const item of body.items) {
+        await db.insert(orderItems).values({
+          order_id: newOrder[0].order_id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+        });
+      }
 
-    // Create order items
-    for (const item of body.items) {
-      await db.insert(orderItems).values({
-        order_id: newOrder[0].order_id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-      });
+      return NextResponse.json(newOrder[0]);
+    } catch (dbError) {
+      console.error("Database error when creating order:", dbError);
+      return NextResponse.json(
+        { error: 'Database error when creating order', details: dbError.message },
+        { status: 500 }
+      );
     }
-
-    return NextResponse.json(newOrder[0]);
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json(
-      { error: 'Failed to create order' },
+      { error: 'Failed to create order', details: error.message },
       { status: 500 }
     );
   }

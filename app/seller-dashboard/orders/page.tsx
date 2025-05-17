@@ -1,3 +1,6 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,7 +10,11 @@ import { Input } from "@/components/ui/input"
 import { formatDistanceToNow } from "date-fns"
 import { ru } from "date-fns/locale"
 
+// Import translations
+import { statusTranslations } from "@/components/order-card"
+
 interface OrderItem {
+  id: number;
   name: string;
   quantity: number;
   price: number;
@@ -15,99 +22,112 @@ interface OrderItem {
 
 interface Order {
   id: string;
-  date: Date;
+  date: string;
   customer: {
     name: string;
     email: string;
+    address: string,
   };
   items: OrderItem[];
   total: number;
   status: string;
-  paymentStatus: string;
-  shippingAddress: string;
+  paymentMethod: string;
+  address: string;
 }
 
-// Пример данных
-const orders = [
-  {
-    id: "ЗКЗ-7652",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 часа назад
-    customer: {
-      name: "София Тейлор",
-      email: "sofia.t@example.com",
-    },
-    items: [
-      { name: "Шоколадный торт", quantity: 1, price: 24.99 },
-      { name: "Ассорти макарон", quantity: 2, price: 18.99 },
-    ],
-    total: 62.97,
-    status: "В обработке",
-    paymentStatus: "Оплачен",
-    shippingAddress: "ул. Кленовая, 123, г. Москва, 123456",
-  },
-  {
-    id: "ЗКЗ-7651",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 8), // 8 часов назад
-    customer: {
-      name: "Джеймс Уилсон",
-      email: "james.w@example.com",
-    },
-    items: [{ name: "Клубничный чизкейк", quantity: 1, price: 22.99 }],
-    total: 22.99,
-    status: "Отправлен",
-    paymentStatus: "Оплачен",
-    shippingAddress: "ул. Дубовая, 456, г. Санкт-Петербург, 234567",
-  },
-  {
-    id: "ЗКЗ-7650",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 день назад
-    customer: {
-      name: "Эмма Джонсон",
-      email: "emma.j@example.com",
-    },
-    items: [
-      { name: "Тирамису в стаканчике", quantity: 2, price: 8.99 },
-      { name: "Булочки с корицей", quantity: 1, price: 16.99 },
-    ],
-    total: 34.97,
-    status: "Доставлен",
-    paymentStatus: "Оплачен",
-    shippingAddress: "ул. Сосновая, 789, г. Казань, 345678",
-  },
-  {
-    id: "ЗКЗ-7649",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 36), // 1.5 дня назад
-    customer: {
-      name: "Ной Уильямс",
-      email: "noah.w@example.com",
-    },
-    items: [
-      { name: "Шоколадный торт", quantity: 1, price: 24.99 },
-      { name: "Клубничный чизкейк", quantity: 1, price: 22.99 },
-      { name: "Ассорти макарон", quantity: 2, price: 18.99 },
-      { name: "Булочки с корицей", quantity: 1, price: 16.99 },
-    ],
-    total: 102.95,
-    status: "Доставлен",
-    paymentStatus: "Оплачен",
-    shippingAddress: "ул. Кедровая, 101, г. Екатеринбург, 456789",
-  },
-  {
-    id: "ЗКЗ-7648",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 дня назад
-    customer: {
-      name: "Оливия Браун",
-      email: "olivia.b@example.com",
-    },
-    items: [{ name: "Веганское шоколадное печенье", quantity: 2, price: 12.99 }],
-    total: 25.98,
-    status: "Доставлен",
-    paymentStatus: "Оплачен",
-    shippingAddress: "ул. Березовая, 202, г. Сочи, 567890",
-  },
-]
+export default function SellerOrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [sortOrder, setSortOrder] = useState("newest")
 
-export default function OrdersPage() {
+  // Fetch orders from API
+  useEffect(() => {
+    const fetchSellerOrders = async () => {
+      try {
+        setLoading(true)
+        
+        // Get seller ID from localStorage or other auth source
+        const sellerData = JSON.parse(localStorage.getItem('sellerData') || '{"id": 1}');
+        const sellerId = sellerData.id;
+        
+        const response = await fetch(`/api/seller/orders?sellerId=${sellerId}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log(data);
+        setOrders(data);
+      } catch (err) {
+        console.error("Error fetching seller orders:", err);
+        setError(err instanceof Error ? err.message : "Failed to load orders");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSellerOrders();
+  }, []);
+
+  // Filter orders by search term
+  const filteredOrders = orders.filter(order => {
+    if (searchTerm === "") return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      order.id.toLowerCase().includes(searchLower) ||
+      order.customer.name.toLowerCase().includes(searchLower) ||
+      order.customer.email.toLowerCase().includes(searchLower)
+    );
+  });
+  
+  // Filter orders by status
+  const statusFilteredOrders = statusFilter === "all" 
+    ? filteredOrders 
+    : filteredOrders.filter(order => {
+        // Map status to filter value
+        const statusMap: Record<string, string> = {
+          "ordering": "processing",
+          "processing": "processing",
+          "in_progress": "processing",
+          "payed": "processing",
+          "delivering": "shipped",
+          "shipping": "shipped",
+          "delivered": "delivered",
+          "cancelled": "cancelled"
+        };
+        
+        return statusMap[order.status] === statusFilter;
+      });
+  
+  // Sort orders
+  const sortedOrders = [...statusFilteredOrders].sort((a, b) => {
+    switch (sortOrder) {
+      case "newest":
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case "oldest":
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      case "total-desc":
+        return b.total - a.total;
+      case "total-asc":
+        return a.total - b.total;
+      default:
+        return 0;
+    }
+  });
+
+  if (loading) {
+    return <div className="text-center py-10">Загрузка заказов...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">Ошибка: {error}</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -117,10 +137,14 @@ export default function OrdersPage() {
 
       <div className="flex flex-col sm:flex-row gap-4 items-end justify-between">
         <div className="grid gap-2 w-full sm:max-w-[360px]">
-          <Input placeholder="Поиск заказов по ID или клиенту..." />
+          <Input 
+            placeholder="Поиск заказов по ID или клиенту..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          <Select defaultValue="all">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Статус заказа" />
             </SelectTrigger>
@@ -132,7 +156,7 @@ export default function OrdersPage() {
               <SelectItem value="cancelled">Отменены</SelectItem>
             </SelectContent>
           </Select>
-          <Select defaultValue="newest">
+          <Select value={sortOrder} onValueChange={setSortOrder}>
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Сортировка" />
             </SelectTrigger>
@@ -161,59 +185,88 @@ export default function OrdersPage() {
             Доставлены
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="all" className="mt-4 space-y-4">
-          {orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
-        </TabsContent>
-        <TabsContent value="processing" className="mt-4 space-y-4">
-          {orders
-            .filter((order) => order.status === "В обработке")
-            .map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-        </TabsContent>
-        <TabsContent value="shipped" className="mt-4 space-y-4">
-          {orders
-            .filter((order) => order.status === "Отправлен")
-            .map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-        </TabsContent>
-        <TabsContent value="delivered" className="mt-4 space-y-4">
-          {orders
-            .filter((order) => order.status === "Доставлен")
-            .map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-        </TabsContent>
+        
+        {sortedOrders.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            Заказы не найдены
+          </div>
+        ) : (
+          <>
+            <TabsContent value="all" className="mt-4 space-y-4">
+              {sortedOrders.map((order) => (
+                <OrderCard key={order.id} order={order} onStatusChange={handleStatusChange} />
+              ))}
+            </TabsContent>
+            <TabsContent value="processing" className="mt-4 space-y-4">
+              {sortedOrders
+                .filter((order) => order.status === "В обработке")
+                .map((order) => (
+                  <OrderCard key={order.id} order={order} onStatusChange={handleStatusChange} />
+                ))}
+            </TabsContent>
+            <TabsContent value="shipped" className="mt-4 space-y-4">
+              {sortedOrders
+                .filter((order) => order.status === "Отправлен")
+                .map((order) => (
+                  <OrderCard key={order.id} order={order} onStatusChange={handleStatusChange} />
+                ))}
+            </TabsContent>
+            <TabsContent value="delivered" className="mt-4 space-y-4">
+              {sortedOrders
+                .filter((order) => order.status === "Доставлен")
+                .map((order) => (
+                  <OrderCard key={order.id} order={order} onStatusChange={handleStatusChange} />
+                ))}
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   )
 }
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({ order, onStatusChange }: { order: Order; onStatusChange: (orderId: string, newStatus: string) => void }) {
+  // Function to handle clicking the "mark as shipped" or "mark as delivered" button
+  const handleStatusChange = (newStatus: string) => {
+    onStatusChange(order.id, newStatus);
+  };
+
+  // Map status to our UI representation
+  const displayStatus = statusTranslations[order.status as OrderStatus] || order.status;
+  
+  // Determine badge variant based on status
+  const getBadgeVariant = (status: string) => {
+    const statusMap: Record<string, "outline" | "secondary" | "default"> = {
+      "ordering": "outline",
+      "processing": "outline",
+      "payed": "outline",
+      "in_progress": "outline",
+      "delivering": "secondary",
+      "shipping": "secondary",
+      "delivered": "default",
+      "cancelled": "destructive"
+    };
+    
+    return statusMap[status] || "outline";
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">{order.id}</CardTitle>
-              <Badge
-                variant={
-                  order.status === "В обработке" ? "outline" : order.status === "Отправлен" ? "secondary" : "default"
-                }
-              >
-                {order.status}
+              <CardTitle className="text-base">Заказ #{order.id}</CardTitle>
+              <Badge variant={getBadgeVariant(order.status)}>
+                {displayStatus}
               </Badge>
             </div>
             <CardDescription>
-              Размещен {formatDistanceToNow(order.date, { addSuffix: true, locale: ru })}
+              {order.date}
             </CardDescription>
           </div>
           <div className="text-right">
-            <div className="font-semibold">${order.total.toFixed(2)}</div>
+            <div className="font-semibold">{order.total.toFixed(2)} руб.</div>
             <div className="text-sm text-muted-foreground">
               {order.items.length} {order.items.length === 1 ? "товар" : order.items.length < 5 ? "товара" : "товаров"}
             </div>
@@ -238,7 +291,7 @@ function OrderCard({ order }: { order: Order }) {
                   <div>
                     {item.quantity} x {item.name}
                   </div>
-                  <div>${(item.price * item.quantity).toFixed(2)}</div>
+                  <div>{(item.price * item.quantity).toFixed(2)} руб.</div>
                 </li>
               ))}
             </ul>
@@ -247,7 +300,7 @@ function OrderCard({ order }: { order: Order }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <h4 className="text-sm font-medium mb-1">Адрес доставки</h4>
-              <div className="text-sm">{order.shippingAddress}</div>
+              <div className="text-sm">{order.customer.address}</div>
             </div>
             <div>
               <h4 className="text-sm font-medium mb-1">Статус оплаты</h4>
@@ -262,12 +315,47 @@ function OrderCard({ order }: { order: Order }) {
         <Button variant="outline" size="sm">
           Просмотреть детали
         </Button>
-        {order.status === "В обработке" && <Button size="sm">Отметить как отправленный</Button>}
-        {order.status === "Отправлен" && <Button size="sm">Отметить как доставленный</Button>}
+        {["ordering", "processing", "payed", "in_progress"].includes(order.status) && (
+          <Button size="sm" onClick={() => handleStatusChange("shipping")}>
+            Отметить как отправленный
+          </Button>
+        )}
+        {["shipping", "delivering"].includes(order.status) && (
+          <Button size="sm" onClick={() => handleStatusChange("delivered")}>
+            Отметить как доставленный
+          </Button>
+        )}
         <Button variant="outline" size="sm">
           Распечатать счет
         </Button>
       </CardContent>
     </Card>
   )
+}
+
+// Add status update handler function
+function handleStatusChange(orderId: string, newStatus: string) {
+  // Implement API call to update order status
+  fetch('/api/orders', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      order_id: parseInt(orderId),
+      order_status: newStatus,
+    }),
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Failed to update order status');
+    return response.json();
+  })
+  .then(() => {
+    // Refresh orders after status update
+    window.location.reload();
+  })
+  .catch(error => {
+    console.error('Error updating order status:', error);
+    // Show error toast or notification
+  });
 }

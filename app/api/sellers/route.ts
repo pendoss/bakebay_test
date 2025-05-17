@@ -39,9 +39,30 @@ export async function GET(request: Request) {
   }
 }
 
+interface sellerRegisterData {
+  seller_name: string,
+  description: string,
+  location: string,
+  website: string,
+  contact_name: string,
+  contact_email: string,
+  contact_number: string,
+  inn: string,
+  about_products: string,
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    let body: sellerRegisterData;
+    try {
+      body = await request.json();
+      console.log(body);
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
     
     // Validate required fields
     if (!body.seller_name) {
@@ -54,7 +75,15 @@ export async function POST(request: Request) {
     // Create new seller
     const newSeller = await db.insert(sellers).values({
       seller_name: body.seller_name,
-      seller_rating: body.seller_rating || 0.0,
+      seller_rating: 0.0,
+      description: body.description,
+      location: body.location,
+      website: body.website,
+      contact_name: body.contact_name,
+      contact_email: body.contact_email,
+      contact_number: body.contact_number,
+      inn: body.inn,
+      about_products: body.about_products
     }).returning();
     
     return NextResponse.json(newSeller[0]);

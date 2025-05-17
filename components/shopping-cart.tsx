@@ -177,19 +177,24 @@ export function ShoppingCart() {
                     }
 
                     // Get user data from localStorage or session
-                    const userData = JSON.parse(localStorage.getItem('userData') || '{"id": 1}');
+                    const userData = JSON.parse(localStorage.getItem('userData') || '{"id": 2}');
 
-                    // In a real app, this would come from a form
-                    // For now, we'll use a more realistic approach with default values
+                    // Log the items we're sending for debugging
+                    console.log("Cart items being sent:", items);
+
+                    // Make sure we're sending valid product_id values
                     const orderData = {
                       user_id: userData.id,
                       address: localStorage.getItem('userAddress') || "123 Main St, City",
                       payment_method: localStorage.getItem('paymentMethod') || "Credit Card",
                       items: items.map(item => ({
-                        product_id: item.id,
+                        // Ensure we're using the correct ID format
+                        product_id: typeof item.id === 'string' ? parseInt(item.id, 10) : item.id,
                         quantity: item.quantity
                       }))
                     };
+
+                    console.log("Order data being sent:", orderData);
 
                     // Send order to API
                     const response = await fetch('/api/orders', {
@@ -201,7 +206,9 @@ export function ShoppingCart() {
                     });
 
                     if (!response.ok) {
-                      throw new Error('Failed to create order');
+                      const errorData = await response.json();
+                      console.error('Error response:', errorData);
+                      throw new Error(errorData.error || 'Failed to create order');
                     }
 
                     const data = await response.json();

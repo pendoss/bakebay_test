@@ -12,15 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription, DialogHeader,
   DialogOverlay,
   DialogPortal,
-  DialogTitle,
-  DialogTrigger
+  DialogTitle
 } from "@/components/ui/dialog";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
@@ -41,7 +40,18 @@ interface AuthDialogProps {
 export function UserNav() {
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
+  const [isAuthenticatedUser, setIsAuthenticatedUser] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Access localStorage only on the client side
+    setIsAuthenticatedUser(localStorage.getItem('auth'));
+  }, []);
+
+  const handleLogout = () : void => {
+    localStorage.removeItem('auth');
+    setIsAuthenticatedUser(null);
+    router.push('/')
+  }
   return (
       <>
     <DropdownMenu>
@@ -69,9 +79,14 @@ export function UserNav() {
           <DropdownMenuItem onClick={() => router.push("/settings")} className="focus:bg-secondary focus:text-white">Настройки</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="focus:bg-secondary focus:text-white">Выйти
-        </DropdownMenuItem>
-        <DropdownMenuItem className="focus:bg-secondary focus:text-white" onClick={() => setIsOpen(true)}>Войти</DropdownMenuItem>
+        {isAuthenticatedUser != null? (
+          <DropdownMenuItem className="focus:bg-secondary focus:text-white" onClick={handleLogout}>Выйти</DropdownMenuItem>
+          ) :(
+          <DropdownMenuItem className="focus:bg-secondary focus:text-white" onClick={() => setIsOpen(true)}>Войти</DropdownMenuItem>
+          )
+        }
+        
+        
       </DropdownMenuContent>
     </DropdownMenu>
 

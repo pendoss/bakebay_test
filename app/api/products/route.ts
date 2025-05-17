@@ -1,21 +1,31 @@
 import { NextResponse } from 'next/server';
 import { db, products, sellers, categories, dietaryConstrains } from '@/src/db';
 import { productImages } from '@/src/db/schema/product_images';
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const id = url.searchParams.get('id');
   const categoryId = url.searchParams.get('category');
   const sellerId = url.searchParams.get('seller');
+  const countOnly = url.searchParams.get('count');
   console.log('url', url);
   console.log('id', id);
   try {
 
-    // If ID is provided, return a single product
     if (id) {
       try {
-        // Get the product with related data
+
+        if (countOnly === 'true' && sellerId) {
+          const counter = await db.select({
+            counter: count()
+          })
+          .from(products)
+          .where(eq(products.seller_id, parseInt(sellerId)))
+          .then(result => result[0]?.counter || 0);
+          
+          return NextResponse.json({ count: counter });
+        }
         console.log(id)
         const product = await db.query.products.findFirst({
           where: eq(products.product_id, parseInt(id)),
@@ -28,17 +38,14 @@ export async function GET(request: Request) {
           );
         }
 
-        // Get product images
         const images = await db.select()
           .from(productImages)
           .where(eq(productImages.product_id, parseInt(id)))
           .orderBy(productImages.is_main, productImages.display_order);
 
-        // Create response with images
         const productWithImages = {
           ...product,
           images: images,
-          // Use the main image as the primary image, or the first image if no main image is set
           image: images.find(img => img.is_main)?.image_url || 
                  (images.length > 0 ? images[0].image_url : null)
         };
@@ -53,15 +60,11 @@ export async function GET(request: Request) {
       }
     }
 
-    // Build query based on filters
     let query = db.select().from(products).where( categoryId ? eq(products.category,categoryId) : sellerId ? eq(products.seller_id, parseInt(sellerId)) : undefined);
 
-    // Execute query
     const allProducts = await query.leftJoin(sellers, eq(products.seller_id, sellers.seller_id)).leftJoin(categories, eq(products.category_id, categories.id));
 
-    // Format the response
     const formattedProducts = await Promise.all(allProducts.map(async row => {
-      // Get dietary constraints for each product
       const dietaryConstraints = await db.select({
         id: dietaryConstrains.id,
         name: dietaryConstrains.name,
