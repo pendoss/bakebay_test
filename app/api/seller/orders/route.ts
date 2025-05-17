@@ -49,8 +49,8 @@ export async function GET(request: Request) {
       return NextResponse.json([]);
     }
     
-    // Get unique order IDs
-    const orderIds = [...new Set(relevantItems.map(item => item.order_id))];
+    // Get unique order IDs and filter out any nulls
+    const orderIds = [...new Set(relevantItems.map(item => item.order_id))].filter(Boolean) as number[];
     
     // Fetch full orders
     const sellerOrders = await db.select()
