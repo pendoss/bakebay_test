@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator"
 import { SellerDashboardNav } from "@/components/seller-dashboard/seller-nav" // Adjust the import if needed
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Decode } from "@/app/api/jwt"
+// import { Decode } from "@/app/api/jwt"
 import { Loader2 } from "lucide-react"
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
 export default function SellerDashboardLayout({ children }: Props) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [isAuthorized, setIsAuthorized] = useState(false)
+  // const [isAuthorized, setIsAuthorized] = useState(false)
 
   useEffect(() => {
     const checkAuth = () => {
@@ -62,9 +62,9 @@ export default function SellerDashboardLayout({ children }: Props) {
     )
   }
 
-  if (!isAuthorized) {
-    return null // Router will handle redirection, this prevents flash of content
-  }
+  // if (!isAuthorized) {
+  //   return null // Router will handle redirection, this prevents flash of content
+  // }
 
   return (
     <div className="container py-8 px-4 md:px-6">
