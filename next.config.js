@@ -1,7 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: ['s3.diploma.larek.tech']
+    // domains: ['s3.diploma.larek.tech'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 's3.diploma.larek.tech',
+        port: '',
+        pathname: '/bakebay/**',
+        search: '',
+      }],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
