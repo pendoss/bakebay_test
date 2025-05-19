@@ -27,19 +27,19 @@ export default function SellerDashboardLayout({ children }: Props) {
           return
         }
         
-        // Decode token to check user role
+        // // Decode token to check user role
 
-        console.log("decodiiiing tokin: ",)
-        const userData = Decode(token)
-        console.log("User data:", userData)
+        // console.log("decodiiiing tokin: ",)
+        // const userData = Decode(token)
+        // console.log("User data:", userData)
         
-        if (userData && userData.role === 'seller') {
-          console.log("User is a seller, access granted")
-          setIsAuthorized(true)
-        } else {
-          console.log("User is not a seller, redirecting to become seller page")
-          router.push("/sellers?tab=become")
-        }
+        // if (userData && userData.role === 'seller') {
+        //   console.log("User is a seller, access granted")
+        //   setIsAuthorized(true)
+        // } else {
+        //   console.log("User is not a seller, redirecting to become seller page")
+        //   router.push("/sellers?tab=become")
+        // }
       } catch (error) {
         console.error("Error checking auth:", error)
         router.push("/")
