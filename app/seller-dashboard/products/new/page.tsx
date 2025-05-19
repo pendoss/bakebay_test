@@ -144,7 +144,6 @@ export default function NewProductPage() {
       ingredients
     };
 
-    // Form validation
     if (!updatedFormState.name || !updatedFormState.description || !updatedFormState.category) {
       toast({
         title: "Ошибка валидации",
@@ -156,7 +155,6 @@ export default function NewProductPage() {
     }
 
     try {
-      // Use the server action to create the product
       const result = await createProduct(updatedFormState);
 
       if (result.success) {

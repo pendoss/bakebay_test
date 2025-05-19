@@ -23,7 +23,6 @@ export async function POST(req: Request) {
         });
     } catch (error) {
         if (error === unauthorized) {
-            return new NextResponse()
             return NextResponse.json(
                 { error: 'Invalid credentials.' },
                 { status: 401 }
