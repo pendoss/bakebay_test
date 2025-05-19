@@ -44,7 +44,7 @@ export default function Home() {
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="w-8 h-8 rounded-full border-2 border-primary/20 overflow-hidden">
-                      <Image src={`/placeholder.svg?text=${i}`} alt={`Клиент ${i}`} width={32} height={32} />
+                      <Image src={"https://" + process.env.S3_ENDPOINT + "/" + process.env.S3_BUCKET_NAME + "/" + "user_placeholder_"+ `${i}` +".jpeg"} alt={`Клиент ${i}`} width={32} height={32} />
                     </div>
                   ))}
                 </div>
@@ -53,7 +53,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="relative h-[400px] md:h-[450px] rounded-2xl overflow-hidden shadow-xl flex items-center justify-center">
+            <div className="relative h-[400px] md:h-[450px] rounded-2xl overflow-hidden shadow-xl flex items-center justify-center bg-[#ecf3f7]">
               <Image
                 src={"https://" + process.env.S3_ENDPOINT + "/" + process.env.S3_BUCKET_NAME + "/" + "BakeBay_logo.png"}
                 alt="Витрина вкусных тортов"
@@ -123,13 +123,14 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-accent/50 -z-10"></div>
         <div className="container px-4 md:px-6 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-xl">
+            <div className="relative h-[373px] rounded-2xl overflow-hidden shadow-xl">
               <Image
-                src={`https://${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET_NAME}/BakeBay_logo.png`}
+                src={`https://${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET_NAME}/main_page_team.jpg`}
                 alt="Витрина вкусных тортов"
-                fill
+                width={652}
+                height={1000}
                 className="object-contain"
-                sizes="(max-width: 500px) 100vw, 33vw"
+                sizes="(max-width: 500px) 100vw, 33vw "
               />
             </div>
             <div className="space-y-6">

@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { OrderCard } from "@/components/order-card"
-import { Filter } from "lucide-react"
+import { Filter, Images } from "lucide-react"
 
 // Определение типа для заказов
 export type OrderStatus = 'ordering' | 'processing' | 'payed' | 'processed' | 'in_progress' | 'delivering' | 'delivered' | 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'cancelled';
@@ -80,6 +80,7 @@ export default function OrdersPage() {
                     paymentMethod: order.paymentMethod,
                     user_id: userId,
                     items: order.items || [],
+                    images: order.images || [],
                     statusHistory: [
                         { status: 'placed', date: order.date, completed: true },
                         { status: 'confirmed', date: order.status === 'ordering' ? null : order.date, completed: order.status !== 'ordering' },

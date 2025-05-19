@@ -85,7 +85,7 @@ export function OrderCard({ order } : OrderCardProps) {
         order.items.forEach((item, index) => {
             // Create a product object that matches what addItem expects
             const product = {
-                id: typeof item.id === 'number' ? item.id : Date.now() + index, // Use actual product ID if available
+                id: typeof item.id === 'number' ? item.id : Date.now() + index,
                 name: item.name,
                 price: item.price,
                 image: item.image || "/placeholder.svg",

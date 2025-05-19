@@ -25,7 +25,7 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {useForm} from "react-hook-form";
 import {Input} from "@/components/ui/input";
-import {Eye, EyeOff} from "lucide-react";
+import {Eye, EyeOff, User} from "lucide-react";
 
 interface AuthDialogProps {
   isOpen: boolean;
@@ -58,16 +58,18 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder.svg" alt="Аватар пользователя" />
-            <AvatarFallback>ПЛ</AvatarFallback>
+            <AvatarImage src="https://s3.diploma.larek.tech/bakebay/user_placeholder_1.jpeg" alt="Аватар пользователя" />
+            <AvatarFallback>
+              <User />
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Имя Пользователя</p>
-            <p className="text-xs leading-none text-muted-foreground">user@example.com</p>
+            <p className="text-sm font-medium leading-none">Оливия Браун</p>
+            <p className="text-xs leading-none text-muted-foreground">olivia.braun@test.com</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
