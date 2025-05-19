@@ -4,10 +4,8 @@ import { db, users } from '@/src/db';
 import { userMiddleware, isAuthenticated } from '@/app/api/middleware/user';
 
 export async function PUT(
-  request: NextRequest,
-  context: { params: { id: string } }
+  request: NextRequest
 ) {
-  const { params } = context;
   return userMiddleware(request, async (req) => {
     if (!isAuthenticated(req)) {
       return NextResponse.json(
@@ -16,13 +14,15 @@ export async function PUT(
       );
     }
 
-    // Check if user is updating their own role or is an admin
-    if (req.user?.userId !== parseInt(params.id) && req.user?.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      );
-    }
+    // const body = await request.json();
+
+    // // Check if user is updating their own role or is an admin
+    // if (req.user?.userId !== parseInt(params.id) && req.user?.role !== 'admin') {
+    //   return NextResponse.json(
+    //     { error: 'Forbidden' },
+    //     { status: 403 }
+    //   );
+    // }
 
     try {
       const body = await request.json();
@@ -35,7 +35,7 @@ export async function PUT(
       }
 
       // Update user role in the database
-      const userId = parseInt(params.id);
+      const userId = parseInt(body.id);
       const updatedUser = await db.update(users)
         .set({
           user_role: body.role,
