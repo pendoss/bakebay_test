@@ -5,8 +5,9 @@ import { userMiddleware, isAuthenticated } from '@/app/api/middleware/user';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const { params } = context;
   return userMiddleware(request, async (req) => {
     if (!isAuthenticated(req)) {
       return NextResponse.json(
