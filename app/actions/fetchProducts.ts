@@ -30,12 +30,8 @@ function getStatusText(status: string | null | undefined): string {
 
 export async function fetchProducts(): Promise<{ products: Product[], error: string | null }> {
   try {
-    // Fetch products from the database
     const dbProducts = await db.select().from(productsTable);
-
-    // Transform the data to match the expected format
     const transformedProducts: Product[] = await Promise.all(dbProducts.map(async product => {
-      // Get product images
       const images = await db.select()
         .from(productImages)
         .where(eq(productImages.product_id, product.product_id))

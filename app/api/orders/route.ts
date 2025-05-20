@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import {OrderItems} from "@/components/order-card";
 import {db, orders, orderItems, products, users} from "@/src/db";
+import { updateStockById } from '@/app/actions/addIngredient';
 
 
 export async function GET(request: Request) {
@@ -149,9 +150,49 @@ export async function POST(request: Request) {
   }
 }
 
+// export async function PUT(request: Request) {
+//   try {
+//     const body = await request.json();
+
+//     // Validate required fields
+//     if (!body.order_id) {
+//       return NextResponse.json(
+//         { error: 'Missing order ID' },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Update order
+//     const updatedOrder = await db.update(orders)
+//       .set({
+//         order_status: body.order_status,
+//         address: body.address,
+//         payment_method: body.payment_method,
+//         updated_at: Math.floor(Date.now() / 1000),
+//       })
+//       .where(eq(orders.order_id, body.order_id))
+//       .returning();
+
+//     if (updatedOrder.length === 0) {
+//       return NextResponse.json(
+//         { error: 'Order not found' },
+//         { status: 404 }
+//       );
+//     }
+
+//     return NextResponse.json(updatedOrder[0]);
+//   } catch (error) {
+//     console.error('Error updating order:', error);
+//     return NextResponse.json(
+//       { error: 'Failed to update order' },
+//       { status: 500 }
+//     );
+//   }
+// }
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
+    console.log("Order update request:", body);
 
     // Validate required fields
     if (!body.order_id) {
@@ -160,8 +201,8 @@ export async function PUT(request: Request) {
         { status: 400 }
       );
     }
-
-    // Update order
+    
+    // Update order status
     const updatedOrder = await db.update(orders)
       .set({
         order_status: body.order_status,
@@ -177,6 +218,23 @@ export async function PUT(request: Request) {
         { error: 'Order not found' },
         { status: 404 }
       );
+    }
+
+    if (body.order_status === "delivering") {
+      console.log("Processing inventory updates for delivering status");
+      const items = await db.select()
+        .from(orderItems)
+        .where(eq(orderItems.order_id, body.order_id));
+      
+      console.log("Found items to process:", items);
+      for (const item of items) {
+        try {
+          console.log(`Updating stock for product ID: ${item.product_id}`);
+          await updateStockById(item.product_id!);
+        } catch (stockError) {
+          console.error(`Error updating stock for product ${item.product_id}:`, stockError);
+        }
+      }
     }
 
     return NextResponse.json(updatedOrder[0]);

@@ -13,6 +13,7 @@ import { ru } from "date-fns/locale"
 // Import translations
 import { statusTranslations } from "@/components/order-card"
 import { OrderStatus } from "@/app/orders/page"
+import { updateStockById } from "@/app/actions/addIngredient"
 
 interface OrderItem {
   id: number;
@@ -21,7 +22,7 @@ interface OrderItem {
   price: number;
 }
 
-interface Order {
+export interface OrderFull {
   id: string;
   date: string;
   customer: {
@@ -37,7 +38,7 @@ interface Order {
 }
 
 export default function SellerOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<OrderFull[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -97,7 +98,6 @@ export default function SellerOrdersPage() {
           "in_progress": "processing",
           "payed": "processing",
           "delivering": "shipped",
-          "shipping": "shipped",
           "delivered": "delivered",
           "cancelled": "cancelled"
         };
@@ -207,14 +207,14 @@ export default function SellerOrdersPage() {
             </TabsContent>
             <TabsContent value="shipped" className="mt-4 space-y-4">
               {sortedOrders
-                .filter((order) => order.status === "Отправлен")
+                .filter((order) => order.status === "delivering")
                 .map((order) => (
                   <OrderCard key={order.id} order={order} onStatusChange={handleStatusChange} />
                 ))}
             </TabsContent>
             <TabsContent value="delivered" className="mt-4 space-y-4">
               {sortedOrders
-                .filter((order) => order.status === "Доставлен")
+                .filter((order) => order.status === "delivered")
                 .map((order) => (
                   <OrderCard key={order.id} order={order} onStatusChange={handleStatusChange} />
                 ))}
@@ -226,11 +226,37 @@ export default function SellerOrdersPage() {
   )
 }
 
-function OrderCard({ order, onStatusChange }: { order: Order; onStatusChange: (orderId: string, newStatus: string) => void }) {
+function OrderCard({ order, onStatusChange }: { order: OrderFull; onStatusChange: (orderId: string, newStatus: string) => void }) {
   // Function to handle clicking the "mark as shipped" or "mark as delivered" button
   const handleStatusChange = (newStatus: string) => {
     onStatusChange(order.id, newStatus);
   };
+  function handleStatusChangeDelivering(orderId: string, newStatus: string) {
+    // Implement API call to update order status
+    fetch('/api/orders', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        order_id: parseInt(orderId),
+        order_status: newStatus,
+        items: newStatus === "delivering" ? order.items.map(item => item.id) : []
+      }),
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to update order status');
+      return response.json();
+    })
+    .then(() => {
+      // Refresh orders after status update
+      window.location.reload();
+    })
+    .catch(error => {
+      console.error('Error updating order status:', error);
+      // Show error toast or notification
+    });
+  }
 
   // Map status to our UI representation
   const displayStatus = statusTranslations[order.status as OrderStatus] || order.status;
@@ -317,11 +343,11 @@ function OrderCard({ order, onStatusChange }: { order: Order; onStatusChange: (o
           Просмотреть детали
         </Button>
         {["ordering", "processing", "payed", "in_progress"].includes(order.status) && (
-          <Button size="sm" onClick={() => handleStatusChange("shipping")}>
+          <Button size="sm" onClick={() => handleStatusChangeDelivering(order.id, "delivering")}>
             Отметить как отправленный
           </Button>
         )}
-        {["shipping", "delivering"].includes(order.status) && (
+        {["delivering"].includes(order.status) && (
           <Button size="sm" onClick={() => handleStatusChange("delivered")}>
             Отметить как доставленный
           </Button>
@@ -360,3 +386,5 @@ function handleStatusChange(orderId: string, newStatus: string) {
     // Show error toast or notification
   });
 }
+
+

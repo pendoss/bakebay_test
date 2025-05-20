@@ -20,7 +20,7 @@ export const statusTranslations: Record<OrderStatus, string> = {
     placed: "Оформлен",
     confirmed: "Подтвержден",
     preparing: "Готовится",
-    shipping: "Доставляется",
+    delivering: "Доставляется",
     delivered: "Доставлен",
     cancelled: "Отменен",
     ordering: "Оформляется",
@@ -28,7 +28,6 @@ export const statusTranslations: Record<OrderStatus, string> = {
     payed: "Оплачен",
     processed: "Обработан",
     in_progress: "В процессе",
-    delivering: "Доставляется",
 }
 
 // Цвета для статусов
@@ -36,7 +35,6 @@ export const statusColors: Record<OrderStatus, string> = {
     placed: "bg-lemon-meringue text-secondary",
     confirmed: "bg-lavender-dessert text-secondary",
     preparing: "bg-mint-frosting text-secondary",
-    shipping: "bg-caramel-light text-secondary",
     delivered: "bg-strawberry-cream text-secondary",
     cancelled: "bg-muted text-muted-foreground",
     ordering: "bg-lemon-meringue text-secondary",

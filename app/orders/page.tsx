@@ -9,7 +9,7 @@ import { OrderCard } from "@/components/order-card"
 import { Filter, Images } from "lucide-react"
 
 // Определение типа для заказов
-export type OrderStatus = 'ordering' | 'processing' | 'payed' | 'processed' | 'in_progress' | 'delivering' | 'delivered' | 'placed' | 'confirmed' | 'preparing' | 'shipping' | 'cancelled';
+export type OrderStatus = 'ordering' | 'processing' | 'payed' | 'processed' | 'in_progress' | 'delivering' | 'delivered' | 'placed' | 'confirmed' | 'preparing' | 'cancelled';
 
 
 // order_id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -85,7 +85,7 @@ export default function OrdersPage() {
                         { status: 'placed', date: order.date, completed: true },
                         { status: 'confirmed', date: order.status === 'ordering' ? null : order.date, completed: order.status !== 'ordering' },
                         { status: 'preparing', date: ['ordering', 'processing'].includes(order.status) ? null : order.date, completed: !['ordering', 'processing'].includes(order.status) },
-                        { status: 'shipping', date: ['delivering', 'delivered'].includes(order.status) ? order.date : null, completed: ['delivering', 'delivered'].includes(order.status) },
+                        { status: 'delivering', date: ['delivering', 'delivered'].includes(order.status) ? order.date : null, completed: ['delivering', 'delivered'].includes(order.status) },
                         { status: 'delivered', date: order.status === 'delivered' ? order.date : null, completed: order.status === 'delivered' },
                     ]
                 }))

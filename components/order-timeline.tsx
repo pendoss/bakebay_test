@@ -8,7 +8,7 @@ const statusIcons: Partial<Record<OrderStatus, JSX.Element>> = {
     placed: <Clock className="h-4 w-4" />,
     confirmed: <Check className="h-4 w-4" />,
     preparing: <Clock className="h-4 w-4" />,
-    shipping: <Clock className="h-4 w-4" />,
+    delivering: <Clock className="h-4 w-4" />,
     delivered: <Check className="h-4 w-4" />,
     cancelled: <Clock className="h-4 w-4" />,
 }
@@ -18,7 +18,7 @@ const statusColors: Partial<Record<OrderStatus, string>> = {
     placed: "bg-lemon-meringue border-lemon-meringue text-secondary",
     confirmed: "bg-lavender-dessert border-lavender-dessert text-secondary",
     preparing: "bg-mint-frosting border-mint-frosting text-secondary",
-    shipping: "bg-caramel-light border-caramel-light text-secondary",
+    delivering: "bg-caramel-light border-caramel-light text-secondary",
     delivered: "bg-strawberry-cream border-strawberry-cream text-secondary",
     cancelled: "bg-muted border-muted text-muted-foreground",
 }
@@ -42,7 +42,7 @@ export function OrderTimeline({ statusHistory } : OrderTimelineProps) {
     // Создаем массив всех возможных статусов для отображения
     const allStatuses: OrderStatus[] = isCancelled
         ? ["placed", "confirmed", "cancelled"]
-        : ["placed", "confirmed", "preparing", "shipping", "delivered"]
+        : ["placed", "confirmed", "preparing", "delivered"]
 
     return (
         <div className="relative mt-6">
