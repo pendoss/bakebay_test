@@ -293,7 +293,7 @@ export default function ProductsPage() {
                   </div>
                   {product.status !== "Активен" && (
                     <Badge
-                      variant={product.status === "Мало на складе" ? "secondary" : "outline"}
+                      variant={product.status === "low" ? "secondary" : "outline"}
                       className="absolute bottom-2 left-2"
                     >
                       {product.status}
@@ -372,7 +372,7 @@ export default function ProductsPage() {
                           variant={
                             product.status === "Активен"
                               ? "default"
-                              : product.status === "Мало на складе"
+                              : product.status === "low"
                                 ? "secondary"
                                 : "outline"
                           }
