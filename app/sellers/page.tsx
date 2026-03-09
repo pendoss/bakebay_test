@@ -1,8 +1,13 @@
+"use client"
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SellersList } from "@/components/sellers-list"
 import { BecomeSellerForm } from "@/components/become-seller-form"
+import {useUser} from "@/contexts/user-context";
 
 export default function SellersPage() {
+
+    const {user} = useUser();
   return (
     <div className="container py-10 px-4 md:px-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -12,28 +17,32 @@ export default function SellersPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="browse" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
-          <TabsTrigger value="browse">Просмотр продавцов</TabsTrigger>
-          <TabsTrigger value="become">Стать продавцом</TabsTrigger>
-        </TabsList>
+        {user && user.user_role === "seller" ? (
+            <SellersList/>
+        ) : (
+            <Tabs defaultValue="browse" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-8">
+                    <TabsTrigger value="browse">Просмотр продавцов</TabsTrigger>
+                    <TabsTrigger value="become">Стать продавцом</TabsTrigger>
+                </TabsList>
 
-        <TabsContent value="browse">
-          <SellersList />
-        </TabsContent>
+                <TabsContent value="browse">
+                    <SellersList/>
+                </TabsContent>
 
-        <TabsContent value="become">
-          <div className="max-w-3xl mx-auto">
-            <div className="mb-8 text-center">
-              <h2 className="text-2xl font-bold mb-2">Присоединяйтесь к нашему маркетплейсу</h2>
-              <p className="text-muted-foreground">
-                Поделитесь своими сладкими творениями с нашим сообществом и развивайте свой бизнес
-              </p>
-            </div>
-            <BecomeSellerForm />
-          </div>
-        </TabsContent>
-      </Tabs>
+                <TabsContent value="become">
+                    <div className="max-w-3xl mx-auto">
+                        <div className="mb-8 text-center">
+                            <h2 className="text-2xl font-bold mb-2">Присоединяйтесь к нашему маркетплейсу</h2>
+                            <p className="text-muted-foreground">
+                                Поделитесь своими сладкими творениями с нашим сообществом и развивайте свой бизнес
+                            </p>
+                        </div>
+                        <BecomeSellerForm/>
+                    </div>
+                </TabsContent>
+            </Tabs>
+        )}
     </div>
   )
 }

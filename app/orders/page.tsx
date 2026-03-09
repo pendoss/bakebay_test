@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import {useUser} from "@/contexts/user-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -44,6 +45,7 @@ type Order= {
 };
 
 export default function OrdersPage() {
+    const {user} = useUser()
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -53,16 +55,14 @@ export default function OrdersPage() {
 
     // Fetch orders from the API
     useEffect(() => {
+        if (!user) return
+
         const fetchOrders = async () => {
             try {
                 setLoading(true)
-                
-                // Get the current user ID from localStorage or other auth mechanism
-                const userData = JSON.parse(localStorage.getItem('userData') || '{"id": 2}');
-                const userId = userData.id;
-                
+
                 // Fetch orders for the specific user
-                const response = await fetch(`/api/orders?userId=${userId}`)
+                const response = await fetch(`/api/orders?userId=${user.user_id}`)
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText}`)
@@ -78,7 +78,7 @@ export default function OrdersPage() {
                     totalPrice: order.total || 0,
                     address: order.address,
                     paymentMethod: order.paymentMethod,
-                    user_id: userId,
+                    user_id: user.user_id,
                     items: order.items || [],
                     images: order.images || [],
                     statusHistory: [
@@ -100,7 +100,7 @@ export default function OrdersPage() {
         }
 
         fetchOrders()
-    }, [])
+    }, [user?.user_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Фильтрация и сортировка заказов
     const filteredOrders = orders

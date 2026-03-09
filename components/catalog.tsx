@@ -7,183 +7,115 @@ import { Button } from "@/components/ui/button"
 import { SlidersHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function Catalog({ 
-  initialCategory = null,
-  initialFilters = null 
-}:{ 
-  initialCategory: string | null,
-  initialFilters?: {
-    priceRange: [number, number];
-    categories: string[];
-    dietary: string[];
-    rating: number;
-    sellers: string[];
-  } | null
+type CatalogFilters = {
+  priceRange: [number, number];
+  categories: string[];
+  dietary: string[];
+  rating: number;
+  sellers: number[];
+};
+
+export function Catalog({
+                          initialCategory = null,
+                          initialFilters = null,
+                        }: {
+  initialCategory: string | null;
+  initialFilters?: CatalogFilters | null;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [products, setProducts] = useState<any[]>([])
-  console.log('Initial products state:', [])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<{
-    priceRange: [number, number];
-    categories: string[];
-    dietary: string[];
-    rating: number;
-    sellers: string[];
-  }>(initialFilters || {
-    priceRange: [0, 10000] as [number, number],
-    categories: initialCategory ? [initialCategory] : [],
-    dietary: [],
-    rating: 0,
-    sellers: [],
-  });
+  const [globalPriceRange, setGlobalPriceRange] = useState<[number, number]>([0, 10000])
+  const [priceRangeReady, setPriceRangeReady] = useState(false)
 
-  // Fetch products when component mounts or filters change
+  const [filters, setFilters] = useState<CatalogFilters>(
+      initialFilters || {
+        priceRange: [0, 10000] as [number, number],
+        categories: initialCategory ? [initialCategory] : [],
+        dietary: [],
+        rating: 0,
+        sellers: [],
+      }
+  )
+
   useEffect(() => {
     fetchProducts()
-  }, [filters.categories, filters.sellers]) // Fetch when these filters change
+  }, [filters.categories, filters.sellers]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Improved fetchProducts function
   const fetchProducts = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Build query parameters based on filters
       const queryParams = new URLSearchParams()
+      if (filters.categories.length > 0) queryParams.append("category", filters.categories[0])
+      if (filters.sellers.length > 0) queryParams.append("seller", filters.sellers[0].toString())
 
-      if (filters.categories.length > 0) {
-        queryParams.append('category', filters.categories[0])
+      const url = `/api/products${queryParams.toString() ? `?${queryParams.toString()}` : ""}`
+      const response = await fetch(url)
+      if (!response.ok) throw new Error(`Failed to fetch products: ${response.status}`)
+
+      const data = await response.json()
+      const productsArray: any[] = Array.isArray(data)
+          ? data
+          : data?.products && Array.isArray(data.products)
+              ? data.products
+              : []
+
+      // Compute global price range from raw data (before client filtering)
+      if (!priceRangeReady && productsArray.length > 0) {
+        const prices = productsArray
+            .map((p: any) => p.price)
+            .filter((p: any) => typeof p === "number" && !isNaN(p))
+        if (prices.length > 0) {
+          const min = Math.floor(Math.min(...prices))
+          const max = Math.ceil(Math.max(...prices))
+          setGlobalPriceRange([min, max])
+          setPriceRangeReady(true)
+          // Reset the price filter to the real range on first load
+          setFilters((prev) => ({...prev, priceRange: [min, max] as [number, number]}))
+        }
       }
 
-      if (filters.sellers.length > 0) {
-        queryParams.append('seller', filters.sellers[0])
-      }
-
-      // Fetch products from API
-      const url = `/api/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      console.log('Fetching products from URL:', url);
-
-      const response = await fetch(url);
-      console.log('API response status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
-      }
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-        throw new Error('Failed to parse response as JSON')
-      }
-
-      // Ensure data is always an array
-      console.log('API response data:', data);
-      const productsArray = Array.isArray(data) ? data :
-          (data && typeof data === 'object' && data.products && Array.isArray(data.products)) ?
-              data.products : [];
-
-      // Apply client-side filtering
-      const filteredProducts = applyClientSideFilters(productsArray)
-
-      setProducts(filteredProducts)
+      setProducts(applyClientSideFilters(productsArray))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      console.error('Error fetching products:', err)
+      setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setLoading(false)
     }
   }
 
-
-  // Apply client-side filters
   const applyClientSideFilters = (productsData: any[]) => {
-    console.log('Applying client-side filters to:', productsData);
-    console.log('Current filters:', filters);
-
-    if (!Array.isArray(productsData)) {
-      console.error('productsData is not an array:', productsData);
-      return [];
-    }
-
-    // If no products, return empty array
-    if (productsData.length === 0) {
-      console.log('No products to filter');
-      return [];
-    }
-
-    // Log the first product to see its structure
-    if (productsData.length > 0) {
-      console.log('First product structure:', JSON.stringify(productsData[0], null, 2));
-    }
+    if (!Array.isArray(productsData) || productsData.length === 0) return []
 
     return productsData.filter((product) => {
-      console.log('Filtering product:', product.name);
-
-      // Price filter
-      if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
-        console.log(`Product ${product.name} filtered out by price: ${product.price} not in range [${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
-        return false
-      }
-
-      // Rating filter
-      if (filters.rating > 0 && (!product.rating || product.rating < filters.rating)) {
-        console.log(`Product ${product.name} filtered out by rating: ${product.rating} < ${filters.rating}`);
-        return false
-      }
-
-      // Dietary constraints filter
+      if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) return false
+      if (filters.rating > 0 && (!product.rating || product.rating < filters.rating)) return false
       if (filters.dietary.length > 0) {
-        // If product has no dietary_constraints or it's empty, filter it out
-        if (!product.dietary_constraints || product.dietary_constraints.length === 0) {
-          console.log(`Product ${product.name} filtered out by dietary: no dietary constraints`);
-          return false
-        }
-
-        // Check if any of the selected dietary constraints match the product's constraints
-        const productDietaryNames = product.dietary_constraints.map((constraint: any) => constraint.name)
-        if (!filters.dietary.some(diet => productDietaryNames.includes(diet))) {
-          console.log(`Product ${product.name} filtered out by dietary: ${productDietaryNames} does not include any of ${filters.dietary}`);
-          return false
-        }
+        if (!product.dietary_constraints?.length) return false
+        const names = product.dietary_constraints.map((c: any) => c.name)
+        if (!filters.dietary.some((d) => names.includes(d))) return false
       }
-
-      console.log(`Product ${product.name} passed all filters`);
       return true
     })
   }
 
-  // Apply filters to products
-  const applyFiltersAction = (newFilters: {
-    priceRange: [number,number];
-    categories: string[];
-    dietary: string[];
-    rating: number;
-    sellers: string[];
-  }) => {
+  const applyFiltersAction = (newFilters: CatalogFilters) => {
     setFilters(newFilters)
-
-    // If only client-side filters changed (price, rating, dietary), apply them without fetching
-    if (
-      newFilters.categories.toString() === filters.categories.toString() && 
+    const onlyClientSideChanged =
+        newFilters.categories.toString() === filters.categories.toString() &&
       newFilters.sellers.toString() === filters.sellers.toString()
-    ) {
-      const filteredProducts = applyClientSideFilters(products)
-      setProducts(filteredProducts)
-    }
-    // Otherwise, fetch products with new server-side filters
-    else {
-      fetchProducts()
-    }
-  }
 
-  console.log('Products before rendering:', products);
+    if (onlyClientSideChanged) {
+      setProducts(applyClientSideFilters(products))
+    }
+    // Otherwise the useEffect on filters.categories / filters.sellers triggers fetchProducts
+  }
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
-      {/* Кнопка фильтра для мобильных устройств */}
+      {/* Кнопка фильтра для мобильных */}
       <div className="md:hidden flex justify-end mb-4">
         <Button variant="outline" onClick={() => setSidebarOpen(!sidebarOpen)} className="flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4" />
@@ -191,24 +123,28 @@ export function Catalog({
         </Button>
       </div>
 
-      {/* Боковая панель фильтров - мобильная версия с оверлеем */}
+      {/* Боковая панель — мобильная */}
       <div
-        className={cn(
-          "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden",
-          sidebarOpen ? "block" : "hidden",
-        )}
-      >
+          className={cn("fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden", sidebarOpen ? "block" : "hidden")}>
         <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-background p-6 shadow-lg">
-          <Button variant="ghost" className="absolute right-4 top-4" onClick={() => setSidebarOpen(false)}>
-            ✕
-          </Button>
-          <FilterSidebar filters={filters} applyFiltersAction={applyFiltersAction} />
+          <Button variant="ghost" className="absolute right-4 top-4" onClick={() => setSidebarOpen(false)}>✕</Button>
+          <FilterSidebar
+              filters={filters}
+              applyFiltersAction={applyFiltersAction}
+              minPrice={globalPriceRange[0]}
+              maxPrice={globalPriceRange[1]}
+          />
         </div>
       </div>
 
-      {/* Боковая панель фильтров - десктопная версия */}
+      {/* Боковая панель — десктоп */}
       <div className="hidden md:block w-64 flex-shrink-0">
-        <FilterSidebar filters={filters} applyFiltersAction={applyFiltersAction} />
+        <FilterSidebar
+            filters={filters}
+            applyFiltersAction={applyFiltersAction}
+            minPrice={globalPriceRange[0]}
+            maxPrice={globalPriceRange[1]}
+        />
       </div>
 
       {/* Сетка продуктов */}
@@ -222,28 +158,16 @@ export function Catalog({
           <div className="col-span-full text-center py-12">
             <h3 className="text-lg font-medium text-destructive">Ошибка загрузки продуктов</h3>
             <p className="text-muted-foreground mt-2">{error}</p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => fetchProducts()}
-            >
-              Попробовать снова
-            </Button>
+            <Button variant="outline" className="mt-4" onClick={fetchProducts}>Попробовать снова</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 p-4 relative z-10">
-            {products && products.length > 0 ? (
+            {products.length > 0 ? (
               products.map((product, index) => {
-                // Skip invalid products
-                if (!product || typeof product !== 'object') {
-                  console.error('Invalid product:', product);
-                  return null;
-                }
-                // Use ProductCard component
-                console.log('Rendering product:', product.id, product.name, 'Image:', product.image);
+                if (!product || typeof product !== "object") return null
                 return (
-                  <ProductCard 
-                    key={product.id || `product-${index}`} 
+                    <ProductCard
+                        key={product.id || `product-${index}`}
                     product={{
                       id: product.id || 0,
                       name: product.name || "Unknown Product",
@@ -251,14 +175,17 @@ export function Catalog({
                       price: product.price || 0,
                       image: product.image || "/placeholder.svg?height=200&width=200",
                       category: product.category_info ? product.category_info.name : (product.category || "Uncategorized"),
-                      dietary: product.dietary_constraints ? 
-                        product.dietary_constraints.map((constraint: any) => constraint.name) : 
-                        [],
+                      dietary: product.dietary_constraints
+                          ? product.dietary_constraints.map((c: any) => c.name)
+                          : [],
                       rating: product.seller?.rating || 4.5,
                       seller: product.seller ? product.seller.name : "Unknown Seller",
-                    }} 
+                      shelfLife: product.shelf_life ?? undefined,
+                      storageConditions: product.storage_conditions ?? undefined,
+                      size: product.size ?? undefined,
+                    }}
                   />
-                );
+                )
               })
             ) : (
               <div className="col-span-full text-center py-12">
@@ -269,13 +196,13 @@ export function Catalog({
                   className="mt-4"
                   onClick={() => {
                     setFilters({
-                      priceRange: [0, 30] as [number, number],
+                      priceRange: globalPriceRange,
                       categories: [],
                       dietary: [],
                       rating: 0,
                       sellers: [],
-                    });
-                    fetchProducts();
+                    })
+                    fetchProducts()
                   }}
                 >
                   Сбросить фильтры

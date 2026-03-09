@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { EllipsisVertical, Plus, Star } from "lucide-react"
 import { fetchProducts } from "@/app/actions/fetchProducts"
 import { ProductEditDialog } from "@/components/product-edit-dialog"
+import {useUser} from "@/contexts/user-context"
 
 // Define interface for product objects
 interface Product {
@@ -105,6 +106,7 @@ const exampleProducts: Product[] = [
 ]
 
 export default function ProductsPage() {
+  const {sellerId} = useUser()
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +122,7 @@ export default function ProductsPage() {
       try {
         setIsLoading(true);
         // Use the server action to fetch products
-        const result = await fetchProducts();
+        const result = await fetchProducts(sellerId);
 
         if (result.error) {
           setError(result.error);
@@ -140,7 +142,7 @@ export default function ProductsPage() {
     }
 
     loadProducts();
-  }, []);
+  }, [sellerId]);
 
 
   // Filter products based on search term, status, and category

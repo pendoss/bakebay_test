@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Star } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
+import {useUser} from "@/contexts/user-context";
+import {cn} from "@/lib/utils"
 
 interface Seller {
   seller_id: number;
@@ -21,6 +23,7 @@ interface Seller {
   contact_number: string;
   inn?: string;
   about_products?: string;
+  image_url?: string;
   user_id?: number;
   // Derived fields (not in DB but calculated for display)
   productsCount?: number;
@@ -34,29 +37,38 @@ export function SellersList() {
   const [sellers, setSellers] = useState<Seller[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const {user} = useUser();
+
+  const currentUserId = user?.user_id
+
+  const isMySellerCard = (seller: Seller) => {
+    if (!currentUserId) return false
+    if (!seller.user_id) return false
+    return seller.user_id === currentUserId
+  }
 
   useEffect(() => {
     const fetchSellers = async () => {
       try {
         setLoading(true)
         const response = await fetch('/api/sellers')
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch sellers: ${response.status} ${response.statusText}`)
         }
-        
+
         const data = await response.json()
         console.log(data)
-        
+
         const formattedSellers = data.map((seller: Seller) => ({
           ...seller,
           // Format created_at timestamp to a readable date if available, or use placeholder
           joinedDate: "Недавно",
-          image: "/placeholder.svg?height=300&width=300",
+          image: seller.image_url || "/placeholder.svg?height=300&width=300",
           specialties: getSpecialties(seller),
           productsCount: 0 // Will be updated after fetching product counts
         }))
-        
+
         // Get product counts for each seller
         for (const seller of formattedSellers) {
           try {
@@ -69,7 +81,7 @@ export function SellersList() {
             console.error(`Failed to fetch product count for seller ${seller.seller_id}:`, error)
           }
         }
-        
+
         setSellers(formattedSellers)
       } catch (error) {
         console.error("Error fetching sellers:", error)
@@ -78,29 +90,29 @@ export function SellersList() {
         setLoading(false)
       }
     }
-    
+
     fetchSellers()
   }, [])
 
   // Helper function to format date
   const formatJoinedDate = (timestamp?: number) => {
     if (!timestamp) return "Недавно"
-    
+
     const date = new Date(timestamp * 1000)
     return date.toLocaleDateString('ru-RU', {
       year: 'numeric',
       month: 'long'
     })
   }
-  
+
   // Helper function to generate specialties based on seller data
   const getSpecialties = (seller: Seller) => {
     const specialties = []
-    
+
     if (seller.about_products) {
       // Extract keywords from about_products
       const keywords = seller.about_products.toLowerCase()
-      
+
       if (keywords.includes("торт")) specialties.push("Торты")
       if (keywords.includes("печенье")) specialties.push("Печенье")
       if (keywords.includes("пирог")) specialties.push("Пироги")
@@ -108,18 +120,17 @@ export function SellersList() {
       if (keywords.includes("веган")) specialties.push("Веганское")
       if (keywords.includes("безглютен")) specialties.push("Без глютена")
     }
-    
+
     // If no specialties detected, add a default one based on location
     if (specialties.length === 0) {
       specialties.push(`Кондитерские изделия`)
     }
-    
+
     return specialties
   }
 
-  const handleViewProducts = (sellerId: number, sellerName: string) => {
-    // Navigate to catalog page with seller filter
-    router.push(`/catalog?seller=${encodeURIComponent(sellerName)}&sellerId=${sellerId}`)
+  const handleViewProducts = (sellerId: number) => {
+    router.push(`/catalog?sellerId=${sellerId}`)
   }
 
   // Show loading skeleton
@@ -191,9 +202,20 @@ export function SellersList() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {sellers.map((seller) => (
-        <Card key={seller.seller_id} className="overflow-hidden">
+          <Card
+              key={seller.seller_id}
+              className={cn(
+                  "overflow-hidden",
+                  isMySellerCard(seller) && "ring-1 ring-primary/20"
+              )}
+          >
           <div className="aspect-[3/2] relative">
             <Image src={seller.image || "/placeholder.svg"} alt={seller.seller_name} fill className="object-cover" />
+            {isMySellerCard(seller) && (
+                <Badge className="absolute left-3 top-3 bg-primary text-primary-foreground">
+                  Ваш магазин
+                </Badge>
+            )}
           </div>
           <CardHeader className="min-h-[150px]">
             <div className="flex justify-between items-start">
@@ -230,8 +252,8 @@ export function SellersList() {
           </CardContent>
           <CardFooter>
             <Button 
-              className="w-full" 
-              onClick={() => handleViewProducts(seller.seller_id, seller.seller_name)}
+              className="w-full"
+              onClick={() => handleViewProducts(seller.seller_id)}
             >
               Посмотреть товары
             </Button>

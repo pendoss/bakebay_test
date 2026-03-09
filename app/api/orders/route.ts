@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import {OrderItems} from "@/components/order-card";
 import {db, orders, orderItems, products, users} from "@/src/db";
 import { updateStockById } from '@/app/actions/addIngredient';
+import {adjustIngredientStock} from '@/app/lib/ingredients';
 
 
 export async function GET(request: Request) {
@@ -201,7 +202,15 @@ export async function PUT(request: Request) {
         { status: 400 }
       );
     }
-    
+
+      // Get current status before update (for ingredient adjustment)
+      const currentOrder = await db
+          .select({order_status: orders.order_status})
+          .from(orders)
+          .where(eq(orders.order_id, body.order_id))
+          .limit(1);
+      const oldStatus = currentOrder[0]?.order_status ?? '';
+
     // Update order status
     const updatedOrder = await db.update(orders)
       .set({
@@ -219,6 +228,10 @@ export async function PUT(request: Request) {
         { status: 404 }
       );
     }
+
+      if (body.order_status) {
+          await adjustIngredientStock(body.order_id, oldStatus, body.order_status);
+      }
 
     if (body.order_status === "delivering") {
       console.log("Processing inventory updates for delivering status");

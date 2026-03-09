@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { OrderTimeline } from "@/components/order-timeline"
-import { ChevronDown, ChevronUp, Package, RefreshCw, XCircle, MessageSquare } from "lucide-react"
+import {ChevronDown, ChevronUp, Package, RefreshCw, XCircle, MessageSquare, Star} from "lucide-react"
 import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import {OrderStatus} from "@/app/orders/page";
+import {ReviewDialog} from "@/components/review-dialog";
 
 // Define the OrderStatus type to match the one in other files
 
@@ -75,6 +76,7 @@ export type OrderItems = {
 }
 export function OrderCard({ order } : OrderCardProps) {
     const [isOpen, setIsOpen] = useState(false)
+    const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
     const { addItem } = useCart()
     const { toast } = useToast()
 
@@ -188,10 +190,21 @@ export function OrderCard({ order } : OrderCardProps) {
 
             <CardFooter className="p-4 pt-0 flex flex-wrap gap-2">
                 {order.orderStatus === "delivered" && (
-                    <Button variant="outline" className="gap-1" onClick={handleRepeatOrder}>
-                        <RefreshCw className="h-4 w-4 mr-1" />
-                        Повторить заказ
-                    </Button>
+                    <>
+                        <Button variant="outline" className="gap-1" onClick={handleRepeatOrder}>
+                            <RefreshCw className="h-4 w-4 mr-1"/>
+                            Повторить заказ
+                        </Button>
+                        <Button variant="outline" className="gap-1" onClick={() => setReviewDialogOpen(true)}>
+                            <Star className="h-4 w-4 mr-1"/>
+                            Оставить отзыв
+                        </Button>
+                        <ReviewDialog
+                            open={reviewDialogOpen}
+                            onOpenChange={setReviewDialogOpen}
+                            items={order.items}
+                        />
+                    </>
                 )}
 
                 {["placed", "confirmed"].includes(order.orderStatus) && (

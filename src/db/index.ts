@@ -12,6 +12,7 @@ import { sellers } from './schema/sellers';
 import { dietaryConstrains } from './schema/dietary_constrains';
 import { productImages } from './schema/product_images';
 import { productIngredients, stockStatusEnum } from './schema/product_ingredients';
+import {reviews} from './schema/reviews';
 
 // Create a PostgreSQL connection pool
 const pool = new Pool({
@@ -33,6 +34,7 @@ const db = drizzle(pool, {
     productImages,
     productIngredients,
     stockStatusEnum,
+      reviews,
   },
 });
 // Export the db instance and all schemas
@@ -49,5 +51,6 @@ export {
   dietaryConstrains,
   productImages,
   productIngredients,
-  stockStatusEnum
+    stockStatusEnum,
+    reviews,
 };

@@ -1,11 +1,11 @@
 "use client"
 
 import { Separator } from "@/components/ui/separator"
-import { SellerDashboardNav } from "@/components/seller-dashboard/seller-nav" // Adjust the import if needed
-import { useEffect, useState } from "react"
+import {SellerDashboardNav} from "@/components/seller-dashboard/seller-nav"
+import {useEffect} from "react"
 import { useRouter } from "next/navigation"
-// import { Decode } from "@/app/api/jwt"
 import { Loader2 } from "lucide-react"
+import {useUser} from "@/contexts/user-context"
 
 interface Props {
   children?: React.ReactNode
@@ -13,43 +13,18 @@ interface Props {
 
 export default function SellerDashboardLayout({ children }: Props) {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
-  // const [isAuthorized, setIsAuthorized] = useState(false)
+  const {user, isLoading} = useUser()
 
   useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const token = localStorage.getItem("auth")
-        
-        if (!token) {
-          console.log("No authentication token found")
-          router.push("/")
-          return
-        }
-        
-        // // Decode token to check user role
-
-        // console.log("decodiiiing tokin: ",)
-        // const userData = Decode(token)
-        // console.log("User data:", userData)
-        
-        // if (userData && userData.role === 'seller') {
-        //   console.log("User is a seller, access granted")
-        //   setIsAuthorized(true)
-        // } else {
-        //   console.log("User is not a seller, redirecting to become seller page")
-        //   router.push("/sellers?tab=become")
-        // }
-      } catch (error) {
-        console.error("Error checking auth:", error)
-        router.push("/")
-      } finally {
-        setIsLoading(false)
-      }
+    if (isLoading) return
+    if (!user) {
+      router.replace("/")
+      return
     }
-    
-    checkAuth()
-  }, [router])
+    if (user.user_role !== "seller") {
+      router.replace("/sellers?tab=become")
+    }
+  }, [user, isLoading, router])
 
   if (isLoading) {
     return (
@@ -62,9 +37,9 @@ export default function SellerDashboardLayout({ children }: Props) {
     )
   }
 
-  // if (!isAuthorized) {
-  //   return null // Router will handle redirection, this prevents flash of content
-  // }
+  if (!user || user.user_role !== "seller") {
+    return null
+  }
 
   return (
     <div className="container py-8 px-4 md:px-6">

@@ -90,6 +90,8 @@ export async function GET(request: Request) {
         long_desc: row.products.long_desc,
         category: row.products.category,
         storage_conditions: row.products.storage_conditions,
+        shelf_life: row.products.shelf_life,
+        size: row.products.size,
         stock: row.products.stock,
         seller: row.sellers ? {
           id: row.sellers.seller_id,

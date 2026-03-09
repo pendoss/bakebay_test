@@ -14,21 +14,25 @@ interface Ingredient {
     alert: number
 }
 
-export async function fetchIngredients(): Promise<{ingredients: Ingredient[], error: string | null}>{
+export async function fetchIngredients(sellerId?: number | null): Promise<{
+    ingredients: Ingredient[],
+    error: string | null
+}> {
     try{
+        const targetSellerId = sellerId ?? 0;
         const statement = sql`
             with all_ingredients_for_seller as (
-    select s.seller_id, name, pi.stock, unit, alert, pi.status from product_ingredients pi
+    select s.seller_id, pi.name, pi.stock, pi.unit, pi.alert, pi.status from product_ingredients pi
                                                                         join products p on pi.product_id=p.product_id
                                                                         join sellers s on p.seller_id=s.seller_id
-    where s.seller_id = 1),
-     sum_products_per_seller as (
-         select name, sum(stock) from all_ingredients_for_seller
+    where s.seller_id = ${targetSellerId}),
+     sum_per_ingredient as (
+         select name, sum(stock) as total_stock from all_ingredients_for_seller
          group by name)
 
-select distinct seller_id, ai.name, stock, unit, alert, status
+select distinct ai.seller_id, ai.name, sp.total_stock as stock, ai.unit, ai.alert, ai.status
 from all_ingredients_for_seller ai
-         inner join sum_products_per_seller sp on ai.name=sp.name
+         inner join sum_per_ingredient sp on ai.name=sp.name
         `;
         
         // const ingredients: Ingredient[] = result.map(row => ({

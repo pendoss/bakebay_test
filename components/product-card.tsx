@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from "react"
+import React, {useState, useRef, useEffect} from "react"
 import Image from "next/image"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -31,6 +31,14 @@ const dietaryTranslations: { [key: string]: string } = {
   "May Contain Nuts": "Может содержать орехи",
 }
 
+type Review = {
+    id: number
+    rating: number
+    comment: string
+    created_at: string | Date | null
+    customer: { name: string }
+}
+
 type Product = {
     id: number
     name: string
@@ -41,6 +49,10 @@ type Product = {
     dietary: string[]
     rating: number
     seller: string
+    shelfLife?: number | null
+    storageConditions?: string | null
+    ingredients?: { name: string; amount: number; unit: string }[]
+    size?: string | null
 }
 
 export function ProductCard({ product } : {product : Product}) {
@@ -139,6 +151,17 @@ interface ProductDetailDialogProps {
     onAddToCart: (e: React.MouseEvent) => void
 }
 function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : ProductDetailDialogProps) {
+    const [reviews, setReviews] = useState<Review[]>([])
+
+    useEffect(() => {
+        if (isOpen && product.id) {
+            fetch(`/api/reviews?productId=${product.id}`)
+                .then(r => r.json())
+                .then(data => setReviews(Array.isArray(data) ? data : []))
+                .catch(() => setReviews([]))
+        }
+    }, [isOpen, product.id])
+
   const handleDialogOpenChange = (open: boolean) => {
     console.log("Dialog onOpenChange called", open);
     setIsOpen(open);
@@ -188,17 +211,18 @@ function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : Produ
                   </div>
                 </div>
 
+                  {product.size && (
                 <div>
                   <h4 className="font-medium mb-2">Размер</h4>
-                  <RadioGroup defaultValue="regular">
+                    <RadioGroup defaultValue={product.size}>
                     <div className="flex flex-wrap gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="small" id="size-small" />
                         <Label htmlFor="size-small">Маленький</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="regular" id="size-regular" />
-                        <Label htmlFor="size-regular">Стандартный</Label>
+                          <RadioGroupItem value="medium" id="size-medium"/>
+                          <Label htmlFor="size-medium">Стандартный</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="large" id="size-large" />
@@ -207,6 +231,7 @@ function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : Produ
                     </div>
                   </RadioGroup>
                 </div>
+                  )}
               </div>
 
               <Tabs defaultValue="details" className="mt-6">
@@ -228,11 +253,12 @@ function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : Produ
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Срок годности:</span>
-                      <span className="font-medium">3-5 дней</span>
+                        <span
+                            className="font-medium">{product.shelfLife ? `${product.shelfLife} дн.` : "Не указано"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Хранение:</span>
-                      <span className="font-medium">Охлажденное</span>
+                        <span className="font-medium">{product.storageConditions || "Не указано"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Произведено в:</span>
@@ -242,41 +268,45 @@ function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : Produ
                 </TabsContent>
 
                 <TabsContent value="ingredients" className="space-y-4 mt-4">
-                  <p className="text-sm">
-                    Ингредиенты могут включать: муку, сахар, масло, яйца, молоко, экстракт ванили и другие натуральные
-                    ароматизаторы.
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Информация об аллергенах: Может содержать пшеницу, молочные продукты, яйца и орехи. Производится на
-                    предприятии, где обрабатываются орехи.
-                  </p>
+                    {product.ingredients && product.ingredients.length > 0 ? (
+                        <div className="space-y-1">
+                            {product.ingredients.map((ing, i) => (
+                                <div key={i} className="flex justify-between text-sm">
+                                    <span>{ing.name}</span>
+                                    <span className="text-muted-foreground">{ing.amount} {ing.unit}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">Состав не указан продавцом.</p>
+                    )}
                 </TabsContent>
 
                 <TabsContent value="reviews" className="space-y-4 mt-4">
-                  <div className="space-y-4">
-                    {[
-                      { name: "Мария С.", rating: 5, comment: "Абсолютно восхитительно! Обязательно закажу снова." },
-                      { name: "Михаил Т.", rating: 4, comment: "Отличный вкус и текстура. Прибыл свежим." },
-                      { name: "Юлия Р.", rating: 5, comment: "Идеальный уровень сладости и красивое оформление." },
-                    ].map((review, index) => (
-                      <div key={index} className="border-b pb-4 last:border-0">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{review.name}</span>
-                          <div className="flex">
-                            {Array(5)
-                              .fill(0)
-                              .map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`h-4 w-4 ${i < review.rating ? "fill-primary text-primary" : "fill-muted text-muted-foreground"}`}
-                                />
-                              ))}
-                          </div>
+                    {reviews.length > 0 ? (
+                        <div className="space-y-4">
+                            {reviews.map((review) => (
+                                <div key={review.id} className="border-b pb-4 last:border-0">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium">{review.customer.name}</span>
+                                        <div className="flex">
+                                            {Array(5)
+                                                .fill(0)
+                                                .map((_, i) => (
+                                                    <Star
+                                                        key={i}
+                                                        className={`h-4 w-4 ${i < review.rating ? "fill-primary text-primary" : "fill-muted text-muted-foreground"}`}
+                                                    />
+                                                ))}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm mt-1">{review.comment}</p>
+                                </div>
+                            ))}
                         </div>
-                        <p className="text-sm mt-1">{review.comment}</p>
-                      </div>
-                    ))}
-                  </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">Отзывов пока нет.</p>
+                    )}
                 </TabsContent>
               </Tabs>
 

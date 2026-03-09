@@ -25,15 +25,24 @@ interface OrderId{
     orderId: number
 }
 
-export async function getOrderIds(): Promise<{orderIds: OrderId[], error: string | null}>{
+export async function getOrderIds(sellerId?: number | null): Promise<{ orderIds: OrderId[], error: string | null }> {
     try{
-        const result = await db.select({orderId: orders.order_id}).from(orders)
+        let result: OrderId[];
+        if (sellerId) {
+            result = await db.selectDistinct({orderId: orders.order_id})
+                .from(orders)
+                .leftJoin(orderItems, eq(orders.order_id, orderItems.order_id))
+                .leftJoin(products, eq(orderItems.product_id, products.product_id))
+                .where(eq(products.seller_id, sellerId));
+        } else {
+            result = await db.select({orderId: orders.order_id}).from(orders);
+        }
 
         return {orderIds: result, error: null}
     } catch (error) {
         return {orderIds: [], error: "didn't get id's"}
     }
-    
+
 }
 
 export async function getOrderDetails(id: number): Promise<{orderDetails: OrderDetails[], error: string | null}>{

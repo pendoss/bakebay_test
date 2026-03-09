@@ -14,6 +14,7 @@ export const sellers = pgTable ("sellers",
         contact_number: varchar().notNull().default(""),
         inn: varchar(),
         about_products: text(),
+            image_url: text(),
         user_id: integer().references(() => users.user_id)
 
     })

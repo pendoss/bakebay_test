@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db, sellers, products } from '@/src/db';
+import {db, sellers, products, users} from '@/src/db';
 import { eq } from 'drizzle-orm';
+import {Decode, Encode} from '@/app/api/jwt';
 
 export async function GET(request: Request) {
   try {
@@ -25,10 +26,18 @@ export async function GET(request: Request) {
       
       return NextResponse.json(seller);
     }
-    
+
+    const userId = url.searchParams.get('userId');
+
+    // Filter by userId if provided
+    if (userId) {
+      const userSellers = await db.select().from(sellers).where(eq(sellers.user_id, parseInt(userId)));
+      return NextResponse.json(userSellers);
+    }
+
     // Get all sellers
     const allSellers = await db.select().from(sellers);
-    
+
     return NextResponse.json(allSellers);
   } catch (error) {
     console.error('Error fetching sellers:', error);
@@ -49,30 +58,45 @@ interface sellerRegisterData {
   contact_number: string,
   inn: string,
   about_products: string,
+  image_url: string,
 }
 
 export async function POST(request: Request) {
   try {
+    // Require authentication
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    if (!token) {
+      return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+    }
+
+    let userId: number;
+    try {
+      const payload = Decode(token);
+      userId = payload.userId;
+    } catch {
+      return NextResponse.json({error: 'Invalid token'}, {status: 401});
+    }
+
     let body: sellerRegisterData;
     try {
       body = await request.json();
-      console.log(body);
     } catch (parseError) {
       return NextResponse.json(
         { error: 'Invalid JSON in request body' },
         { status: 400 }
       );
     }
-    
+
     // Validate required fields
-    if (!body.seller_name) {
+    if (!body.seller_name || !body.image_url) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
-    // Create new seller
+
+    // Create new seller linked to the user
     const newSeller = await db.insert(sellers).values({
       seller_name: body.seller_name,
       seller_rating: 0.0,
@@ -83,10 +107,20 @@ export async function POST(request: Request) {
       contact_email: body.contact_email,
       contact_number: body.contact_number,
       inn: body.inn,
-      about_products: body.about_products
+      about_products: body.about_products,
+      image_url: body.image_url,
+      user_id: userId,
     }).returning();
-    
-    return NextResponse.json(newSeller[0]);
+
+    // Promote user role to 'seller'
+    await db.update(users)
+        .set({user_role: 'seller', updated_at: new Date()})
+        .where(eq(users.user_id, userId));
+
+    // Issue a new token with the updated role
+    const newToken = Encode({userId, role: 'seller'});
+
+    return NextResponse.json({seller: newSeller[0], token: newToken});
   } catch (error) {
     console.error('Error creating seller:', error);
     return NextResponse.json(

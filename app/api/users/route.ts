@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, users } from '@/src/db';
 import bcrypt from "bcryptjs";
+import {eq} from 'drizzle-orm';
 import { Decode, Encode } from '../jwt';
 
 
@@ -33,7 +34,44 @@ export async function GET(request: Request) {
 }
 
 
+export async function PUT(request: Request) {
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+  if (!token) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 
+  try {
+    const payload = Decode(token);
+    const body: {
+      first_name?: string; last_name?: string; email?: string;
+      phone_number?: string; address?: string; city?: string;
+      postal_code?: string; country?: string;
+    } = await request.json();
+
+    const updated = await db.update(users)
+        .set({
+          ...(body.first_name !== undefined && {first_name: body.first_name}),
+          ...(body.last_name !== undefined && {last_name: body.last_name}),
+          ...(body.email !== undefined && {email: body.email}),
+          ...(body.phone_number !== undefined && {phone_number: body.phone_number}),
+          ...(body.address !== undefined && {address: body.address}),
+          ...(body.city !== undefined && {city: body.city}),
+          ...(body.postal_code !== undefined && {postal_code: body.postal_code}),
+          ...(body.country !== undefined && {country: body.country}),
+          updated_at: new Date(),
+        })
+        .where(eq(users.user_id, payload.userId))
+        .returning({
+          user_id: users.user_id, email: users.email,
+          first_name: users.first_name, last_name: users.last_name,
+          phone_number: users.phone_number, address: users.address,
+          city: users.city, postal_code: users.postal_code, country: users.country,
+          user_role: users.user_role, created_at: users.created_at,
+        });
+
+    return NextResponse.json(updated[0]);
+  } catch {
+    return NextResponse.json({error: 'Failed to update user'}, {status: 500});
+  }
+}
 
 interface registerData{
   name: string
