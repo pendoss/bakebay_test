@@ -1,27 +1,21 @@
 "use client"
 
-import React, { useState, useEffect, useRef, DragEvent, ChangeEvent } from "react"
-import { useRouter } from "next/navigation"
+import React, {ChangeEvent, DragEvent, useEffect, useRef, useState} from "react"
+import {useRouter} from "next/navigation"
 import Image from "next/image"
 import {useUser} from "@/contexts/user-context"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
-import { Upload, X, Plus, Trash2, GripVertical, ImagePlus } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from "@/components/ui/dialog"
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Textarea} from "@/components/ui/textarea"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import {Separator} from "@/components/ui/separator"
+import {Checkbox} from "@/components/ui/checkbox"
+import {useToast} from "@/hooks/use-toast"
+import {GripVertical, ImagePlus, Plus, Trash2, X} from "lucide-react"
+import {Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
 import {updateProduct} from "@/app/actions/product"
 
 

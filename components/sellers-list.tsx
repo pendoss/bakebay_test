@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import {useEffect, useState} from "react"
 import Image from "next/image"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Star } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { Skeleton } from "@/components/ui/skeleton"
+import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card"
+import {Badge} from "@/components/ui/badge"
+import {Button} from "@/components/ui/button"
+import {Star} from "lucide-react"
+import {useRouter} from "next/navigation"
+import {Skeleton} from "@/components/ui/skeleton"
 import {useUser} from "@/contexts/user-context";
 import {cn} from "@/lib/utils"
 
@@ -93,17 +93,6 @@ export function SellersList() {
 
     fetchSellers()
   }, [])
-
-  // Helper function to format date
-  const formatJoinedDate = (timestamp?: number) => {
-    if (!timestamp) return "Недавно"
-
-    const date = new Date(timestamp * 1000)
-    return date.toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: 'long'
-    })
-  }
 
   // Helper function to generate specialties based on seller data
   const getSpecialties = (seller: Seller) => {

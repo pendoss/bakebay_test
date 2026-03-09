@@ -1,7 +1,6 @@
 "use server"
-import { OrderItems } from "@/components/order-card";
-import { db, orderItems, orders, productIngredients, products } from "@/src/db";
-import { eq } from "drizzle-orm";
+import {db, orderItems, orders, productIngredients, products} from "@/src/db";
+import {eq} from "drizzle-orm";
 
 
 interface OrderItemIngredients {

@@ -1,9 +1,7 @@
 "use server"
 
-import { db, productIngredients, productImages } from "@/src/db";
-import { eq } from "drizzle-orm";
-import { sql } from "drizzle-orm";
-import { products, sellers } from "@/src/db";
+import {db} from "@/src/db";
+import {sql} from "drizzle-orm";
 
 interface Ingredient {
     name: string,
@@ -58,9 +56,9 @@ from all_ingredients_for_seller ai
         
         // console.log("result from query:", ingredients);
         return { ingredients, error: null };
-        // const res: postgres.RowList<Record<string, unknown>[]> = await db.execute(statement);        
+        // const res: postgres.RowList<Record<string, unknown>[]> = await db.execute(statement);
     } catch (error) {
         console.log("Error getting ingredients: ", error)
         return {ingredients: [], error: " Error geting ingredients"};
     }
-};
+}

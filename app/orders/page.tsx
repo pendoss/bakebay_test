@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import {useEffect, useState} from "react"
 import {useUser} from "@/contexts/user-context"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { OrderCard } from "@/components/order-card"
-import { Filter, Images } from "lucide-react"
+import {Button} from "@/components/ui/button"
+import {Card, CardContent} from "@/components/ui/card"
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {OrderCard} from "@/components/order-card"
+import {Filter} from "lucide-react"
 
 // Определение типа для заказов
 export type OrderStatus = 'ordering' | 'processing' | 'payed' | 'processed' | 'in_progress' | 'delivering' | 'delivered' | 'placed' | 'confirmed' | 'preparing' | 'cancelled';
@@ -49,9 +49,9 @@ export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [searchTerm, setSearchTerm] = useState("")
+    const [searchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
-    const [sortOrder, setSortOrder] = useState("newest")
+    const [sortOrder] = useState("newest")
 
     // Fetch orders from the API
     useEffect(() => {

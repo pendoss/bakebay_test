@@ -3,16 +3,16 @@
 import {useEffect, useState} from "react"
 import {useUser} from "@/contexts/user-context"
 import {Avatar, AvatarFallback} from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Star } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
-import { ru } from "date-fns/locale"
+import {Badge} from "@/components/ui/badge"
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
+import {Input} from "@/components/ui/input"
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import {Textarea} from "@/components/ui/textarea"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {Star} from "lucide-react"
+import {formatDistanceToNow} from "date-fns"
+import {ru} from "date-fns/locale"
 
 interface Review {
     id: number;
@@ -65,8 +65,7 @@ export default function ReviewsPage() {
         .filter(r => {
             const q = searchTerm.toLowerCase()
             if (q && !r.product.toLowerCase().includes(q) && !r.customer.name.toLowerCase().includes(q)) return false
-            if (ratingFilter !== "all" && r.rating !== parseInt(ratingFilter)) return false
-            return true
+            return ratingFilter === "all" || r.rating === parseInt(ratingFilter)
         })
         .sort((a, b) => {
             switch (sortOrder) {

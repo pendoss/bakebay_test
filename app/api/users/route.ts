@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
-import { db, users } from '@/src/db';
+import {NextResponse} from 'next/server';
+import {db, users} from '@/src/db';
 import bcrypt from "bcryptjs";
 import {eq} from 'drizzle-orm';
-import { Decode, Encode } from '../jwt';
+import {Decode, Encode} from '../jwt';
 
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     // Get all users (excluding sensitive information)
     const allUsers = await db.select({

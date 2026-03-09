@@ -1,8 +1,7 @@
-import { NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
-import {OrderItems} from "@/components/order-card";
-import {db, orders, orderItems, products, users} from "@/src/db";
-import { updateStockById } from '@/app/actions/addIngredient';
+import {NextResponse} from 'next/server';
+import {eq} from 'drizzle-orm';
+import {db, orderItems, orders, products, users} from "@/src/db";
+import {updateStockById} from '@/app/actions/addIngredient';
 import {adjustIngredientStock} from '@/app/lib/ingredients';
 
 

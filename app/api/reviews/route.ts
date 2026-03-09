@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
-import {db, reviews, products, users, sellers} from '@/src/db';
-import {eq, and} from 'drizzle-orm';
+import {db, products, reviews, sellers, users} from '@/src/db';
+import {eq} from 'drizzle-orm';
 import {Decode} from '@/app/api/jwt';
 
 // GET /api/reviews?sellerId=X  OR  /api/reviews?productId=X
