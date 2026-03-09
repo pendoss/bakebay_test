@@ -3,6 +3,7 @@ import {eq} from 'drizzle-orm';
 import {db, orderItems, orders, products, users} from "@/src/db";
 import {updateStockById} from '@/app/actions/addIngredient';
 import {adjustIngredientStock} from '@/app/lib/ingredients';
+import {Decode} from '@/app/api/jwt';
 
 
 export async function GET(request: Request) {
@@ -75,19 +76,29 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+    }
+
+    let userId: number;
+    try {
+      const payload = Decode(token);
+      userId = payload.userId;
+    } catch {
+      return NextResponse.json({error: 'Invalid token'}, {status: 401});
+    }
+
     const body = await request.json();
-    
-    // Add detailed logging to see what's coming in
-    console.log("Received order request with body:", body);
 
     // Validate required fields
-    if (!body.user_id || !body.address || !body.payment_method || !body.items || body.items.length === 0) {
+    if (!body.address || !body.payment_method || !body.items || body.items.length === 0) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     // Calculate total price
     let totalPrice = 0;
     for (const item of body.items) {
@@ -114,7 +125,7 @@ export async function POST(request: Request) {
       const newOrder = await db.insert(orders).values({
         date: new Date(),
         order_status: body.order_status || 'ordering',
-        user_id: body.user_id,
+        user_id: userId,
         total_price: totalPrice,
         address: body.address,
         payment_method: body.payment_method,
