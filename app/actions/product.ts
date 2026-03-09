@@ -1,6 +1,6 @@
 'use server'
 
-import { db, products, productImages, productIngredients, dietaryConstrains } from "@/src/db";
+import {db, dietaryConstrains, productImages, productIngredients, products} from "@/src/db";
 import {UploadFile} from "@/src/s3";
 import {eq} from "drizzle-orm";
 
@@ -195,7 +195,8 @@ export async function updateProduct(formData: UpdateProductData, images: UpdateP
 
     return {success: true};
   } catch (error) {
-    console.error('Error updating product:', error);
-    return {success: false, error: 'Failed to update product'};
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Error updating product:', message);
+    return {success: false, error: message};
   }
 }
