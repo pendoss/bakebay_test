@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { ShoppingCart, Package, List, CheckCircle, Pencil, Check, X } from "lucide-react";
+import { ShoppingCart, Package, List, CheckCircle, Pencil, Check, X, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +12,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { fetchIngredients } from "@/app/actions/fetchIngredients";
-import { getOrderDetails, getOrderIds, OrderDetails } from "@/app/actions/getOrders";
+import { getOrderIds, getOrdersDetails, OrderDetails } from "@/app/actions/getOrders";
+import { StatusBadge } from "@/components/StatusBadge";
+import { computeMinPurchaseCost, computeMaxProfit, MinPurchaseResult, MaxProfitResult } from "@/app/actions/computeOptimization";
+import { exportPurchaseList } from "@/app/actions/exportData";
+import { formatPrice } from "@/lib/formatters";
+import { downloadCsv } from "@/lib/downloadCsv";
 import {useUser} from "@/contexts/user-context";
 
 export interface Ingredient {
@@ -65,6 +70,10 @@ export default function IngredientsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState({ stock: 0, alert: 0, purchase_qty: 1, purchase_price: 0 })
+  const [optMode, setOptMode] = useState<"min-purchase" | "max-profit">("min-purchase")
+  const [optLoading, setOptLoading] = useState(false)
+  const [minPurchaseResult, setMinPurchaseResult] = useState<MinPurchaseResult | null>(null)
+  const [maxProfitResult, setMaxProfitResult] = useState<MaxProfitResult | null>(null)
 
   const filteredIngredients = Object.keys(allIngredients).filter(ingredient =>
     ingredient.toLowerCase().includes(searchTerm.toLowerCase())
@@ -86,14 +95,7 @@ export default function IngredientsPage() {
       }
 
       const {orderIds} = await getOrderIds(sellerId);
-
-      const orders: OrderDetails[] = [];
-      for (const id of orderIds) {
-        const result = await getOrderDetails(id.orderId)
-        if (result.orderDetails && result.orderDetails.length > 0) {
-          orders.push(...result.orderDetails)
-        }
-      }
+      const { orderDetails: orders } = await getOrdersDetails(orderIds.map(o => o.orderId));
 
       const processingOrders = orders.filter((order) => order.status === "ordering")
       setActiveOrders(processingOrders)
@@ -191,7 +193,7 @@ export default function IngredientsPage() {
       </div>
 
       <Tabs defaultValue="shopping-list" className="w-full">
-        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
+        <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:flex">
           <TabsTrigger value="shopping-list" className="flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
             Список покупок
@@ -203,6 +205,10 @@ export default function IngredientsPage() {
           <TabsTrigger value="all-ingredients" className="flex items-center gap-2">
             <List className="h-4 w-4" />
             Все ингредиенты
+          </TabsTrigger>
+          <TabsTrigger value="optimization" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Оптимизация
           </TabsTrigger>
         </TabsList>
 
@@ -309,7 +315,7 @@ export default function IngredientsPage() {
                   <div>
                     <CardTitle>{order.id}</CardTitle>
                   </div>
-                  <Badge>{order.status}</Badge>
+                  <StatusBadge status={order.status ?? ""} type="order" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -448,17 +454,7 @@ export default function IngredientsPage() {
                             </div>
 
                             <div className="col-span-1">
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  ingredient.status === "ok"
-                                    ? "bg-green-100 text-green-800"
-                                    : ingredient.status === "low"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {ingredient.status}
-                              </span>
+                              <StatusBadge status={ingredient.status} type="stock" />
                             </div>
 
                             <div className="col-span-1">
@@ -516,8 +512,135 @@ export default function IngredientsPage() {
               )}
 
               <div className="flex justify-end mt-4">
-                <Button variant="outline">Экспорт инвентаря</Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    if (!sellerId) return
+                    const csv = await exportPurchaseList(sellerId)
+                    downloadCsv(csv, `закупки_${new Date().toISOString().slice(0, 10)}.csv`)
+                  }}
+                >
+                  Экспорт инвентаря
+                </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="optimization" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>LP-оптимизация</CardTitle>
+              <CardDescription>Рассчитайте минимальные закупки или максимальную прибыль</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button
+                  variant={optMode === "min-purchase" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setOptMode("min-purchase")}
+                >
+                  <TrendingDown className="h-4 w-4 mr-1" />
+                  Минимум закупок
+                </Button>
+                <Button
+                  variant={optMode === "max-profit" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setOptMode("max-profit")}
+                >
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  Максимум прибыли
+                </Button>
+              </div>
+
+              <Button
+                onClick={async () => {
+                  if (!sellerId) return
+                  setOptLoading(true)
+                  try {
+                    if (optMode === "min-purchase") {
+                      const result = await computeMinPurchaseCost(sellerId)
+                      setMinPurchaseResult(result)
+                      setMaxProfitResult(null)
+                    } else {
+                      const result = await computeMaxProfit(sellerId)
+                      setMaxProfitResult(result)
+                      setMinPurchaseResult(null)
+                    }
+                  } finally {
+                    setOptLoading(false)
+                  }
+                }}
+                disabled={optLoading || !sellerId}
+              >
+                {optLoading ? "Рассчитывается..." : "Рассчитать"}
+              </Button>
+
+              {minPurchaseResult && (
+                <div className="space-y-3">
+                  {minPurchaseResult.warning && (
+                    <p className="text-sm text-yellow-600">{minPurchaseResult.warning}</p>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <p className="font-semibold">Итог: {formatPrice(minPurchaseResult.total_cost)}</p>
+                  </div>
+                  <div className="rounded-md border overflow-x-auto">
+                    <div className="grid grid-cols-5 gap-2 p-3 font-medium border-b text-sm bg-muted/40 min-w-[600px]">
+                      <div>Ингредиент</div>
+                      <div className="text-right">Нужно</div>
+                      <div className="text-right">Склад</div>
+                      <div className="text-right">Купить (упак.)</div>
+                      <div className="text-right">Стоимость</div>
+                    </div>
+                    <div className="divide-y min-w-[600px]">
+                      {minPurchaseResult.items.map((item) => (
+                        <div key={item.name} className="grid grid-cols-5 gap-2 p-3 text-sm items-center">
+                          <div className="font-medium">{item.name}</div>
+                          <div className="text-right text-muted-foreground">{item.needed.toFixed(2)} {item.unit}</div>
+                          <div className="text-right text-muted-foreground">{item.stock.toFixed(2)} {item.unit}</div>
+                          <div className="text-right">
+                            {item.packages_to_buy > 0 ? `${item.packages_to_buy} шт.` : "— (хватит)"}
+                          </div>
+                          <div className="text-right font-medium">
+                            {item.cost > 0 ? formatPrice(item.cost) : "0 ₽"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {maxProfitResult && (
+                <div className="space-y-3">
+                  <p className="font-semibold">Макс. выручка: {formatPrice(maxProfitResult.max_revenue)}</p>
+                  <div className="rounded-md border overflow-x-auto">
+                    <div className="grid grid-cols-5 gap-2 p-3 font-medium border-b text-sm bg-muted/40 min-w-[600px]">
+                      <div>Продукт</div>
+                      <div className="text-right">Заказано</div>
+                      <div className="text-right">Выполнить</div>
+                      <div className="text-right">Выручка</div>
+                      <div>Лимит</div>
+                    </div>
+                    <div className="divide-y min-w-[600px]">
+                      {maxProfitResult.items.map((item) => (
+                        <div key={item.name} className="grid grid-cols-5 gap-2 p-3 text-sm items-center">
+                          <div className="font-medium">{item.name}</div>
+                          <div className="text-right text-muted-foreground">{item.ordered_qty} шт.</div>
+                          <div className="text-right">{item.fulfill_qty} шт.</div>
+                          <div className="text-right font-medium">{formatPrice(item.revenue)}</div>
+                          <div className="text-muted-foreground text-xs">
+                            {item.fulfill_qty >= item.ordered_qty
+                              ? "✓"
+                              : item.limiting_ingredient
+                                ? `Мало: ${item.limiting_ingredient}`
+                                : "Недостаток"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -21,6 +21,8 @@ import { EllipsisVertical, Plus, Star } from "lucide-react"
 import { fetchProducts } from "@/app/actions/fetchProducts"
 import { ProductEditDialog } from "@/components/product-edit-dialog"
 import {useUser} from "@/contexts/user-context"
+import { exportProductSmeta } from "@/app/actions/exportData"
+import { downloadCsv } from "@/lib/downloadCsv"
 
 // Define interface for product objects
 interface Product {
@@ -288,6 +290,10 @@ export default function ProductsPage() {
                         }}>Редактировать товар</DropdownMenuItem>
                         <DropdownMenuItem>Обновить запасы</DropdownMenuItem>
                         <DropdownMenuItem>Просмотреть отзывы</DropdownMenuItem>
+                        <DropdownMenuItem onClick={async () => {
+                          const csv = await exportProductSmeta(product.id)
+                          downloadCsv(csv, `смета_${product.name}.csv`)
+                        }}>Скачать смету</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">Удалить товар</DropdownMenuItem>
                       </DropdownMenuContent>
