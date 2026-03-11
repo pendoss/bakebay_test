@@ -28,7 +28,7 @@ interface ReviewDialogProps {
 }
 
 export function ReviewDialog({open, onOpenChange, items}: ReviewDialogProps) {
-    const {token} = useUser()
+    const {isAuthenticated} = useUser()
     const [selectedProductId, setSelectedProductId] = useState<string>(
         items[0]?.id ? String(items[0].id) : ""
     )
@@ -44,7 +44,7 @@ export function ReviewDialog({open, onOpenChange, items}: ReviewDialogProps) {
             return
         }
 
-        if (!token) {
+        if (!isAuthenticated) {
             toast({title: "Необходима авторизация", variant: "destructive"})
             return
         }
@@ -53,10 +53,8 @@ export function ReviewDialog({open, onOpenChange, items}: ReviewDialogProps) {
         try {
             const resp = await fetch('/api/reviews', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
                 body: JSON.stringify({
                     product_id: parseInt(selectedProductId),
                     rating,

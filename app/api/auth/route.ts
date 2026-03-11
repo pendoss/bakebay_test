@@ -1,9 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
 import { db, users } from "@/src/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { NextResponse } from 'next/server';
-import { Decode, Encode } from '../jwt';
+import { Encode } from '../jwt';
+import { cookies } from 'next/headers';
 
 
 const unauthorized = 'bebe chel'
@@ -18,9 +18,17 @@ export async function POST(req: Request) {
         const creds: credentials = await req.json()
 
         const jwt = await signIn(creds)
-        return NextResponse.json({
-            "token": jwt,
+
+        const cookieStore = await cookies();
+        cookieStore.set('auth_token', jwt, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60, // 1 hour
         });
+
+        return NextResponse.json({ success: true });
     } catch (error) {
         if (error === unauthorized) {
             return NextResponse.json(

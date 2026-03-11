@@ -1,18 +1,16 @@
 import {NextResponse} from 'next/server';
 import {db, users} from '@/src/db';
 import {eq} from 'drizzle-orm';
-import {Decode} from '../../jwt';
+import {getAuthPayload} from '../../get-auth';
 
-export async function GET(request: Request) {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+export async function GET() {
+    const payload = await getAuthPayload();
 
-    if (!token) {
+    if (!payload) {
         return NextResponse.json({error: 'Unauthorized'}, {status: 401});
     }
 
     try {
-        const payload = Decode(token);
-
         const result = await db
             .select({
                 user_id: users.user_id,

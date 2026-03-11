@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import {db, sellers, products, users} from '@/src/db';
 import { eq } from 'drizzle-orm';
-import {Decode, Encode} from '@/app/api/jwt';
+import {Encode} from '@/app/api/jwt';
+import {getAuthPayload} from '@/app/api/get-auth';
+import {cookies} from 'next/headers';
 
 export async function GET(request: Request) {
   try {
@@ -63,20 +65,11 @@ interface sellerRegisterData {
 
 export async function POST(request: Request) {
   try {
-    // Require authentication
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    if (!token) {
+    const authPayload = await getAuthPayload();
+    if (!authPayload) {
       return NextResponse.json({error: 'Unauthorized'}, {status: 401});
     }
-
-    let userId: number;
-    try {
-      const payload = Decode(token);
-      userId = payload.userId;
-    } catch {
-      return NextResponse.json({error: 'Invalid token'}, {status: 401});
-    }
+    const userId = authPayload.userId;
 
     let body: sellerRegisterData;
     try {
@@ -117,10 +110,18 @@ export async function POST(request: Request) {
         .set({user_role: 'seller', updated_at: new Date()})
         .where(eq(users.user_id, userId));
 
-    // Issue a new token with the updated role
+    // Issue a new token with the updated role and update the cookie
     const newToken = Encode({userId, role: 'seller'});
+    const cookieStore = await cookies();
+    cookieStore.set('auth_token', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60,
+    });
 
-    return NextResponse.json({seller: newSeller[0], token: newToken});
+    return NextResponse.json({seller: newSeller[0]});
   } catch (error) {
     console.error('Error creating seller:', error);
     return NextResponse.json(

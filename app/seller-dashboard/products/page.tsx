@@ -275,7 +275,7 @@ export default function ProductsPage() {
                   <div className="absolute top-2 right-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white">
+                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-primary">
                           <EllipsisVertical className="h-4 w-4" />
                           <span className="sr-only">Действия</span>
                         </Button>

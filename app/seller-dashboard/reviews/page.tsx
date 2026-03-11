@@ -159,7 +159,6 @@ export default function ReviewsPage() {
 }
 
 function ReviewCard({review, onReply}: { review: Review; onReply: (id: number, text: string) => void }) {
-    const {token} = useUser()
     const [replyText, setReplyText] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -169,10 +168,8 @@ function ReviewCard({review, onReply}: { review: Review; onReply: (id: number, t
         try {
             const resp = await fetch('/api/reviews', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
                 body: JSON.stringify({review_id: review.id, seller_reply: replyText}),
             })
             if (resp.ok) {

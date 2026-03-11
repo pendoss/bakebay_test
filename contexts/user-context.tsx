@@ -17,12 +17,12 @@ export interface UserInfo {
 }
 
 interface UserContextType {
-    token: string | null
     user: UserInfo | null
     sellerId: number | null
     isLoading: boolean
-    login: (token: string) => Promise<void>
-    logout: () => void
+    isAuthenticated: boolean
+    login: () => Promise<void>
+    logout: () => Promise<void>
     refreshUser: () => Promise<void>
 }
 
@@ -36,11 +36,9 @@ export function useUser() {
     return context
 }
 
-async function fetchUserInfo(token: string): Promise<UserInfo | null> {
+async function fetchUserInfo(): Promise<UserInfo | null> {
     try {
-        const resp = await fetch("/api/users/me", {
-            headers: {Authorization: `Bearer ${token}`},
-        })
+        const resp = await fetch("/api/users/me", {credentials: 'include'})
         if (!resp.ok) return null
         return await resp.json()
     } catch {
@@ -60,17 +58,13 @@ async function fetchSellerId(userId: number): Promise<number | null> {
 }
 
 export function UserProvider({children}: { children: ReactNode }) {
-    const [token, setToken] = useState<string | null>(null)
     const [user, setUser] = useState<UserInfo | null>(null)
     const [sellerId, setSellerId] = useState<number | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
-    const loadUser = async (tok: string) => {
-        const info = await fetchUserInfo(tok)
+    const loadUser = async () => {
+        const info = await fetchUserInfo()
         if (!info) {
-            // Token is invalid — clear everything
-            localStorage.removeItem("auth")
-            setToken(null)
             setUser(null)
             setSellerId(null)
             return
@@ -86,35 +80,25 @@ export function UserProvider({children}: { children: ReactNode }) {
 
     // Load on mount
     useEffect(() => {
-        const stored = localStorage.getItem("auth")
-        if (stored) {
-            setToken(stored)
-            loadUser(stored).finally(() => setIsLoading(false))
-        } else {
-            setIsLoading(false)
-        }
+        loadUser().finally(() => setIsLoading(false))
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    const login = async (newToken: string) => {
-        localStorage.setItem("auth", newToken)
-        setToken(newToken)
-        await loadUser(newToken)
+    const login = async () => {
+        await loadUser()
     }
 
-    const logout = () => {
-        localStorage.removeItem("auth")
-        setToken(null)
+    const logout = async () => {
+        await fetch('/api/auth/logout', {method: 'POST', credentials: 'include'})
         setUser(null)
         setSellerId(null)
     }
 
     const refreshUser = async () => {
-        const tok = localStorage.getItem("auth")
-        if (tok) await loadUser(tok)
+        await loadUser()
     }
 
     return (
-        <UserContext.Provider value={{token, user, sellerId, isLoading, login, logout, refreshUser}}>
+        <UserContext.Provider value={{user, sellerId, isLoading, isAuthenticated: user !== null, login, logout, refreshUser}}>
             {children}
         </UserContext.Provider>
     )

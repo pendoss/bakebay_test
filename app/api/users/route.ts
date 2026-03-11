@@ -2,7 +2,9 @@ import {NextResponse} from 'next/server';
 import {db, users} from '@/src/db';
 import bcrypt from "bcryptjs";
 import {eq} from 'drizzle-orm';
-import {Decode, Encode} from '../jwt';
+import {Encode} from '../jwt';
+import {getAuthPayload} from '../get-auth';
+import {cookies} from 'next/headers';
 
 
 export async function GET(_request: Request) {
@@ -35,11 +37,10 @@ export async function GET(_request: Request) {
 
 
 export async function PUT(request: Request) {
-  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-  if (!token) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+  const payload = await getAuthPayload();
+  if (!payload) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 
   try {
-    const payload = Decode(token);
     const body: {
       first_name?: string; last_name?: string; email?: string;
       phone_number?: string; address?: string; city?: string;
@@ -123,9 +124,16 @@ export async function POST(request: Request) {
       password: hashedPassword,
     }).returning();
     
-    return NextResponse.json({
-      "token": Encode({userId: newUser[0].user_id, role: newUser[0].user_role!})
-      });
+    const jwt = Encode({userId: newUser[0].user_id, role: newUser[0].user_role!});
+    const cookieStore = await cookies();
+    cookieStore.set('auth_token', jwt, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60,
+    });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error creating user:', error);
     return NextResponse.json(

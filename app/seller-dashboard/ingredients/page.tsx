@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { ShoppingCart, Package, List, CheckCircle } from "lucide-react";
+import { ShoppingCart, Package, List, CheckCircle, Pencil, Check, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -13,16 +13,18 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { fetchIngredients } from "@/app/actions/fetchIngredients";
 import { getOrderDetails, getOrderIds, OrderDetails } from "@/app/actions/getOrders";
-import { addIngredient } from "@/app/actions/addIngredient";
 import {useUser} from "@/contexts/user-context";
 
 export interface Ingredient {
+    ingredient_id: number,
     name: string,
     amount: string,
     stock: number,
     unit: string,
     status: string,
-    alert: number
+    alert: number,
+    purchase_qty: number,
+    purchase_price: number,
 }
 
 export interface OrderItem {
@@ -41,6 +43,7 @@ export interface Order {
 interface IngredientDetail {
   amounts: number[];
   orders: Set<string>;
+  unit: string;
 }
 
 interface AllIngredientsType {
@@ -51,120 +54,6 @@ interface CheckedIngredientsType {
   [key: string]: boolean;
 }
 
-// // Пример данных для заказов с ингредиентами
-// const orders: Order[] = [
-//   {
-//     id: "ЗКЗ-7652",
-//     customer: "София Тейлор",
-//     status: "В обработке",
-//     items: [
-//       {
-//         name: "Шоколадный торт",
-//         quantity: 1,
-//         ingredients: [
-//           { name: "Мука общего назначения", amount: "250г" },
-//           { name: "Какао-порошок", amount: "75г" },
-//           { name: "Сахар", amount: "300г" },
-//           { name: "Масло", amount: "200г" },
-//           { name: "Яйца", amount: "4" },
-//           { name: "Молоко", amount: "120мл" },
-//           { name: "Темный шоколад", amount: "150г" },
-//           { name: "Ванильный экстракт", amount: "5мл" },
-//         ],
-//       },
-//       {
-//         name: "Ассорти макарон",
-//         quantity: 2,
-//         ingredients: [
-//           { name: "Миндальная мука", amount: "200г" },
-//           { name: "Сахарная пудра", amount: "200г" },
-//           { name: "Яичные белки", amount: "100г" },
-//           { name: "Гранулированный сахар", amount: "100г" },
-//           { name: "Пищевой краситель", amount: "разные" },
-//           { name: "Масло", amount: "150г" },
-//           { name: "Ванильный экстракт", amount: "5мл" },
-//         ],
-//       },
-//     ],
-//   },
-//   {
-//     id: "ЗКЗ-7651",
-//     customer: "Джеймс Уилсон",
-//     status: "В обработке",
-//     items: [
-//       {
-//         name: "Клубничный чизкейк",
-//         quantity: 1,
-//         ingredients: [
-//           { name: "Печенье Грэхем", amount: "200г" },
-//           { name: "Масло", amount: "100г" },
-//           { name: "Сливочный сыр", amount: "500г" },
-//           { name: "Сахар", amount: "150г" },
-//           { name: "Яйца", amount: "3" },
-//           { name: "Ванильный экстракт", amount: "10мл" },
-//           { name: "Свежая клубника", amount: "300г" },
-//           { name: "Клубничный джем", amount: "100г" },
-//         ],
-//       },
-//     ],
-//   },
-//   {
-//     id: "ЗКЗ-7650",
-//     customer: "Эмма Джонсон",
-//     status: "Отправлен",
-//     items: [
-//       {
-//         name: "Тирамису в стаканчике",
-//         quantity: 2,
-//         ingredients: [
-//           { name: "Сыр маскарпоне", amount: "250г" },
-//           { name: "Яйца", amount: "2" },
-//           { name: "Сахар", amount: "100г" },
-//           { name: "Печенье савоярди", amount: "100г" },
-//           { name: "Эспрессо", amount: "120мл" },
-//           { name: "Какао-порошок", amount: "20г" },
-//           { name: "Ром", amount: "30мл" },
-//         ],
-//       },
-//       {
-//         name: "Булочки с корицей",
-//         quantity: 1,
-//         ingredients: [
-//           { name: "Мука общего назначения", amount: "500г" },
-//           { name: "Масло", amount: "100г" },
-//           { name: "Молоко", amount: "240мл" },
-//           { name: "Сахар", amount: "150г" },
-//           { name: "Корица", amount: "30г" },
-//           { name: "Дрожжи", amount: "10г" },
-//           { name: "Яйца", amount: "1" },
-//           { name: "Сливочный сыр", amount: "100г" },
-//           { name: "Сахарная пудра", amount: "150г" },
-//         ],
-//       },
-//     ],
-//   },
-// ]
-
-
-// async function handler(req: AuthenticatedRequest): Promise<NextResponse>{
-//   if (!isAuthenticated(req)) {
-//     return NextResponse.json(
-//       {error: 'Ошибка прав доступа'},
-//       { status : 401}
-//     )
-//   }
-
-//   const user = req.user;
-
-//   if (req.method === 'POST' && !isAdmin(req)){
-//     return NextResponse.json(
-//       { error: 'Требуются права администратора'},
-//       { status: 401}
-//     )
-//   }
-//   return NextResponse.json({error: "Нет разререшен"}, {status: 401})
-// }
-
 export default function IngredientsPage() {
   const {sellerId} = useUser()
   const [activeOrders, setActiveOrders] = useState<OrderDetails[]>([])
@@ -174,19 +63,17 @@ export default function IngredientsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [inventorySearchTerm, setInventorySearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-  const [isAddIngredienrOpen, setIsAddIngredientOpen] = useState(false)
-  const [newIngredientForm, setNewIngredientForm] = useState({name: "", stock: 0, unit: "", alert: 10})
-  const filteredIngredients = Object.keys(allIngredients).filter(ingredient => 
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState({ stock: 0, alert: 0, purchase_qty: 1, purchase_price: 0 })
+
+  const filteredIngredients = Object.keys(allIngredients).filter(ingredient =>
     ingredient.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-
-  
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-      
-      // Load ingredients inventory data
+
       try {
         const {ingredients, error} = await fetchIngredients(sellerId);
         if (!error && ingredients) {
@@ -211,43 +98,38 @@ export default function IngredientsPage() {
       const processingOrders = orders.filter((order) => order.status === "ordering")
       setActiveOrders(processingOrders)
 
-      // Рассчитываем все необходимые ингредиенты
       const ingredients: AllIngredientsType = {}
       processingOrders.forEach((order) => {
         order.items.forEach((item) => {
           if (item.quantity !== null) {
-          for (let i = 0; i < item.quantity; i++) {
             item.ingredients.forEach((ingredient) => {
-              if (ingredient.name!==null){
-              if (!ingredients[ingredient.name] ) {
-                ingredients[ingredient.name] = {
-                  amounts: [],
-                  orders: new Set(),
+              if (ingredient.name !== null) {
+                if (!ingredients[ingredient.name]) {
+                  ingredients[ingredient.name] = {
+                    amounts: [],
+                    orders: new Set(),
+                    unit: ingredient.unit ?? "",
+                  }
                 }
+                const amount = ingredient.amount !== null ? (+ingredient.amount) : 0;
+                ingredients[ingredient.name].amounts.push(amount * item.quantity)
+                ingredients[ingredient.name].orders.add(order.id !== null ? ("" + order.id) : (""))
               }
-              ingredients[ingredient.name].amounts.push(ingredient.amount !== null? (+ingredient.amount): (0) )
-              ingredients[ingredient.name].orders.add(order.id !== null ? (""+order.id): (""))
-            }
             })
           }
-          }
-        }
-        )
+        })
       })
-      console.log("ingi",ingredients)
       setAllIngredients(ingredients)
 
-
-      // Инициализируем состояние проверки для всех ингредиентов
       const initialCheckedState: CheckedIngredientsType = {}
       Object.keys(ingredients).forEach((ingredient) => {
         initialCheckedState[ingredient] = false
       })
       setCheckedIngredients(initialCheckedState)
-      
+
       setIsLoading(false);
     }
-    
+
     loadData();
   }, [sellerId])
 
@@ -257,8 +139,7 @@ export default function IngredientsPage() {
       [ingredient]: !prev[ingredient],
     }))
   }
-  
- 
+
   const getCompletionPercentage = (): number => {
     const total = Object.keys(checkedIngredients).length
     if (total === 0) return 0
@@ -266,19 +147,49 @@ export default function IngredientsPage() {
     return Math.round((checked / total) * 100)
   }
 
-  // Filter ingredients for inventory tab
   const filteredInventoryIngredients = inventoryIngredients
     .filter(ing => ing.name.toLowerCase().includes(inventorySearchTerm.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  const startEdit = (ingredient: Ingredient) => {
+    setEditingId(ingredient.ingredient_id)
+    setEditForm({
+      stock: ingredient.stock,
+      alert: ingredient.alert,
+      purchase_qty: ingredient.purchase_qty,
+      purchase_price: ingredient.purchase_price,
+    })
+  }
+
+  const handleSave = async (ingredient_id: number) => {
+    await fetch('/api/product-ingredients', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ingredient_id,
+        stock: editForm.stock,
+        alert: editForm.alert,
+        purchase_qty: editForm.purchase_qty,
+        purchase_price: editForm.purchase_price,
+      }),
+    })
+    setInventoryIngredients(prev =>
+      prev.map(ing =>
+        ing.ingredient_id === ingredient_id
+          ? { ...ing, ...editForm }
+          : ing
+      )
+    )
+    setEditingId(null)
+  }
+
   return (
     <div className="space-y-6">
-      
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Управление ингредиентами</h2>
         <p className="text-muted-foreground">Отслеживайте ингредиенты, необходимые для ваших ожидающих заказов</p>
       </div>
-      {/* {localStorage.getItem('auth') ? ( */}
+
       <Tabs defaultValue="shopping-list" className="w-full">
         <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
           <TabsTrigger value="shopping-list" className="flex items-center gap-2">
@@ -326,9 +237,7 @@ export default function IngredientsPage() {
                   size="sm"
                   onClick={() => {
                     const newState: CheckedIngredientsType = {}
-                    Object.keys(checkedIngredients).forEach((key) => {
-                      newState[key] = true
-                    })
+                    Object.keys(checkedIngredients).forEach((key) => { newState[key] = true })
                     setCheckedIngredients(newState)
                   }}
                 >
@@ -339,9 +248,7 @@ export default function IngredientsPage() {
                   size="sm"
                   onClick={() => {
                     const newState: CheckedIngredientsType = {}
-                    Object.keys(checkedIngredients).forEach((key) => {
-                      newState[key] = false
-                    })
+                    Object.keys(checkedIngredients).forEach((key) => { newState[key] = false })
                     setCheckedIngredients(newState)
                   }}
                 >
@@ -375,7 +282,7 @@ export default function IngredientsPage() {
                           <span>Необходимо для {allIngredients[ingredient]?.orders.size || 0} заказов</span>
                           <div className="mt-1">
                             <Badge variant="outline">
-                              {(allIngredients[ingredient]?.amounts.reduce((a, b) => a + b, 0) ?? 0).toFixed(2)}
+                              {(allIngredients[ingredient]?.amounts.reduce((a, b) => a + b, 0) ?? 0).toFixed(2)} {allIngredients[ingredient]?.unit}
                             </Badge>
                           </div>
                         </div>
@@ -395,54 +302,54 @@ export default function IngredientsPage() {
         </TabsContent>
 
         <TabsContent value="by-order" className="mt-4 space-y-4">
-            {activeOrders.map((order) => (
-              <Card key={order.id}>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <CardTitle>{order.id}</CardTitle>
-                    </div>
-                    <Badge>{order.status}</Badge>
+          {activeOrders.map((order) => (
+            <Card key={order.id}>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <CardTitle>{order.id}</CardTitle>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {order.items.map((item, itemIndex) => (
-                      <div key={itemIndex}>
-                        <h4 className="font-medium mb-2">
-                          {item.name} × {item.quantity}
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
-                          {item.ingredients.map((ingredient, ingredientIndex) => {
-                            const orderItemIngredientKey = `${order.id}:${item.name}:${ingredient.name}`;
-                            const totalAmount = (parseFloat(String(ingredient.amount)) || 0) * (item.quantity || 1);
+                  <Badge>{order.status}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {order.items.map((item, itemIndex) => (
+                    <div key={itemIndex}>
+                      <h4 className="font-medium mb-2">
+                        {item.name} × {item.quantity}
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+                        {item.ingredients.map((ingredient, ingredientIndex) => {
+                          const orderItemIngredientKey = `${order.id}:${item.name}:${ingredient.name}`;
+                          const totalAmount = (parseFloat(String(ingredient.amount)) || 0) * (item.quantity || 1);
 
-                            return (
-                              <div key={ingredientIndex} className="flex items-center p-2 rounded-md border bg-muted/30">
-                                <div className="flex-1">
-                                  <div className="font-medium text-sm">{ingredient.name}</div>
-                                  <div className="text-xs text-muted-foreground">{totalAmount.toFixed(2)}</div>
-                                </div>
-                                <Checkbox
-                                  checked={checkedIngredients[orderItemIngredientKey] ?? false}
-                                  onCheckedChange={() => {
-                                    setCheckedIngredients(prev => ({
-                                      ...prev,
-                                      [orderItemIngredientKey]: !prev[orderItemIngredientKey]
-                                    }));
-                                  }}
-                                />
+                          return (
+                            <div key={ingredientIndex} className="flex items-center p-2 rounded-md border bg-muted/30">
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{ingredient.name}</div>
+                                <div className="text-xs text-muted-foreground">{totalAmount.toFixed(2)} {ingredient.unit}</div>
                               </div>
-                            );
-                          })}
-                        </div>
-                        {itemIndex < order.items.length - 1 && <Separator className="my-4" />}
+                              <Checkbox
+                                checked={checkedIngredients[orderItemIngredientKey] ?? false}
+                                onCheckedChange={() => {
+                                  setCheckedIngredients(prev => ({
+                                    ...prev,
+                                    [orderItemIngredientKey]: !prev[orderItemIngredientKey]
+                                  }));
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      {itemIndex < order.items.length - 1 && <Separator className="my-4" />}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
 
           {activeOrders.length === 0 && (
             <div className="text-center py-12">
@@ -463,8 +370,8 @@ export default function IngredientsPage() {
             </CardHeader>
             <CardContent>
               <div className="mb-4">
-                <Input 
-                  placeholder="Поиск ингредиентов..." 
+                <Input
+                  placeholder="Поиск ингредиентов..."
                   value={inventorySearchTerm}
                   onChange={(e) => setInventorySearchTerm(e.target.value)}
                 />
@@ -473,45 +380,132 @@ export default function IngredientsPage() {
               {isLoading ? (
                 <div className="text-center py-8">Загрузка ингредиентов...</div>
               ) : (
-                <div className="rounded-md border">
-                  <div className="grid grid-cols-12 gap-4 p-4 font-medium border-b">
-                    <div className="col-span-4">Название</div>
-                    <div className="col-span-2">В наличии</div>
-                    <div className="col-span-2">Единица</div>
-                    <div className="col-span-2">Статус</div>
-                    <div className="col-span-2">Оповещения</div>
+                <div className="rounded-md border overflow-x-auto">
+                  <div className="grid grid-cols-12 gap-2 p-4 font-medium border-b min-w-[800px]">
+                    <div className="col-span-2">Название</div>
+                    <div className="col-span-1">В наличии</div>
+                    <div className="col-span-1">Ед.</div>
+                    <div className="col-span-2">Объем закупки</div>
+                    <div className="col-span-2">Цена закупки</div>
+                    <div className="col-span-1">Цена/ед.</div>
+                    <div className="col-span-1">Статус</div>
+                    <div className="col-span-1">Порог</div>
+                    <div className="col-span-1"></div>
                   </div>
 
-                  <div className="divide-y">
+                  <div className="divide-y min-w-[800px]">
                     {filteredInventoryIngredients.length > 0 ? (
-                      filteredInventoryIngredients.map((ingredient, index) => (
-                        <div 
-                          key={`${ingredient.name}-${index}`} 
-                          className="grid grid-cols-12 gap-4 p-4 items-center"
-                        >
-                          <div className="col-span-4 font-medium">{ingredient.name}</div>
-                          <div className="col-span-2">
-                            {""+ingredient.stock} 
+                      filteredInventoryIngredients.map((ingredient) => {
+                        const isEditing = editingId === ingredient.ingredient_id;
+                        const costPerUnit = isEditing
+                          ? (editForm.purchase_qty > 0 ? editForm.purchase_price / editForm.purchase_qty : 0)
+                          : (ingredient.purchase_qty > 0 ? ingredient.purchase_price / ingredient.purchase_qty : 0);
+
+                        return (
+                          <div
+                            key={ingredient.ingredient_id}
+                            className="grid grid-cols-12 gap-2 p-3 items-center"
+                          >
+                            <div className="col-span-2 font-medium">{ingredient.name}</div>
+
+                            <div className="col-span-1">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  className="h-8 px-2"
+                                  value={editForm.stock}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, stock: Number(e.target.value) }))}
+                                />
+                              ) : ingredient.stock}
+                            </div>
+
+                            <div className="col-span-1">{ingredient.unit}</div>
+
+                            <div className="col-span-2">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  className="h-8 px-2"
+                                  value={editForm.purchase_qty}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, purchase_qty: Number(e.target.value) }))}
+                                />
+                              ) : ingredient.purchase_qty}
+                            </div>
+
+                            <div className="col-span-2">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  className="h-8 px-2"
+                                  value={editForm.purchase_price}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, purchase_price: Number(e.target.value) }))}
+                                />
+                              ) : ingredient.purchase_price > 0 ? `${ingredient.purchase_price} ₽` : "—"}
+                            </div>
+
+                            <div className="col-span-1 text-sm text-muted-foreground">
+                              {costPerUnit > 0 ? `${costPerUnit.toFixed(2)} ₽` : "—"}
+                            </div>
+
+                            <div className="col-span-1">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  ingredient.status === "ok"
+                                    ? "bg-green-100 text-green-800"
+                                    : ingredient.status === "low"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {ingredient.status}
+                              </span>
+                            </div>
+
+                            <div className="col-span-1">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  className="h-8 px-2"
+                                  value={editForm.alert}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, alert: Number(e.target.value) }))}
+                                />
+                              ) : (ingredient.alert !== 0 ? ingredient.alert : 10)}
+                            </div>
+
+                            <div className="col-span-1 flex gap-1">
+                              {isEditing ? (
+                                <>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    onClick={() => handleSave(ingredient.ingredient_id)}
+                                  >
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    onClick={() => setEditingId(null)}
+                                  >
+                                    <X className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7"
+                                  onClick={() => startEdit(ingredient)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                          <div className="col-span-2">{ingredient.unit}</div>
-                          <div className="col-span-2">
-                            <span 
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                ingredient.status === "ok" 
-                                  ? "bg-green-100 text-green-800" 
-                                  : ingredient.status === "low" 
-                                  ? "bg-yellow-100 text-yellow-800" 
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {ingredient.status}
-                            </span>
-                          </div>
-                          <div className="col-span-2">
-                            {ingredient.alert !== 0 ? (ingredient.alert) : (10)}
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="text-center py-8 col-span-12">
                         Ингредиенты не найдены
@@ -521,85 +515,13 @@ export default function IngredientsPage() {
                 </div>
               )}
 
-              <div className="flex justify-between mt-4">
+              <div className="flex justify-end mt-4">
                 <Button variant="outline">Экспорт инвентаря</Button>
-                <Button onClick={() => setIsAddIngredientOpen(true)}>Добавить ингредиент</Button>
-                {isAddIngredienrOpen && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                      <h3 className="text-lg font-medium mb-4">Добавить новый ингредиент</h3>
-
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="ingredient-name">Название</Label>
-                          <Input
-                              id="ingredient-name"
-                              placeholder="Название ингредиента"
-                              value={newIngredientForm.name}
-                              onChange={(e) => setNewIngredientForm(prev => ({...prev, name: e.target.value}))}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="ingredient-stock">Количество</Label>
-                            <Input
-                                id="ingredient-stock"
-                                type="number"
-                                placeholder="0"
-                                value={newIngredientForm.stock}
-                                onChange={(e) => setNewIngredientForm(prev => ({
-                                  ...prev,
-                                  stock: Number(e.target.value)
-                                }))}
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="ingredient-unit">Единица измерения</Label>
-                            <Input
-                                id="ingredient-unit"
-                                placeholder="г, кг, шт"
-                                value={newIngredientForm.unit}
-                                onChange={(e) => setNewIngredientForm(prev => ({...prev, unit: e.target.value}))}
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="ingredient-alert">Порог оповещения</Label>
-                          <Input
-                              id="ingredient-alert"
-                              type="number"
-                              placeholder="10"
-                              value={newIngredientForm.alert}
-                              onChange={(e) => setNewIngredientForm(prev => ({...prev, alert: Number(e.target.value)}))}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end gap-2 mt-6">
-                        <Button variant="outline" onClick={() => {
-                          setIsAddIngredientOpen(false);
-                          setNewIngredientForm({name: "", stock: 0, unit: "", alert: 10});
-                        }}>Отмена</Button>
-                        <Button onClick={() => {
-                          addIngredient(newIngredientForm.name, newIngredientForm.stock, newIngredientForm.unit, newIngredientForm.alert)
-                          setIsAddIngredientOpen(false);
-                          setNewIngredientForm({name: "", stock: 0, unit: "", alert: 10});
-                        }}>Добавить</Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-      {/* ) :(
-        <p> Чтобы получить доступ к разделу, нужно стать продавцом</p>
-      )} */}
     </div>
   )
 }

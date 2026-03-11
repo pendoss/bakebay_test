@@ -581,10 +581,32 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
                           <Label htmlFor="ingredientAmount">Количество</Label>
                           <Input
                             id="ingredientAmount"
+                            type="number"
+                            min="0"
                             value={newIngredient.amount}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({ ...newIngredient, amount: +e.target.value })}
-                            placeholder="например, 250г"
+                            placeholder="например, 250"
                           />
+                        </div>
+                        <div className="space-y-2 w-32">
+                          <Label htmlFor="ingredientUnit">Ед. измерения</Label>
+                          <Select
+                            value={newIngredient.unit}
+                            onValueChange={(value) => setNewIngredient({ ...newIngredient, unit: value })}
+                          >
+                            <SelectTrigger id="ingredientUnit">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="г">г</SelectItem>
+                              <SelectItem value="кг">кг</SelectItem>
+                              <SelectItem value="мл">мл</SelectItem>
+                              <SelectItem value="л">л</SelectItem>
+                              <SelectItem value="шт">шт</SelectItem>
+                              <SelectItem value="ч.л.">ч.л.</SelectItem>
+                              <SelectItem value="ст.л.">ст.л.</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <Button
                           type="button"

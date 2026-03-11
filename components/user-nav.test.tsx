@@ -45,25 +45,6 @@ jest.mock('@/components/ui/dropdown-menu', () => {
     }
 })
 
-// localStorage mock
-const localStorageMock = (() => {
-    let store: Record<string, string> = {}
-    return {
-        getItem: (key: string) => store[key] ?? null,
-        setItem: (key: string, value: string) => {
-            store[key] = value
-        },
-        removeItem: (key: string) => {
-            delete store[key]
-        },
-        clear: () => {
-            store = {}
-        },
-    }
-})()
-
-Object.defineProperty(window, 'localStorage', {value: localStorageMock, writable: true})
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const CUSTOMER_USER = {
@@ -82,6 +63,7 @@ const SELLER_USER = {
     user_role: 'seller',
 }
 
+/** Mock /api/users/me to return a logged-in user (simulates valid HttpOnly cookie). */
 function mockFetchUserInfo(user: typeof CUSTOMER_USER | typeof SELLER_USER) {
     global.fetch = jest.fn().mockImplementation((url: string) => {
         if (url === '/api/users/me') {
@@ -100,56 +82,66 @@ function mockFetchUserInfo(user: typeof CUSTOMER_USER | typeof SELLER_USER) {
     }) as jest.Mock
 }
 
-function mockFetchLoginSuccess(token: string, user: typeof CUSTOMER_USER) {
+/** Mock unauthenticated state: /api/users/me returns 401. */
+function mockFetchUnauthenticated() {
     global.fetch = jest.fn().mockImplementation((url: string) => {
-        if (url === '/api/auth') {
-            return Promise.resolve({
-                status: 200,
-                json: () => Promise.resolve({token}),
-            })
-        }
         if (url === '/api/users/me') {
-            return Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve(user),
-            })
-        }
-        if (url.startsWith('/api/sellers')) {
-            return Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve([]),
-            })
+            return Promise.resolve({ok: false, status: 401, json: () => Promise.resolve({error: 'Unauthorized'})})
         }
         return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     }) as jest.Mock
 }
 
-function mockFetchRegisterSuccess(token: string, user: typeof CUSTOMER_USER) {
+/** Mock for login: initial /api/users/me returns 401, then after /api/auth returns user. */
+function mockFetchLoginSuccess(user: typeof CUSTOMER_USER) {
+    let meCallCount = 0
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+        if (url === '/api/auth') {
+            return Promise.resolve({
+                status: 200,
+                json: () => Promise.resolve({success: true}),
+            })
+        }
+        if (url === '/api/users/me') {
+            meCallCount++
+            if (meCallCount === 1) {
+                // Initial mount — not logged in yet
+                return Promise.resolve({ok: false, status: 401, json: () => Promise.resolve({error: 'Unauthorized'})})
+            }
+            return Promise.resolve({ok: true, json: () => Promise.resolve(user)})
+        }
+        if (url.startsWith('/api/sellers')) {
+            return Promise.resolve({ok: true, json: () => Promise.resolve([])})
+        }
+        return Promise.reject(new Error(`Unexpected fetch: ${url}`))
+    }) as jest.Mock
+}
+
+/** Mock for register: initial /api/users/me returns 401, then after /api/users POST returns user. */
+function mockFetchRegisterSuccess(user: typeof CUSTOMER_USER) {
+    let meCallCount = 0
     global.fetch = jest.fn().mockImplementation((url: string) => {
         if (url === '/api/users') {
             return Promise.resolve({
                 status: 200,
-                json: () => Promise.resolve({token}),
+                json: () => Promise.resolve({success: true}),
             })
         }
         if (url === '/api/users/me') {
-            return Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve(user),
-            })
+            meCallCount++
+            if (meCallCount === 1) {
+                return Promise.resolve({ok: false, status: 401, json: () => Promise.resolve({error: 'Unauthorized'})})
+            }
+            return Promise.resolve({ok: true, json: () => Promise.resolve(user)})
         }
         if (url.startsWith('/api/sellers')) {
-            return Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve([]),
-            })
+            return Promise.resolve({ok: true, json: () => Promise.resolve([])})
         }
         return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     }) as jest.Mock
 }
 
 beforeEach(() => {
-    localStorageMock.clear()
     pushMock.mockClear()
     refreshMock.mockClear()
     jest.clearAllMocks()
@@ -159,36 +151,41 @@ beforeEach(() => {
 
 describe('Неавторизованный пользователь', () => {
     beforeEach(() => {
-        global.fetch = jest.fn() as jest.Mock
+        mockFetchUnauthenticated()
     })
 
-    it('показывает "Вы вошли как гость" в заголовке дропдауна', () => {
+    it('показывает "Вы вошли как гость" в заголовке дропдауна', async () => {
         renderWithUser(<UserNav/>)
+        await act(async () => {})
         expect(screen.getByText('Вы вошли как гость')).toBeInTheDocument()
     })
 
-    it('показывает кнопку "Войти"', () => {
+    it('показывает кнопку "Войти"', async () => {
         renderWithUser(<UserNav/>)
+        await act(async () => {})
         expect(screen.getByText('Войти')).toBeInTheDocument()
     })
 
-    it('НЕ показывает пункты меню Профиль, Заказы, Избранное', () => {
+    it('НЕ показывает пункты меню Профиль, Заказы, Избранное', async () => {
         renderWithUser(<UserNav/>)
+        await act(async () => {})
         expect(screen.queryByText('Профиль')).not.toBeInTheDocument()
         expect(screen.queryByText('Заказы')).not.toBeInTheDocument()
         expect(screen.queryByText('Избранное')).not.toBeInTheDocument()
     })
 
-    it('НЕ показывает "Панель продавца"', () => {
+    it('НЕ показывает "Панель продавца"', async () => {
         renderWithUser(<UserNav/>)
+        await act(async () => {})
         expect(screen.queryByText('Панель продавца')).not.toBeInTheDocument()
     })
 
-    it('НЕ вызывает fetch при отсутствии токена', async () => {
+    it('проверяет сессию через /api/users/me при монтировании', async () => {
         renderWithUser(<UserNav/>)
-        await act(async () => {
-        }) // flush effects
-        expect(global.fetch).not.toHaveBeenCalled()
+        await act(async () => {})
+        const calls = (global.fetch as jest.Mock).mock.calls
+        const meCall = calls.find(([url]: [string]) => url === '/api/users/me')
+        expect(meCall).toBeDefined()
     })
 })
 
@@ -196,7 +193,6 @@ describe('Неавторизованный пользователь', () => {
 
 describe('Авторизованный пользователь (customer)', () => {
     beforeEach(() => {
-        localStorageMock.setItem('auth', 'mock-customer-token')
         mockFetchUserInfo(CUSTOMER_USER)
     })
 
@@ -235,14 +231,33 @@ describe('Авторизованный пользователь (customer)', () 
         expect(screen.getByText('Выйти')).toBeInTheDocument()
     })
 
-    it('выход очищает данные, убирает меню и переходит на главную', async () => {
+    it('выход вызывает POST /api/auth/logout и убирает данные пользователя', async () => {
+        // After logout, /api/users/me returns 401
+        global.fetch = jest.fn().mockImplementation((url: string, opts?: any) => {
+            if (url === '/api/users/me') {
+                return Promise.resolve({ok: true, json: () => Promise.resolve(CUSTOMER_USER)})
+            }
+            if (url === '/api/auth/logout' && opts?.method === 'POST') {
+                return Promise.resolve({ok: true, json: () => Promise.resolve({success: true})})
+            }
+            if (url.startsWith('/api/sellers')) {
+                return Promise.resolve({ok: true, json: () => Promise.resolve([])})
+            }
+            return Promise.reject(new Error(`Unexpected fetch: ${url}`))
+        }) as jest.Mock
+
         renderWithUser(<UserNav/>)
         await waitFor(() => screen.getByText('Иван Иванов'))
 
-        fireEvent.click(screen.getByText('Выйти'))
+        await act(async () => {
+            fireEvent.click(screen.getByText('Выйти'))
+        })
 
-        expect(localStorageMock.getItem('auth')).toBeNull()
         expect(pushMock).toHaveBeenCalledWith('/')
+        const logoutCall = (global.fetch as jest.Mock).mock.calls.find(
+            ([url]: [string]) => url === '/api/auth/logout'
+        )
+        expect(logoutCall).toBeDefined()
         await waitFor(() => {
             expect(screen.queryByText('Иван Иванов')).not.toBeInTheDocument()
         })
@@ -267,7 +282,6 @@ describe('Авторизованный пользователь (customer)', () 
 
 describe('Авторизованный пользователь (seller)', () => {
     beforeEach(() => {
-        localStorageMock.setItem('auth', 'mock-seller-token')
         mockFetchUserInfo(SELLER_USER)
     })
 
@@ -303,39 +317,12 @@ describe('Авторизованный пользователь (seller)', () =>
 // ── 4. Login flow ─────────────────────────────────────────────────────────────
 
 describe('Форма входа', () => {
-    it('после успешного логина сохраняет токен в localStorage', async () => {
-        mockFetchLoginSuccess('new-token-123', CUSTOMER_USER)
-
-        renderWithUser(<UserNav/>)
-
-        // Click "Войти" to open dialog
-        fireEvent.click(screen.getByText('Войти'))
-
-        await waitFor(() => {
-            expect(screen.getByText('Вход в систему')).toBeInTheDocument()
-        })
-
-        // Fill and submit login form
-        fireEvent.change(screen.getByPlaceholderText('your.email@example.com'), {
-            target: {value: 'ivan@test.com'},
-        })
-        fireEvent.change(screen.getByPlaceholderText('••••••••'), {
-            target: {value: 'password123'},
-        })
-
-        await act(async () => {
-            fireEvent.click(screen.getByRole('button', {name: 'Войти'}))
-        })
-
-        await waitFor(() => {
-            expect(localStorageMock.getItem('auth')).toBe('new-token-123')
-        })
-    })
-
     it('после успешного логина отображает данные пользователя', async () => {
-        mockFetchLoginSuccess('new-token-123', CUSTOMER_USER)
+        mockFetchLoginSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
+        await act(async () => {}) // flush initial /api/users/me (returns user after login)
+
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
 
@@ -356,9 +343,11 @@ describe('Форма входа', () => {
     })
 
     it('вызывает POST /api/auth с корректными данными формы', async () => {
-        mockFetchLoginSuccess('new-token', CUSTOMER_USER)
+        mockFetchLoginSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
+        await act(async () => {})
+
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
 
@@ -384,9 +373,11 @@ describe('Форма входа', () => {
     })
 
     it('после логина вызывает /api/users/me для получения профиля', async () => {
-        mockFetchLoginSuccess('new-token', CUSTOMER_USER)
+        mockFetchLoginSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
+        await act(async () => {})
+
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
 
@@ -403,10 +394,37 @@ describe('Форма входа', () => {
 
         await waitFor(() => {
             const calls = (global.fetch as jest.Mock).mock.calls
-            const meCall = calls.find(([url]: [string]) => url === '/api/users/me')
-            expect(meCall).toBeDefined()
-            expect(meCall[1].headers.Authorization).toBe('Bearer new-token')
+            const meCalls = calls.filter(([url]: [string]) => url === '/api/users/me')
+            expect(meCalls.length).toBeGreaterThanOrEqual(1)
+            // Should use credentials: 'include' (cookie-based auth), not Authorization header
+            const lastMeCall = meCalls[meCalls.length - 1]
+            expect(lastMeCall[1]?.credentials).toBe('include')
+            expect(lastMeCall[1]?.headers?.Authorization).toBeUndefined()
         })
+    })
+
+    it('токен НЕ сохраняется в localStorage после логина', async () => {
+        mockFetchLoginSuccess(CUSTOMER_USER)
+
+        renderWithUser(<UserNav/>)
+        await act(async () => {})
+
+        fireEvent.click(screen.getByText('Войти'))
+        await waitFor(() => screen.getByText('Вход в систему'))
+
+        fireEvent.change(screen.getByPlaceholderText('your.email@example.com'), {
+            target: {value: 'ivan@test.com'},
+        })
+        fireEvent.change(screen.getByPlaceholderText('••••••••'), {
+            target: {value: 'password123'},
+        })
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', {name: 'Войти'}))
+        })
+
+        await waitFor(() => screen.getByText('Иван Иванов'))
+        expect(localStorage.getItem('auth')).toBeNull()
     })
 })
 
@@ -414,7 +432,6 @@ describe('Форма входа', () => {
 
 /** Switch Radix Tabs by simulating mousedown (Radix activates on mousedown) */
 async function switchToRegisterTab() {
-    // Radix Tabs activates on mousedown on the trigger button
     const registerTabTrigger = screen.getByRole('tab', {name: 'Зарегистрироваться'})
     fireEvent.mouseDown(registerTabTrigger)
     fireEvent.click(registerTabTrigger)
@@ -422,44 +439,12 @@ async function switchToRegisterTab() {
 }
 
 describe('Форма регистрации', () => {
-    it('после успешной регистрации сохраняет токен в localStorage', async () => {
-        mockFetchRegisterSuccess('register-token-456', CUSTOMER_USER)
-
-        renderWithUser(<UserNav/>)
-        fireEvent.click(screen.getByText('Войти'))
-        await waitFor(() => screen.getByText('Вход в систему'))
-
-        await switchToRegisterTab()
-
-        fireEvent.change(screen.getByPlaceholderText('Иван Иванов'), {
-            target: {value: 'Иван Иванов'},
-        })
-        const emailInputs = screen.getAllByPlaceholderText('your.email@example.com')
-        fireEvent.change(emailInputs[emailInputs.length - 1], {
-            target: {value: 'ivan@test.com'},
-        })
-        // password + confirmPassword (login form also has one placeholder ••••••••, so take last 2)
-        const passwordInputs = screen.getAllByPlaceholderText('••••••••')
-        fireEvent.change(passwordInputs[passwordInputs.length - 2], {
-            target: {value: 'password123'},
-        })
-        fireEvent.change(passwordInputs[passwordInputs.length - 1], {
-            target: {value: 'password123'},
-        })
-
-        await act(async () => {
-            fireEvent.click(screen.getByRole('button', {name: 'Создать аккаунт'}))
-        })
-
-        await waitFor(() => {
-            expect(localStorageMock.getItem('auth')).toBe('register-token-456')
-        })
-    })
-
     it('после успешной регистрации отображает данные пользователя', async () => {
-        mockFetchRegisterSuccess('register-token-456', CUSTOMER_USER)
+        mockFetchRegisterSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
+        await act(async () => {})
+
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
 
@@ -489,10 +474,46 @@ describe('Форма регистрации', () => {
         })
     })
 
-    it('вызывает POST /api/users с корректными данными формы', async () => {
-        mockFetchRegisterSuccess('register-token', CUSTOMER_USER)
+    it('токен НЕ сохраняется в localStorage после регистрации', async () => {
+        mockFetchRegisterSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
+        await act(async () => {})
+
+        fireEvent.click(screen.getByText('Войти'))
+        await waitFor(() => screen.getByText('Вход в систему'))
+
+        await switchToRegisterTab()
+
+        fireEvent.change(screen.getByPlaceholderText('Иван Иванов'), {
+            target: {value: 'Иван Иванов'},
+        })
+        const emailInputs = screen.getAllByPlaceholderText('your.email@example.com')
+        fireEvent.change(emailInputs[emailInputs.length - 1], {
+            target: {value: 'ivan@test.com'},
+        })
+        const passwordInputs = screen.getAllByPlaceholderText('••••••••')
+        fireEvent.change(passwordInputs[passwordInputs.length - 2], {
+            target: {value: 'password123'},
+        })
+        fireEvent.change(passwordInputs[passwordInputs.length - 1], {
+            target: {value: 'password123'},
+        })
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', {name: 'Создать аккаунт'}))
+        })
+
+        await waitFor(() => screen.getByText('Иван Иванов'))
+        expect(localStorage.getItem('auth')).toBeNull()
+    })
+
+    it('вызывает POST /api/users с корректными данными формы', async () => {
+        mockFetchRegisterSuccess(CUSTOMER_USER)
+
+        renderWithUser(<UserNav/>)
+        await act(async () => {})
+
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
 

@@ -3,7 +3,7 @@ import {eq} from 'drizzle-orm';
 import {db, orderItems, orders, products, users} from "@/src/db";
 import {updateStockById} from '@/app/actions/addIngredient';
 import {adjustIngredientStock} from '@/app/lib/ingredients';
-import {Decode} from '@/app/api/jwt';
+import {getAuthPayload} from '@/app/api/get-auth';
 
 
 export async function GET(request: Request) {
@@ -76,18 +76,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const authPayload = await getAuthPayload();
+    if (!authPayload) {
       return NextResponse.json({error: 'Unauthorized'}, {status: 401});
     }
-
-    let userId: number;
-    try {
-      const payload = Decode(token);
-      userId = payload.userId;
-    } catch {
-      return NextResponse.json({error: 'Invalid token'}, {status: 401});
-    }
+    const userId = authPayload.userId;
 
     const body = await request.json();
 

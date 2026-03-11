@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server';
 import {db, products, reviews, sellers, users} from '@/src/db';
 import {eq} from 'drizzle-orm';
-import {Decode} from '@/app/api/jwt';
+import {getAuthPayload} from '@/app/api/get-auth';
 
 // GET /api/reviews?sellerId=X  OR  /api/reviews?productId=X
 export async function GET(request: Request) {
@@ -83,16 +83,9 @@ export async function GET(request: Request) {
 // POST /api/reviews — create a review (customer)
 export async function POST(request: Request) {
     try {
-        const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-        if (!token) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-
-        let userId: number;
-        try {
-            const payload = Decode(token);
-            userId = payload.userId;
-        } catch {
-            return NextResponse.json({error: 'Invalid token'}, {status: 401});
-        }
+        const authPayload = await getAuthPayload();
+        if (!authPayload) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+        const userId = authPayload.userId;
 
         const body = await request.json();
         const {product_id, rating, comment} = body;
@@ -128,16 +121,9 @@ export async function POST(request: Request) {
 // PUT /api/reviews — seller replies to a review
 export async function PUT(request: Request) {
     try {
-        const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-        if (!token) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-
-        let userId: number;
-        try {
-            const payload = Decode(token);
-            userId = payload.userId;
-        } catch {
-            return NextResponse.json({error: 'Invalid token'}, {status: 401});
-        }
+        const authPayload = await getAuthPayload();
+        if (!authPayload) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+        const userId = authPayload.userId;
 
         const body = await request.json();
         const {review_id, seller_reply} = body;

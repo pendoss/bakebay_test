@@ -16,7 +16,7 @@ export function ShoppingCart() {
   const router = useRouter()
   const { toast } = useToast()
   const { items, removeItem, updateQuantity, clearCart, getCartTotal } = useCart()
-  const {token, user} = useUser()
+  const {user} = useUser()
   const [promoCode, setPromoCode] = useState("")
   const [promoApplied, setPromoApplied] = useState(false)
 
@@ -179,7 +179,7 @@ export function ShoppingCart() {
                     }
 
                     // Check authentication
-                    if (!token || !user) {
+                    if (!user) {
                       toast({
                         title: "Необходима авторизация",
                         description: "Войдите в аккаунт, чтобы оформить заказ.",
@@ -200,10 +200,8 @@ export function ShoppingCart() {
                     // Send order to API
                     const response = await fetch('/api/orders', {
                       method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                      },
+                      headers: {'Content-Type': 'application/json'},
+                      credentials: 'include',
                       body: JSON.stringify(orderData),
                     });
 

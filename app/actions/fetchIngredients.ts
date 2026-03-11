@@ -4,12 +4,15 @@ import {db} from "@/src/db";
 import {sql} from "drizzle-orm";
 
 interface Ingredient {
+    ingredient_id: number,
     name: string,
     amount: string,
     stock: number,
     unit: string,
     status: string,
-    alert: number
+    alert: number,
+    purchase_qty: number,
+    purchase_price: number,
 }
 
 export async function fetchIngredients(sellerId?: number | null): Promise<{
@@ -19,46 +22,37 @@ export async function fetchIngredients(sellerId?: number | null): Promise<{
     try{
         const targetSellerId = sellerId ?? 0;
         const statement = sql`
-            with all_ingredients_for_seller as (
-    select s.seller_id, pi.name, pi.stock, pi.unit, pi.alert, pi.status from product_ingredients pi
-                                                                        join products p on pi.product_id=p.product_id
-                                                                        join sellers s on p.seller_id=s.seller_id
-    where s.seller_id = ${targetSellerId}),
-     sum_per_ingredient as (
-         select name, sum(stock) as total_stock from all_ingredients_for_seller
-         group by name)
-
-select distinct ai.seller_id, ai.name, sp.total_stock as stock, ai.unit, ai.alert, ai.status
-from all_ingredients_for_seller ai
-         inner join sum_per_ingredient sp on ai.name=sp.name
+            WITH first_per_ingredient AS (
+                SELECT MIN(pi.ingredient_id) AS ingredient_id
+                FROM product_ingredients pi
+                JOIN products p ON pi.product_id = p.product_id
+                WHERE p.seller_id = ${targetSellerId}
+                GROUP BY pi.name
+            )
+            SELECT pi.ingredient_id, pi.name, pi.stock, pi.unit, pi.alert, pi.status,
+                   pi.purchase_qty, pi.purchase_price
+            FROM product_ingredients pi
+            JOIN first_per_ingredient fpi ON pi.ingredient_id = fpi.ingredient_id
+            ORDER BY pi.name
         `;
-        
-        // const ingredients: Ingredient[] = result.map(row => ({
-        //     name: row.name,
-        //     amount: Number(row.amount),
-        //     stock: Number(row.stock),
-        //     unit: row.unit,
-        //     status: row.status,
-        //     alert: Number(row.alert)
-        // }));d
-        
+
         const res = await db.execute(statement);
-        
+
         const ingredients: Ingredient[] = res.rows.map(row => ({
+            ingredient_id: Number(row.ingredient_id),
             name: row.name as string,
             amount: row.amount as string,
             stock: Number(row.stock),
             unit: row.unit as string,
             status: row.status as string,
-            alert: Number(row.alert)
+            alert: Number(row.alert),
+            purchase_qty: Number(row.purchase_qty ?? 1),
+            purchase_price: Number(row.purchase_price ?? 0),
         }));
-    
-        
-        // console.log("result from query:", ingredients);
+
         return { ingredients, error: null };
-        // const res: postgres.RowList<Record<string, unknown>[]> = await db.execute(statement);
     } catch (error) {
         console.log("Error getting ingredients: ", error)
-        return {ingredients: [], error: " Error geting ingredients"};
+        return {ingredients: [], error: "Error getting ingredients"};
     }
 }

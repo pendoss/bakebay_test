@@ -2,14 +2,13 @@ import {NextResponse} from 'next/server';
 import {db, users} from '@/src/db';
 import {eq} from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import {Decode} from '../../jwt';
+import {getAuthPayload} from '../../get-auth';
 
 export async function PUT(request: Request) {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-    if (!token) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+    const payload = await getAuthPayload();
+    if (!payload) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 
     try {
-        const payload = Decode(token);
         const body: { currentPassword: string; newPassword: string } = await request.json();
 
         const result = await db

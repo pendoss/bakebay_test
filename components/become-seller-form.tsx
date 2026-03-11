@@ -15,7 +15,7 @@ import {useToast} from "@/hooks/use-toast"
 import {useUser} from "@/contexts/user-context"
 
 export function BecomeSellerForm() {
-    const {token, login, isLoading} = useUser()
+    const {user, refreshUser, isLoading} = useUser()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const router = useRouter()
     const {toast} = useToast()
@@ -36,16 +36,14 @@ export function BecomeSellerForm() {
   })
 
   function onSubmit(values: any) {
-      if (!token) return
+      if (!user) return
 
       setIsSubmitting(true)
       fetch("/api/sellers", {
-      method: "POST",
-          headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-          },
-      body: JSON.stringify(values)
+          method: "POST",
+          headers: {'Content-Type': 'application/json'},
+          credentials: 'include',
+          body: JSON.stringify(values)
       }).then(async (resp) => {
           if (!resp.ok) {
               const err = await resp.json().catch(() => ({}))
@@ -56,14 +54,11 @@ export function BecomeSellerForm() {
               })
               setIsSubmitting(false)
               return
-      }
-          const data = await resp.json()
-          if (data.token) {
-              await login(data.token)
           }
+          await refreshUser()
           toast({title: "Заявка отправлена!", description: "Добро пожаловать в BakeBay как продавец."})
           setIsSubmitting(false)
-      router.push('/')
+          router.push('/')
       }).catch(() => {
           toast({title: "Ошибка сети", description: "Попробуйте ещё раз.", variant: "destructive"})
           setIsSubmitting(false)
@@ -76,7 +71,7 @@ export function BecomeSellerForm() {
     }
 
     // Not authenticated
-    if (!token) {
+    if (!user) {
         return (
             <Card className="p-8 text-center">
                 <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4"/>

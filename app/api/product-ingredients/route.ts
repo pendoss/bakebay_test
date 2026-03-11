@@ -84,6 +84,8 @@ export async function PUT(request: Request) {
         stock: body.stock,
         alert: body.alert,
         status: body.status,
+        purchase_qty: body.purchase_qty,
+        purchase_price: body.purchase_price,
       })
       .where(eq(productIngredients.ingredient_id, body.ingredient_id))
       .returning();
@@ -163,15 +165,16 @@ export async function PATCH(request: Request) {
     // Then, insert all the new ingredients
     const newIngredients = [];
     for (const ingredient of ingredients) {
-      if (!ingredient.name || !ingredient.amount) {
-        continue; // Skip invalid ingredients
+      if (!ingredient.name || !ingredient.amount || !ingredient.unit) {
+        continue;
       }
 
       const newIngredient = await db.insert(productIngredients).values({
         product_id: productId,
         name: ingredient.name,
-        unit: ingredient.amount, // Using amount as unit since that's what the UI provides
-        stock: 0, // Default values
+        amount: ingredient.amount,
+        unit: ingredient.unit || 'г',
+        stock: 0,
         alert: 0,
         status: "out",
       }).returning();

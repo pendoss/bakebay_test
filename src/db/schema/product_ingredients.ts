@@ -12,4 +12,6 @@ export const productIngredients = pgTable("product_ingredients", {
     unit: varchar().notNull(),
     alert: integer().default(0),
     status: stockStatusEnum().default("out"),
+    purchase_qty: real().default(1),
+    purchase_price: real().default(0),
 });

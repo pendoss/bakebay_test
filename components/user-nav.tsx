@@ -50,22 +50,22 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 interface AuthDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  onAuthSuccess: (token: string) => Promise<void>;
+  onAuthSuccess: () => Promise<void>;
 }
 
 export function UserNav() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
-  const {token, user, login, logout} = useUser();
+  const {user, login, logout} = useUser();
 
-  const handleAuthSuccess = async (newToken: string) => {
-    await login(newToken);
+  const handleAuthSuccess = async () => {
+    await login();
     setIsOpen(false);
     router.refresh();
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push("/");
     router.refresh();
   };
@@ -82,7 +82,7 @@ export function UserNav() {
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarFallback>
-                  {token && initials ? initials : <User className="h-4 w-4"/>}
+                  {user && initials ? initials : <User className="h-4 w-4"/>}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -105,7 +105,7 @@ export function UserNav() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator/>
-            {token && (
+            {user && (
                 <DropdownMenuGroup>
                   <DropdownMenuItem
                       onClick={() => router.push("/profile")}
@@ -142,7 +142,7 @@ export function UserNav() {
                 </DropdownMenuGroup>
             )}
             <DropdownMenuSeparator/>
-            {token ? (
+            {user ? (
                 <DropdownMenuItem
                     className="focus:bg-secondary focus:text-white"
                     onClick={handleLogout}
@@ -219,8 +219,7 @@ function AuthDialog({isOpen, setIsOpen, onAuthSuccess}: AuthDialogProps) {
         toast({title: "Ошибка входа", description: "Неверный email или пароль.", variant: "destructive"});
         return;
       }
-      const payload = await resp.json();
-      await onAuthSuccess(payload.token);
+      await onAuthSuccess();
       toast({title: "Добро пожаловать!", description: "Вы успешно вошли в аккаунт."});
     } finally {
       setIsLoading(false);
@@ -242,8 +241,7 @@ function AuthDialog({isOpen, setIsOpen, onAuthSuccess}: AuthDialogProps) {
         });
         return;
       }
-      const payload = await resp.json();
-      await onAuthSuccess(payload.token);
+      await onAuthSuccess();
       toast({title: "Аккаунт создан!", description: "Добро пожаловать в BakeBay."});
     } finally {
       setIsLoading(false);
@@ -275,7 +273,7 @@ function AuthDialog({isOpen, setIsOpen, onAuthSuccess}: AuthDialogProps) {
                 </TabsTrigger>
               </TabsList>
               <div style={{viewTransitionName: "auth-tab-content", overflow: "hidden"}}>
-                <TabsContent value="login" className="mt-4">
+                <TabsContent value="login" className="mt-4 p-1">
                   <Form {...loginForm}>
                     <form
                         onSubmit={loginForm.handleSubmit(onLoginSubmit)}
@@ -344,7 +342,7 @@ function AuthDialog({isOpen, setIsOpen, onAuthSuccess}: AuthDialogProps) {
                     </form>
                   </Form>
                 </TabsContent>
-                <TabsContent value="register" className="mt-4">
+                <TabsContent value="register" className="mt-4 p-1">
                   <DialogDescription className="mb-4 text-sm text-gray-600">
                     Заполните все поля чтобы продолжить
                   </DialogDescription>

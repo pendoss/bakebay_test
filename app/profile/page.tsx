@@ -82,7 +82,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function ProfilePage() {
     const router = useRouter()
     const {toast} = useToast()
-    const {token, user: contextUser, refreshUser} = useUser()
+    const {user: contextUser, refreshUser} = useUser()
 
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
     const [orders, setOrders] = useState<Order[]>([])
@@ -145,7 +145,8 @@ export default function ProfilePage() {
         try {
             const resp = await fetch("/api/users", {
                 method: "PUT",
-                headers: {"Content-Type": "application/json", Authorization: `Bearer ${token}`},
+                headers: {"Content-Type": "application/json"},
+                credentials: 'include',
                 body: JSON.stringify(data),
             })
             if (!resp.ok) throw new Error()
@@ -165,7 +166,8 @@ export default function ProfilePage() {
         try {
             const resp = await fetch("/api/users/password", {
                 method: "PUT",
-                headers: {"Content-Type": "application/json", Authorization: `Bearer ${token}`},
+                headers: {"Content-Type": "application/json"},
+                credentials: 'include',
                 body: JSON.stringify({currentPassword: data.currentPassword, newPassword: data.newPassword}),
             })
             if (!resp.ok) {
