@@ -9,6 +9,7 @@ import { RecentOrders } from "@/components/seller-dashboard/recent-orders"
 import { RecentReviews } from "@/components/seller-dashboard/recent-reviews"
 import { AreaChart, BarChart, DollarSign, Package, ShoppingBag, Star, TrendingDown, TrendingUp, Users } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatPrice } from "@/lib/formatters"
 
 interface Analytics {
     kpis: {
@@ -77,7 +78,7 @@ export default function SellerDashboardPage() {
                     <CardContent>
                         {loading ? <KpiSkeleton /> : (
                             <>
-                                <div className="text-2xl font-bold">{kpis!.total_revenue.toLocaleString('ru-RU')} ₽</div>
+                                <div className="text-2xl font-bold">{formatPrice(kpis!.total_revenue)}</div>
                                 <ChangeIndicator value={kpis!.revenue_change} />
                             </>
                         )}
@@ -109,7 +110,7 @@ export default function SellerDashboardPage() {
                             <>
                                 <div className="text-2xl font-bold">{kpis!.products_count}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Ср. чек: {kpis!.avg_order_value.toLocaleString('ru-RU')} ₽
+                                    Ср. чек: {formatPrice(kpis!.avg_order_value)}
                                 </p>
                             </>
                         )}
@@ -215,7 +216,7 @@ export default function SellerDashboardPage() {
                                                             <div className="font-medium text-sm truncate max-w-[180px]">{product.name}</div>
                                                             <div className="flex items-center gap-4 shrink-0">
                                                                 <div className="text-sm text-muted-foreground">{product.quantity} шт.</div>
-                                                                <div className="font-medium text-sm">{product.revenue.toLocaleString('ru-RU')} ₽</div>
+                                                                <div className="font-medium text-sm">{formatPrice(product.revenue)}</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -266,7 +267,7 @@ export default function SellerDashboardPage() {
                                                             </div>
                                                             <div className="col-span-3 text-right">{product.quantity} шт.</div>
                                                             <div className="col-span-3 text-right font-medium">
-                                                                {product.revenue.toLocaleString('ru-RU')} ₽
+                                                                {formatPrice(product.revenue)}
                                                             </div>
                                                         </div>
                                                     )

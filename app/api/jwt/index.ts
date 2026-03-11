@@ -21,7 +21,6 @@ export const Encode = (payload: UserPayload): string => {
 
 export const Decode = (token: string): UserPayload => {
     try {
-        console.log("tuta")
         const secret = process.env.JWT_SECRET_KEY;
         if (!secret) {
             throw new Error("JWT_SECRET_KEY is not defined");

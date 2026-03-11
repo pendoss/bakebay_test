@@ -1,9 +1,8 @@
 "use client"
 
-import { formatDistanceToNow } from "date-fns"
-import { ru } from "date-fns/locale"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Star } from "lucide-react"
+import { formatDate, getInitials } from "@/lib/formatters"
 
 interface RecentReview {
     review_id: number
@@ -12,10 +11,6 @@ interface RecentReview {
     created_at: string
     customer: string
     product: string
-}
-
-function initials(name: string) {
-    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
 }
 
 export function RecentReviews({ reviews }: { reviews: RecentReview[] }) {
@@ -29,7 +24,7 @@ export function RecentReviews({ reviews }: { reviews: RecentReview[] }) {
                 <div key={review.review_id} className="border-b pb-4 last:border-b-0 last:pb-0">
                     <div className="flex items-center gap-4 mb-2">
                         <Avatar className="h-8 w-8">
-                            <AvatarFallback>{initials(review.customer)}</AvatarFallback>
+                            <AvatarFallback>{getInitials(review.customer)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{review.customer}</p>
@@ -46,7 +41,7 @@ export function RecentReviews({ reviews }: { reviews: RecentReview[] }) {
                     </div>
                     <p className="text-sm line-clamp-2">{review.comment}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ru })}
+                        {formatDate(review.created_at)}
                     </p>
                 </div>
             ))}
