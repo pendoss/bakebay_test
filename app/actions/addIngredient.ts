@@ -1,17 +1,19 @@
 "use server"
 
 import { db, orders, productIngredients } from "@/src/db"
-import { eq } from "drizzle-orm"
-import { Ingredient, Order } from "../seller-dashboard/ingredients/page"
+import { and, eq } from "drizzle-orm"
 import { getOrderDetails, OrderDetails } from "./getOrders"
 
-export async function addIngredient(name: string,amount: number, unit: string, alert: number): Promise<{error:  string | null}> {
+export async function addIngredient(name: string, amount: number, unit: string, alert: number, product_id: number): Promise<{error: string | null}> {
     try {
-        const currentStock = await db.selectDistinct({value: productIngredients.stock}).from(productIngredients).where(eq(productIngredients.name, name))
+        const currentStock = await db.selectDistinct({value: productIngredients.stock}).from(productIngredients)
+            .where(and(eq(productIngredients.name, name), eq(productIngredients.product_id, product_id)))
         console.log("currentStock ", currentStock[0])
         const currentStockValue = currentStock[0].value!
         const newStock = currentStockValue + amount
-        await db.update(productIngredients).set({stock: newStock, unit: unit, alert: alert, status: newStock>alert? "ok" : "low"}).where(eq(productIngredients.name, name))
+        await db.update(productIngredients)
+            .set({stock: newStock, unit: unit, alert: alert, status: newStock > alert ? "ok" : "low"})
+            .where(and(eq(productIngredients.name, name), eq(productIngredients.product_id, product_id)))
         return {error: ""}
     } catch(error){
         console.log("Error adding ingredient", error);

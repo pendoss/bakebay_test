@@ -12,6 +12,9 @@ import {LayoutList, LayoutDashboard} from "lucide-react"
 
 import { statusTranslations } from "@/components/order-card"
 import { OrderStatus } from "@/app/orders/page"
+import { StatusBadge } from "@/components/StatusBadge"
+import { exportOrderSmeta } from "@/app/actions/exportData"
+import { downloadCsv } from "@/lib/downloadCsv"
 
 interface OrderItem {
   id: number;
@@ -322,15 +325,6 @@ function getNextStatuses(current: string): { value: string; label: string }[] {
 }
 
 function OrderCard({ order, onStatusChange }: { order: OrderFull; onStatusChange: (orderId: string, newStatus: string) => void }) {
-    const displayStatus = statusTranslations[order.status as OrderStatus] || order.status
-
-    const getBadgeVariant = (status: string): "outline" | "secondary" | "default" => {
-        if (["ordering", "processing", "payed", "in_progress"].includes(status)) return "outline"
-        if (status === "delivering") return "secondary"
-        if (status === "delivered") return "default"
-        return "outline"
-    }
-
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -338,7 +332,7 @@ function OrderCard({ order, onStatusChange }: { order: OrderFull; onStatusChange
           <div>
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">Заказ #{order.id}</CardTitle>
-                <Badge variant={getBadgeVariant(order.status)}>{displayStatus}</Badge>
+                <StatusBadge status={order.status} type="order" />
             </div>
               <CardDescription>{order.date}</CardDescription>
           </div>
@@ -383,21 +377,33 @@ function OrderCard({ order, onStatusChange }: { order: OrderFull; onStatusChange
         </div>
       </CardContent>
         <CardContent className="border-t pt-4">
-            <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-sm text-muted-foreground">Перевести в статус:</span>
-                <Select
-                    value={order.status}
-                    onValueChange={(val) => onStatusChange(order.id, val)}
+            <div className="flex flex-wrap gap-2 items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-sm text-muted-foreground">Перевести в статус:</span>
+                    <Select
+                        value={order.status}
+                        onValueChange={(val) => onStatusChange(order.id, val)}
+                    >
+                        <SelectTrigger className="w-[170px] h-8 text-sm">
+                            <SelectValue/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            {ALL_STATUSES.map(s => (
+                                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                        const csv = await exportOrderSmeta(parseInt(order.id))
+                        downloadCsv(csv, `смета_заказ_${order.id}.csv`)
+                    }}
                 >
-                    <SelectTrigger className="w-[170px] h-8 text-sm">
-                        <SelectValue/>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {ALL_STATUSES.map(s => (
-                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                    Скачать смету
+                </Button>
             </div>
       </CardContent>
     </Card>

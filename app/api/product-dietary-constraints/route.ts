@@ -18,10 +18,6 @@ export async function GET(request: Request) {
         },
       })
       .from(dietaryConstrains)
-      .innerJoin(
-        dietaryConstrains,
-        eq(dietaryConstrains.id, dietaryConstrains.id)
-      )
       .where(eq(dietaryConstrains.product_id, parseInt(productId)));
       
       return NextResponse.json(constraints);

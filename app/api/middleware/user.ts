@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
 import { Decode } from '../jwt';
 
 
@@ -13,10 +11,6 @@ export interface User {
 export interface AuthenticatedRequest extends NextRequest {
     user?: User;
 }
-
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'default_secret_key_change_in_production'
-);
 
 
 export async function userMiddleware(

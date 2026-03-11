@@ -1,6 +1,6 @@
 "use server"
 import {db, orderItems, orders, productIngredients, products} from "@/src/db";
-import {eq} from "drizzle-orm";
+import {eq, inArray} from "drizzle-orm";
 
 
 interface OrderItemIngredients {
@@ -150,5 +150,52 @@ export async function getOrderDetails(id: number): Promise<{orderDetails: OrderD
     } catch (error){
         console.log("Error getting orders:", error);
         return {orderDetails: [], error : "Not getting orders"}
+    }
+}
+
+export async function getOrdersDetails(ids: number[]): Promise<{ orderDetails: OrderDetails[], error: string | null }> {
+    if (ids.length === 0) return { orderDetails: [], error: null }
+    try {
+        const rows = await db.select({
+            id: orders.order_id,
+            status: orders.order_status,
+            quantity: orderItems.quantity,
+            name: products.product_name,
+            ingredient_name: productIngredients.name,
+            amount: productIngredients.amount,
+            unit: productIngredients.unit,
+        }).from(orders)
+            .leftJoin(orderItems, eq(orders.order_id, orderItems.order_id))
+            .leftJoin(products, eq(orderItems.product_id, products.product_id))
+            .leftJoin(productIngredients, eq(products.product_id, productIngredients.product_id))
+            .where(inArray(orders.order_id, ids))
+
+        const ordersMap = new Map<number, OrderDetails>()
+
+        for (const row of rows) {
+            if (row.id === null) continue
+
+            if (!ordersMap.has(row.id)) {
+                ordersMap.set(row.id, { id: row.id, status: row.status, items: [] })
+            }
+
+            const order = ordersMap.get(row.id)!
+            if (!row.name) continue
+
+            let product = order.items.find(i => i.name === row.name)
+            if (!product) {
+                product = { name: row.name, quantity: row.quantity || 1, ingredients: [] }
+                order.items.push(product)
+            }
+
+            if (row.ingredient_name && !product.ingredients.some(i => i.name === row.ingredient_name)) {
+                product.ingredients.push({ name: row.ingredient_name, amount: row.amount, unit: row.unit })
+            }
+        }
+
+        return { orderDetails: Array.from(ordersMap.values()), error: null }
+    } catch (error) {
+        console.error("Error getting orders:", error)
+        return { orderDetails: [], error: "Not getting orders" }
     }
 }
