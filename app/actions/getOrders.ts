@@ -5,7 +5,8 @@ import {eq} from "drizzle-orm";
 
 interface OrderItemIngredients {
     name: string | null,
-    amount: number | null
+    amount: number | null,
+    unit: string | null,
 }
 interface OrderItem {
     name: string| null,
@@ -71,7 +72,8 @@ export async function getOrderDetails(id: number): Promise<{orderDetails: OrderD
             quantity: orderItems.quantity,
             name: products.product_name,
             ingredient_name: productIngredients.name,
-            amount: productIngredients.amount
+            amount: productIngredients.amount,
+            unit: productIngredients.unit
         }).from(orders).leftJoin(
             orderItems, eq(orders.order_id, orderItems.order_id)
         ).leftJoin(
@@ -129,7 +131,8 @@ export async function getOrderDetails(id: number): Promise<{orderDetails: OrderD
                 if (!product.ingredients.some(i => i.name === row.ingredient_name)) {
                     product.ingredients.push({
                         name: row.ingredient_name,
-                        amount: row.amount
+                        amount: row.amount,
+                        unit: row.unit,
                     });
                 }
             }

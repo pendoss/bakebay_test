@@ -112,7 +112,7 @@ export default function IngredientsPage() {
                   }
                 }
                 const amount = ingredient.amount !== null ? (+ingredient.amount) : 0;
-                ingredients[ingredient.name].amounts.push(amount * item.quantity)
+                ingredients[ingredient.name].amounts.push(amount * (item.quantity ?? 1))
                 ingredients[ingredient.name].orders.add(order.id !== null ? ("" + order.id) : (""))
               }
             })
