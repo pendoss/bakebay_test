@@ -92,3 +92,107 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Address section animated border */
+@property --border-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes border-flow {
+    to {
+        --border-angle: 360deg;
+    }
+}
+
+.address-flow {
+    position: relative;
+    border-radius: 8px;
+}
+
+.address-flow::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 10px;
+    padding: 2px;
+    background: conic-gradient(
+            from var(--border-angle),
+            hsl(var(--ring)) 0deg,
+            hsl(var(--ring)) 30deg,
+            transparent 70deg,
+            transparent 360deg
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask: linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: border-flow 0.9s linear 3;
+    pointer-events: none;
+}
+
+/* Auth dialog tab transitions */
+@keyframes vt-slide-in-right {
+    from {
+        transform: translateX(40px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes vt-slide-out-left {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-40px);
+        opacity: 0;
+    }
+}
+
+@keyframes vt-slide-in-left {
+    from {
+        transform: translateX(-40px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes vt-slide-out-right {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(40px);
+        opacity: 0;
+    }
+}
+
+/* login → register */
+:root[data-tab-direction="forward"]::view-transition-old(auth-tab-content) {
+    animation: vt-slide-out-left 0.25s ease both;
+}
+
+:root[data-tab-direction="forward"]::view-transition-new(auth-tab-content) {
+    animation: vt-slide-in-right 0.25s ease both;
+}
+
+/* register → login */
+:root[data-tab-direction="backward"]::view-transition-old(auth-tab-content) {
+    animation: vt-slide-out-right 0.25s ease both;
+}
+
+:root[data-tab-direction="backward"]::view-transition-new(auth-tab-content) {
+    animation: vt-slide-in-left 0.25s ease both;
+}

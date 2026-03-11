@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
-import { db, users } from '@/src/db';
+import {NextResponse} from 'next/server';
+import {db, users} from '@/src/db';
 import bcrypt from "bcryptjs";
-import { Decode, Encode } from '../jwt';
+import {eq} from 'drizzle-orm';
+import {Encode} from '../jwt';
+import {getAuthPayload} from '../get-auth';
+import {cookies} from 'next/headers';
 
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     // Get all users (excluding sensitive information)
     const allUsers = await db.select({
@@ -33,7 +36,43 @@ export async function GET(request: Request) {
 }
 
 
+export async function PUT(request: Request) {
+  const payload = await getAuthPayload();
+  if (!payload) return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 
+  try {
+    const body: {
+      first_name?: string; last_name?: string; email?: string;
+      phone_number?: string; address?: string; city?: string;
+      postal_code?: string; country?: string;
+    } = await request.json();
+
+    const updated = await db.update(users)
+        .set({
+          ...(body.first_name !== undefined && {first_name: body.first_name}),
+          ...(body.last_name !== undefined && {last_name: body.last_name}),
+          ...(body.email !== undefined && {email: body.email}),
+          ...(body.phone_number !== undefined && {phone_number: body.phone_number}),
+          ...(body.address !== undefined && {address: body.address}),
+          ...(body.city !== undefined && {city: body.city}),
+          ...(body.postal_code !== undefined && {postal_code: body.postal_code}),
+          ...(body.country !== undefined && {country: body.country}),
+          updated_at: new Date(),
+        })
+        .where(eq(users.user_id, payload.userId))
+        .returning({
+          user_id: users.user_id, email: users.email,
+          first_name: users.first_name, last_name: users.last_name,
+          phone_number: users.phone_number, address: users.address,
+          city: users.city, postal_code: users.postal_code, country: users.country,
+          user_role: users.user_role, created_at: users.created_at,
+        });
+
+    return NextResponse.json(updated[0]);
+  } catch {
+    return NextResponse.json({error: 'Failed to update user'}, {status: 500});
+  }
+}
 
 interface registerData{
   name: string
@@ -85,9 +124,16 @@ export async function POST(request: Request) {
       password: hashedPassword,
     }).returning();
     
-    return NextResponse.json({
-      "token": Encode({userId: newUser[0].user_id, role: newUser[0].user_role!})
-      });
+    const jwt = Encode({userId: newUser[0].user_id, role: newUser[0].user_role!});
+    const cookieStore = await cookies();
+    cookieStore.set('auth_token', jwt, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60,
+    });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error creating user:', error);
     return NextResponse.json(

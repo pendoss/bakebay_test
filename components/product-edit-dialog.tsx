@@ -1,32 +1,30 @@
 "use client"
 
-import React, { useState, useEffect, useRef, DragEvent, ChangeEvent } from "react"
-import { useRouter } from "next/navigation"
+import React, {ChangeEvent, DragEvent, useEffect, useRef, useState} from "react"
+import {useRouter} from "next/navigation"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
-import { Upload, X, Plus, Trash2, GripVertical, ImagePlus } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from "@/components/ui/dialog"
+import {useUser} from "@/contexts/user-context"
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Textarea} from "@/components/ui/textarea"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import {Separator} from "@/components/ui/separator"
+import {Checkbox} from "@/components/ui/checkbox"
+import {useToast} from "@/hooks/use-toast"
+import {GripVertical, ImagePlus, Plus, Trash2, X} from "lucide-react"
+import {Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
+import {updateProduct} from "@/app/actions/product"
 
 
 interface ProductImage {
   url: string;
-  file: File;
+    file?: File;
   name: string;
+    isExisting?: boolean;
+    s3_key?: string;
 }
 // Default product structure
 const defaultProduct = {
@@ -58,6 +56,7 @@ interface ProductEditDialogProps {
 export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: ProductEditDialogProps) {
   const router = useRouter()
   const { toast } = useToast()
+    const {sellerId} = useUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [productData, setProductData] = useState(defaultProduct)
@@ -81,6 +80,17 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
 
           const productFromApi = await response.json()
 
+            // Verify the product belongs to the current seller
+            if (sellerId && productFromApi.seller_id !== sellerId) {
+                toast({
+                    title: "Доступ запрещён",
+                    description: "Вы не можете редактировать чужой товар.",
+                    variant: "destructive"
+                })
+                onOpenChangeAction(false)
+                return
+            }
+
           // Fetch ingredients for this product
           const ingredientsResponse = await fetch(`/api/product-ingredients?productId=${productId}`)
           let ingredientsData = []
@@ -101,7 +111,7 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
             name: productFromApi.product_name || "",
             description: productFromApi.long_desc || "",
             price: productFromApi.price || 0,
-            comparePrice: 0, // Not in API, set default
+              comparePrice: 0,
             cost: productFromApi.cost || 0,
             inventory: productFromApi.stock || 0,
             sku: productFromApi.sku || "",
@@ -113,8 +123,19 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
             shelfLife: productFromApi.shelf_life || 0,
             ingredients: ingredientsData,
             dietary: productFromApi.dietary_constraints?.map((c: {id: number, name: string}) => c.name) || [],
-            images: ["/placeholder.svg?height=300&width=300"],
+              images: [],
           })
+
+            // Load existing product images into images state
+            const existingImages: ProductImage[] = (productFromApi.images || [])
+                .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
+                .map((img: any) => ({
+                    url: img.image_url,
+                    name: img.name || img.s3_key || 'image',
+                    isExisting: true,
+                    s3_key: img.s3_key,
+                }))
+            setImages(existingImages)
         } catch (error) {
           console.error('Error fetching product:', error)
           toast({
@@ -128,9 +149,11 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
       }
 
       fetchProduct()
+    } else if (!isOpen) {
+        setImages([])
     } else if (isOpen && !productId) {
-      // If creating a new product, reset to default values and mark as not loading
       setProductData(defaultProduct)
+        setImages([])
       setIsLoading(false)
     }
   }, [isOpen, productId, toast])
@@ -140,13 +163,12 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
     setIsSubmitting(true)
 
     try {
-      // Prepare data for API
-      const productToUpdate = {
+        const productFormData = {
         product_id: productData.id,
         product_name: productData.name,
         price: productData.price,
         cost: productData.cost,
-        short_desc: productData.description.substring(0, 100), // First 100 chars as short description
+            short_desc: productData.description.substring(0, 100),
         long_desc: productData.description,
         category: productData.category,
         storage_conditions: productData.storage,
@@ -155,55 +177,43 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
         weight: productData.weight,
         size: productData.size,
         shelf_life: productData.shelfLife,
-        status: productData.status
+            status: productData.status,
       }
 
-      // Call API to update product
-      const response = await fetch('/api/products', {
-        method: productId ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productToUpdate),
-      })
+        const result = await updateProduct(productFormData, images)
 
-      if (!response.ok) {
-        throw new Error(productId ? 'Failed to update product' : 'Failed to create product')
+        if (!result.success) {
+            throw new Error(result.error)
       }
 
-      // If we have a product ID, update ingredients
+        // Update ingredients
       if (productId) {
-        // Update ingredients for this product
         const ingredientsResponse = await fetch('/api/product-ingredients', {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+            headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             product_id: productData.id,
-            ingredients: productData.ingredients
+              ingredients: productData.ingredients,
           }),
         })
-
         if (!ingredientsResponse.ok) {
           console.error('Failed to update ingredients, but product was updated')
         }
       }
 
       toast({
-        title: productId ? "Товар обновлен" : "Товар создан",
-        description: productId ? "Ваш товар был успешно обновлен." : "Ваш товар был успешно создан.",
+          title: "Товар обновлен",
+          description: "Ваш товар был успешно обновлен.",
       })
 
-      // Close the dialog and refresh the products list
       onOpenChangeAction(false)
       router.refresh()
     } catch (error) {
       console.error('Error updating product:', error)
       toast({
         title: "Ошибка",
-        description: productId ? "Не удалось обновить товар." : "Не удалось создать товар.",
-        variant: "destructive"
+          description: "Не удалось обновить товар.",
+          variant: "destructive",
       })
     } finally {
       setIsSubmitting(false)
@@ -571,10 +581,32 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
                           <Label htmlFor="ingredientAmount">Количество</Label>
                           <Input
                             id="ingredientAmount"
+                            type="number"
+                            min="0"
                             value={newIngredient.amount}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({ ...newIngredient, amount: +e.target.value })}
-                            placeholder="например, 250г"
+                            placeholder="например, 250"
                           />
+                        </div>
+                        <div className="space-y-2 w-32">
+                          <Label htmlFor="ingredientUnit">Ед. измерения</Label>
+                          <Select
+                            value={newIngredient.unit}
+                            onValueChange={(value) => setNewIngredient({ ...newIngredient, unit: value })}
+                          >
+                            <SelectTrigger id="ingredientUnit">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="г">г</SelectItem>
+                              <SelectItem value="кг">кг</SelectItem>
+                              <SelectItem value="мл">мл</SelectItem>
+                              <SelectItem value="л">л</SelectItem>
+                              <SelectItem value="шт">шт</SelectItem>
+                              <SelectItem value="ч.л.">ч.л.</SelectItem>
+                              <SelectItem value="ст.л.">ст.л.</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <Button
                           type="button"

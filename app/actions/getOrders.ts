@@ -1,12 +1,12 @@
 "use server"
-import { OrderItems } from "@/components/order-card";
-import { db, orderItems, orders, productIngredients, products } from "@/src/db";
-import { eq } from "drizzle-orm";
+import {db, orderItems, orders, productIngredients, products} from "@/src/db";
+import {eq} from "drizzle-orm";
 
 
 interface OrderItemIngredients {
     name: string | null,
-    amount: number | null
+    amount: number | null,
+    unit: string | null,
 }
 interface OrderItem {
     name: string| null,
@@ -25,15 +25,24 @@ interface OrderId{
     orderId: number
 }
 
-export async function getOrderIds(): Promise<{orderIds: OrderId[], error: string | null}>{
+export async function getOrderIds(sellerId?: number | null): Promise<{ orderIds: OrderId[], error: string | null }> {
     try{
-        const result = await db.select({orderId: orders.order_id}).from(orders)
+        let result: OrderId[];
+        if (sellerId) {
+            result = await db.selectDistinct({orderId: orders.order_id})
+                .from(orders)
+                .leftJoin(orderItems, eq(orders.order_id, orderItems.order_id))
+                .leftJoin(products, eq(orderItems.product_id, products.product_id))
+                .where(eq(products.seller_id, sellerId));
+        } else {
+            result = await db.select({orderId: orders.order_id}).from(orders);
+        }
 
         return {orderIds: result, error: null}
     } catch (error) {
         return {orderIds: [], error: "didn't get id's"}
     }
-    
+
 }
 
 export async function getOrderDetails(id: number): Promise<{orderDetails: OrderDetails[], error: string | null}>{
@@ -63,7 +72,8 @@ export async function getOrderDetails(id: number): Promise<{orderDetails: OrderD
             quantity: orderItems.quantity,
             name: products.product_name,
             ingredient_name: productIngredients.name,
-            amount: productIngredients.amount
+            amount: productIngredients.amount,
+            unit: productIngredients.unit
         }).from(orders).leftJoin(
             orderItems, eq(orders.order_id, orderItems.order_id)
         ).leftJoin(
@@ -121,7 +131,8 @@ export async function getOrderDetails(id: number): Promise<{orderDetails: OrderD
                 if (!product.ingredients.some(i => i.name === row.ingredient_name)) {
                     product.ingredients.push({
                         name: row.ingredient_name,
-                        amount: row.amount
+                        amount: row.amount,
+                        unit: row.unit,
                     });
                 }
             }

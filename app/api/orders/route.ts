@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
-import {OrderItems} from "@/components/order-card";
-import {db, orders, orderItems, products, users} from "@/src/db";
-import { updateStockById } from '@/app/actions/addIngredient';
+import {NextResponse} from 'next/server';
+import {eq} from 'drizzle-orm';
+import {db, orderItems, orders, products, users} from "@/src/db";
+import {updateStockById} from '@/app/actions/addIngredient';
+import {adjustIngredientStock} from '@/app/lib/ingredients';
+import {getAuthPayload} from '@/app/api/get-auth';
 
 
 export async function GET(request: Request) {
@@ -75,19 +76,22 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const authPayload = await getAuthPayload();
+    if (!authPayload) {
+      return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+    }
+    const userId = authPayload.userId;
+
     const body = await request.json();
-    
-    // Add detailed logging to see what's coming in
-    console.log("Received order request with body:", body);
 
     // Validate required fields
-    if (!body.user_id || !body.address || !body.payment_method || !body.items || body.items.length === 0) {
+    if (!body.address || !body.payment_method || !body.items || body.items.length === 0) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     // Calculate total price
     let totalPrice = 0;
     for (const item of body.items) {
@@ -114,7 +118,7 @@ export async function POST(request: Request) {
       const newOrder = await db.insert(orders).values({
         date: new Date(),
         order_status: body.order_status || 'ordering',
-        user_id: body.user_id,
+        user_id: userId,
         total_price: totalPrice,
         address: body.address,
         payment_method: body.payment_method,
@@ -201,7 +205,15 @@ export async function PUT(request: Request) {
         { status: 400 }
       );
     }
-    
+
+      // Get current status before update (for ingredient adjustment)
+      const currentOrder = await db
+          .select({order_status: orders.order_status})
+          .from(orders)
+          .where(eq(orders.order_id, body.order_id))
+          .limit(1);
+      const oldStatus = currentOrder[0]?.order_status ?? '';
+
     // Update order status
     const updatedOrder = await db.update(orders)
       .set({
@@ -219,6 +231,10 @@ export async function PUT(request: Request) {
         { status: 404 }
       );
     }
+
+      if (body.order_status) {
+          await adjustIngredientStock(body.order_id, oldStatus, body.order_status);
+      }
 
     if (body.order_status === "delivering") {
       console.log("Processing inventory updates for delivering status");

@@ -7,14 +7,12 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
-// Extend Window interface to include priceTimeout property
 declare global {
   interface Window {
     priceTimeout: ReturnType<typeof setTimeout>;
   }
 }
 
-// Словарь для перевода категорий
 const categoryTranslations: Record<string, string> = {
   Cakes: "Торты",
   Cookies: "Печенье",
@@ -28,7 +26,6 @@ const categoryTranslations: Record<string, string> = {
   Cupcakes: "Капкейки",
 }
 
-// Словарь для перевода диетических опций
 const dietaryTranslations: Record<string, string> = {
   "Gluten-Free": "Без глютена",
   Vegan: "Веганское",
@@ -39,43 +36,14 @@ const dietaryTranslations: Record<string, string> = {
   "May Contain Nuts": "Может содержать орехи",
 }
 
-// Получаем уникальные значения для опций фильтра
 const categories = [
-  "Cakes",
-  "Cookies",
-  "Pastries",
-  "Italian Desserts",
-  "Tarts",
-  "Brownies",
-  "International Desserts",
-  "Pies",
-  "Chocolates",
-  "Cupcakes",
+    "Cakes", "Cookies", "Pastries", "Italian Desserts", "Tarts",
+    "Brownies", "International Desserts", "Pies", "Chocolates", "Cupcakes",
 ]
 
 const dietaryOptions = [
-  "Gluten-Free",
-  "Vegan",
-  "Dairy-Free",
-  "Contains Nuts",
-  "Contains Gluten",
-  "Contains Dairy",
-  "May Contain Nuts",
-]
-
-const sellers = [
-  "Кондитерская Сладкие Радости",
-  "Чизкейк Рай",
-  "Парижские деликатесы",
-  "Утренняя пекарня",
-  "Зеленые угощения",
-  "Итальянские сладости",
-  "Дом тартов",
-  "Пекарня без аллергенов",
-  "Средиземноморские сладости",
-  "Пирожный рай",
-  "Трюфельные мастера",
-  "Капкейк уголок",
+    "Gluten-Free", "Vegan", "Dairy-Free",
+    "Contains Nuts", "Contains Gluten", "Contains Dairy", "May Contain Nuts",
 ]
 
 const ratingOptions = [
@@ -84,38 +52,53 @@ const ratingOptions = [
   { value: 4.5, label: "4.5 и выше" },
   { value: 4.0, label: "4.0 и выше" },
 ]
+
 type Filters = {
   priceRange: [number, number];
   categories: string[];
   dietary: string[];
   rating: number;
-  sellers: string[];
+    sellers: number[];
 };
 
 type ApplyFiltersAction = (filters: Filters) => void;
 
-export function FilterSidebar({filters, applyFiltersAction}: {
+type AvailableSeller = { id: number; name: string };
+
+export function FilterSidebar({
+                                  filters,
+                                  applyFiltersAction,
+                                  minPrice = 0,
+                                  maxPrice = 10000,
+                              }: {
   filters: Filters;
   applyFiltersAction: ApplyFiltersAction;
+    minPrice?: number;
+    maxPrice?: number;
 }) {
   const [localFilters, setLocalFilters] = useState(filters)
   const [priceRange, setPriceRange] = useState(filters.priceRange)
+    const [availableSellers, setAvailableSellers] = useState<AvailableSeller[]>([])
 
-  // Обновляем локальные фильтры при изменении пропсов
   useEffect(() => {
     setLocalFilters(filters)
     setPriceRange(filters.priceRange)
   }, [filters])
 
+    useEffect(() => {
+        fetch("/api/sellers")
+            .then((r) => r.ok ? r.json() : [])
+            .then((data: { seller_id: number; seller_name: string }[]) =>
+                setAvailableSellers(data.map((s) => ({id: s.seller_id, name: s.seller_name})))
+            )
+            .catch(() => {
+            })
+    }, [])
+
   const handleCategoryChange = (category: string, checked: boolean | "indeterminate") => {
     let newCategories = [...localFilters.categories]
-
-    if (checked === true) {
-      newCategories.push(category)
-    } else {
-      newCategories = newCategories.filter((c) => c !== category)
-    }
-
+      if (checked === true) newCategories.push(category)
+      else newCategories = newCategories.filter((c) => c !== category)
     const newFilters = { ...localFilters, categories: newCategories }
     setLocalFilters(newFilters)
     applyFiltersAction(newFilters)
@@ -123,27 +106,17 @@ export function FilterSidebar({filters, applyFiltersAction}: {
 
   const handleDietaryChange = (option: string, checked: boolean | "indeterminate") => {
     let newDietary = [...localFilters.dietary]
-
-    if (checked === true) {
-      newDietary.push(option)
-    } else {
-      newDietary = newDietary.filter((d) => d !== option)
-    }
-
+      if (checked === true) newDietary.push(option)
+      else newDietary = newDietary.filter((d) => d !== option)
     const newFilters = { ...localFilters, dietary: newDietary }
     setLocalFilters(newFilters)
     applyFiltersAction(newFilters)
   }
 
-  const handleSellerChange = (seller: string, checked: boolean | "indeterminate") => {
+    const handleSellerChange = (sellerId: number, checked: boolean | "indeterminate") => {
     let newSellers = [...localFilters.sellers]
-
-    if (checked === true) {
-      newSellers.push(seller)
-    } else {
-      newSellers = newSellers.filter((s) => s !== seller)
-    }
-
+        if (checked === true) newSellers.push(sellerId)
+        else newSellers = newSellers.filter((s) => s !== sellerId)
     const newFilters = { ...localFilters, sellers: newSellers }
     setLocalFilters(newFilters)
     applyFiltersAction(newFilters)
@@ -158,8 +131,6 @@ export function FilterSidebar({filters, applyFiltersAction}: {
   const handlePriceChange = (value: number[]) => {
     const priceRangeValue: [number, number] = [value[0], value[1]]
     setPriceRange(priceRangeValue)
-
-    // Задержка изменений цены, чтобы избежать слишком частых перерисовок
     clearTimeout(window.priceTimeout)
     window.priceTimeout = setTimeout(() => {
       const newFilters = { ...localFilters, priceRange: priceRangeValue }
@@ -170,14 +141,14 @@ export function FilterSidebar({filters, applyFiltersAction}: {
 
   const handleReset = () => {
     const resetFilters: Filters = {
-      priceRange: [0, 10000] as [number, number],
+        priceRange: [minPrice, maxPrice] as [number, number],
       categories: [],
       dietary: [],
       rating: 0,
       sellers: [],
     }
     setLocalFilters(resetFilters)
-    setPriceRange([0, 10000])
+      setPriceRange([minPrice, maxPrice])
     applyFiltersAction(resetFilters)
   }
 
@@ -194,9 +165,9 @@ export function FilterSidebar({filters, applyFiltersAction}: {
         <div>
           <h4 className="font-medium mb-2">Диапазон цен</h4>
           <Slider
-            defaultValue={priceRange}
             value={priceRange}
-            max={10000}
+            min={minPrice}
+            max={maxPrice}
             step={50}
             onValueChange={handlePriceChange}
             className="mb-2"
@@ -217,7 +188,7 @@ export function FilterSidebar({filters, applyFiltersAction}: {
                     <Checkbox
                       id={`category-${category}`}
                       checked={localFilters.categories.includes(category)}
-                      onCheckedChange={(checked: boolean | "indeterminate") => handleCategoryChange(category, checked)}
+                      onCheckedChange={(checked) => handleCategoryChange(category, checked)}
                     />
                     <Label htmlFor={`category-${category}`}>{categoryTranslations[category] || category}</Label>
                   </div>
@@ -235,7 +206,7 @@ export function FilterSidebar({filters, applyFiltersAction}: {
                     <Checkbox
                       id={`dietary-${option}`}
                       checked={localFilters.dietary.includes(option)}
-                      onCheckedChange={(checked: boolean | "indeterminate") => handleDietaryChange(option, checked)}
+                      onCheckedChange={(checked) => handleDietaryChange(option, checked)}
                     />
                     <Label htmlFor={`dietary-${option}`}>{dietaryTranslations[option] || option}</Label>
                   </div>
@@ -253,7 +224,7 @@ export function FilterSidebar({filters, applyFiltersAction}: {
                     <Checkbox
                       id={`rating-${option.value}`}
                       checked={localFilters.rating === option.value}
-                      onCheckedChange={(checked: boolean | "indeterminate") => {
+                      onCheckedChange={(checked) => {
                         if (checked) handleRatingChange(option.value)
                         else handleRatingChange(0)
                       }}
@@ -269,18 +240,21 @@ export function FilterSidebar({filters, applyFiltersAction}: {
             <AccordionTrigger>Продавцы</AccordionTrigger>
             <AccordionContent>
               <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                {sellers.map((seller) => (
-                  <div key={seller} className="flex items-center space-x-2">
+                  {availableSellers.map((seller) => (
+                      <div key={seller.id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`seller-${seller}`}
-                      checked={localFilters.sellers.includes(seller)}
-                      onCheckedChange={(checked: boolean | "indeterminate") => handleSellerChange(seller, checked)}
+                        id={`seller-${seller.id}`}
+                        checked={localFilters.sellers.includes(seller.id)}
+                        onCheckedChange={(checked) => handleSellerChange(seller.id, checked)}
                     />
-                    <Label htmlFor={`seller-${seller}`} className="text-sm">
-                      {seller}
+                          <Label htmlFor={`seller-${seller.id}`} className="text-sm">
+                              {seller.name}
                     </Label>
                   </div>
                 ))}
+                  {availableSellers.length === 0 && (
+                      <p className="text-sm text-muted-foreground">Загрузка...</p>
+                  )}
               </div>
             </AccordionContent>
           </AccordionItem>

@@ -28,9 +28,11 @@ function getStatusText(status: string | null | undefined): string {
   }
 }
 
-export async function fetchProducts(): Promise<{ products: Product[], error: string | null }> {
+export async function fetchProducts(sellerId?: number | null): Promise<{ products: Product[], error: string | null }> {
   try {
-    const dbProducts = await db.select().from(productsTable);
+    const dbProducts = sellerId
+        ? await db.select().from(productsTable).where(eq(productsTable.seller_id, sellerId))
+        : await db.select().from(productsTable);
     const transformedProducts: Product[] = await Promise.all(dbProducts.map(async product => {
       const images = await db.select()
         .from(productImages)

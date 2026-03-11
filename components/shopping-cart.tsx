@@ -1,20 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import {useState} from "react"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { Trash2, Plus, Minus } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useCart } from "@/contexts/cart-context"
-import { useToast } from "@/hooks/use-toast"
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/components/ui/card"
+import {Input} from "@/components/ui/input"
+import {Separator} from "@/components/ui/separator"
+import {Minus, Plus, Trash2} from "lucide-react"
+import {useRouter} from "next/navigation"
+import {useCart} from "@/contexts/cart-context"
+import {useToast} from "@/hooks/use-toast"
+import {useUser} from "@/contexts/user-context"
 
 export function ShoppingCart() {
   const router = useRouter()
   const { toast } = useToast()
   const { items, removeItem, updateQuantity, clearCart, getCartTotal } = useCart()
+  const {user} = useUser()
   const [promoCode, setPromoCode] = useState("")
   const [promoApplied, setPromoApplied] = useState(false)
 
@@ -162,8 +164,8 @@ export function ShoppingCart() {
 
               {promoApplied && <div className="text-sm text-green-600 mb-4">Промокод успешно применен!</div>}
 
-              <Button 
-                className="w-full" 
+              <Button
+                  className="w-full"
                 onClick={async () => {
                   try {
                     // Check if there are items in the cart
@@ -176,32 +178,30 @@ export function ShoppingCart() {
                       return;
                     }
 
-                    // Get user data from localStorage or session
-                    const userData = JSON.parse(localStorage.getItem('userData') || '{"id": 2}');
+                    // Check authentication
+                    if (!user) {
+                      toast({
+                        title: "Необходима авторизация",
+                        description: "Войдите в аккаунт, чтобы оформить заказ.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
 
-                    // Log the items we're sending for debugging
-                    console.log("Cart items being sent:", items);
-
-                    // Make sure we're sending valid product_id values
                     const orderData = {
-                      user_id: userData.id,
                       address: localStorage.getItem('userAddress') || "123 Main St, City",
                       payment_method: localStorage.getItem('paymentMethod') || "Credit Card",
                       items: items.map(item => ({
-                        // Ensure we're using the correct ID format
                         product_id: typeof item.id === 'string' ? parseInt(item.id, 10) : item.id,
                         quantity: item.quantity
                       }))
                     };
 
-                    console.log("Order data being sent:", orderData);
-
                     // Send order to API
                     const response = await fetch('/api/orders', {
                       method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
+                      headers: {'Content-Type': 'application/json'},
+                      credentials: 'include',
                       body: JSON.stringify(orderData),
                     });
 

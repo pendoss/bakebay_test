@@ -2,6 +2,7 @@
 
 import { useState, useRef, FormEvent, ChangeEvent, DragEvent } from "react"
 import { useRouter } from "next/navigation"
+import {useUser} from "@/contexts/user-context"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -47,11 +48,13 @@ interface Product {
   dietaryInfo: string[];
   images: ProductImage[];
   ingredients: ProductIngredient[];
+  sellerId?: number;
 }
 
 export default function NewProductPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const {sellerId} = useUser()
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [images, setImages] = useState<ProductImage[]>([])
   const [ingredients, setIngredients] = useState<ProductIngredient[]>([])
@@ -155,6 +158,8 @@ export default function NewProductPage() {
     }
 
     try {
+      if (sellerId) updatedFormState.sellerId = sellerId
+
       const result = await createProduct(updatedFormState);
 
       if (result.success) {
@@ -337,10 +342,14 @@ export default function NewProductPage() {
                         <SelectContent>
                           <SelectItem value="Cakes">Торты</SelectItem>
                           <SelectItem value="Cookies">Печенье</SelectItem>
-                          <SelectItem value="Castries">Выпечка</SelectItem>
-                          <SelectItem value="Ctalian-desserts">Итальянские десерты</SelectItem>
+                          <SelectItem value="Pastries">Выпечка</SelectItem>
+                          <SelectItem value="Italian Desserts">Итальянские десерты</SelectItem>
                           <SelectItem value="Chocolates">Шоколад</SelectItem>
                           <SelectItem value="Cupcakes">Капкейки</SelectItem>
+                          <SelectItem value="Tarts">Тарты</SelectItem>
+                          <SelectItem value="Brownies">Брауни</SelectItem>
+                          <SelectItem value="Pies">Пироги</SelectItem>
+                          <SelectItem value="International Desserts">Международные десерты</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
