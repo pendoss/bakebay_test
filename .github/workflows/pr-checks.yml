@@ -1,0 +1,59 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+# Отменяет предыдущий запуск для того же PR при новом пуше
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck / Lint / Test / Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Typecheck ──────────────────────────────────────────────────────────
+      - name: Typecheck
+        run: pnpm tsc --noEmit
+
+      # ── Lint ───────────────────────────────────────────────────────────────
+      - name: Lint
+        run: pnpm lint
+
+      # ── Tests ──────────────────────────────────────────────────────────────
+      - name: Tests
+        run: pnpm test --ci --passWithNoTests
+
+      # ── Build ──────────────────────────────────────────────────────────────
+      # Используем заглушки для переменных окружения: build проверяет только
+      # компиляцию, а не реальное подключение к БД/S3.
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          JWT_SECRET_KEY: ci-placeholder-secret-key-for-build-only
+          SECRET: "0"
+          S3_ENDPOINT: localhost
+          S3_ACCESS_KEY: placeholder
+          S3_SECRET_KEY: placeholder
+          S3_BUCKET_NAME: bakebay
+          S3_PORT: "9000"
+          S3_USE_SSL: "false"
