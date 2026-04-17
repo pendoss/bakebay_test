@@ -120,15 +120,15 @@ export async function getOrderDetails(id: number): Promise<{orderDetails: OrderD
             if (!productsMap.has(row.name)) {
                 productsMap.set(row.name, {
                     name: row.name,
-                    quantity: row.quantity || 1, 
+                    quantity: row.quantity || 1,
                     ingredients: []
                 });
             }
-            
+
             if (row.ingredient_name) {
                 const product = productsMap.get(row.name);
-                if (!product) continue;
-                
+                if (!product) return;
+
                 if (!product.ingredients.some(i => i.name === row.ingredient_name)) {
                     product.ingredients.push({
                         name: row.ingredient_name,

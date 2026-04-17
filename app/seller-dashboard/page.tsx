@@ -1,15 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useUser } from "@/contexts/user-context"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Overview } from "@/components/seller-dashboard/overview"
-import { RecentOrders } from "@/components/seller-dashboard/recent-orders"
-import { RecentReviews } from "@/components/seller-dashboard/recent-reviews"
-import { AreaChart, BarChart, DollarSign, Package, ShoppingBag, Star, TrendingDown, TrendingUp, Users } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { formatPrice } from "@/lib/formatters"
+import {useEffect, useState} from "react"
+import {useUser} from "@/contexts/user-context"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import {Overview} from "@/components/seller-dashboard/overview"
+import {RecentOrders} from "@/components/seller-dashboard/recent-orders"
+import {RecentReviews} from "@/components/seller-dashboard/recent-reviews"
+import {
+    AreaChart,
+    BarChart,
+    DollarSign,
+    Package,
+    ShoppingBag,
+    Star,
+    TrendingDown,
+    TrendingUp,
+    Users
+} from "lucide-react"
+import {Skeleton} from "@/components/ui/skeleton"
+import {formatPrice} from "@/lib/formatters"
 
 interface Analytics {
     kpis: {
@@ -88,8 +98,8 @@ export default function SellerDashboardPage() {
                     <CardContent>
                         {loading ? <KpiSkeleton /> : (
                             <>
-                                <div className="text-2xl font-bold">{formatPrice(kpis?.total_revenue)}</div>
-                                <ChangeIndicator value={kpis?.revenue_change}/>
+                                <div className="text-2xl font-bold">{formatPrice(kpis?.total_revenue ?? 0)}</div>
+                                <ChangeIndicator value={kpis?.revenue_change ?? 0}/>
                             </>
                         )}
                     </CardContent>
@@ -104,7 +114,7 @@ export default function SellerDashboardPage() {
                         {loading ? <KpiSkeleton /> : (
                             <>
                                 <div className="text-2xl font-bold">{kpis?.orders_count}</div>
-                                <ChangeIndicator value={kpis?.orders_change}/>
+                                <ChangeIndicator value={kpis?.orders_change ?? 0}/>
                             </>
                         )}
                     </CardContent>
@@ -120,7 +130,7 @@ export default function SellerDashboardPage() {
                             <>
                                 <div className="text-2xl font-bold">{kpis?.products_count}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Ср. чек: {formatPrice(kpis?.avg_order_value)}
+                                    Ср. чек: {formatPrice(kpis?.avg_order_value ?? 0)}
                                 </p>
                             </>
                         )}
@@ -138,7 +148,7 @@ export default function SellerDashboardPage() {
                                 <div className="text-2xl font-bold">{kpis?.unique_customers}</div>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                                     <Star className="h-3 w-3 fill-primary text-primary" />
-                                    {kpis?.avg_rating > 0 ? kpis?.avg_rating : "—"} средний рейтинг
+                                    {(kpis?.avg_rating ?? 0) > 0 ? kpis?.avg_rating : "—"} средний рейтинг
                                 </p>
                             </>
                         )}
@@ -170,7 +180,7 @@ export default function SellerDashboardPage() {
                             <CardContent className="pl-2">
                                 {loading
                                     ? <Skeleton className="h-[300px] w-full" />
-                                    : <Overview data={analytics?.monthly_data}/>
+                                    : <Overview data={analytics?.monthly_data ?? []}/>
                                 }
                             </CardContent>
                         </Card>
@@ -185,7 +195,7 @@ export default function SellerDashboardPage() {
                             <CardContent>
                                 {loading
                                     ? <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-                                    : <RecentOrders orders={analytics?.recent_orders}/>
+                                    : <RecentOrders orders={analytics?.recent_orders ?? []}/>
                                 }
                             </CardContent>
                         </Card>
@@ -196,13 +206,13 @@ export default function SellerDashboardPage() {
                             <CardHeader>
                                 <CardTitle>Последние отзывы</CardTitle>
                                 <CardDescription>
-                                    {!loading && kpis?.avg_rating > 0 && `Средний рейтинг: ${kpis?.avg_rating} ★`}
+                                    {!loading && (kpis?.avg_rating ?? 0) > 0 && `Средний рейтинг: ${kpis?.avg_rating} ★`}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {loading
                                     ? <div className="space-y-3">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-                                    : <RecentReviews reviews={analytics?.recent_reviews}/>
+                                    : <RecentReviews reviews={analytics?.recent_reviews ?? []}/>
                                 }
                             </CardContent>
                         </Card>

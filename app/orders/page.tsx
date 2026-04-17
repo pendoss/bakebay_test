@@ -72,13 +72,14 @@ export default function OrdersPage() {
                 const response = await fetch(`/api/orders?userId=${user.user_id}`)
 
                 if (!response.ok) {
-                    throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText}`)
+                    setError(`Failed to fetch orders: ${response.status} ${response.statusText}`)
+                    return
                 }
 
                 const data = await response.json()
-                
+
                 // Transform API data to match our component's expected format
-                const formattedOrders = data.map((order: Record<string, unknown>) => ({
+                const formattedOrders = data.map((order: Record<string, string>) => ({
                     id: order.id,
                     date: order.date,
                     orderStatus: order.status,
