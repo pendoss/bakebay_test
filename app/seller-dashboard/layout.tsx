@@ -6,6 +6,8 @@ import {useEffect} from "react"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import {useUser} from "@/contexts/user-context"
+import {useSellerNotifications} from "@/hooks/use-seller-notifications"
+import {useSellerReviewNotifications} from "@/hooks/use-seller-review-notifications"
 
 interface Props {
   children?: React.ReactNode
@@ -13,7 +15,12 @@ interface Props {
 
 export default function SellerDashboardLayout({ children }: Props) {
   const router = useRouter()
-  const {user, isLoading} = useUser()
+  const {user, sellerId, isLoading} = useUser()
+
+  // Поллинг новых заказов — уведомляет продавца раз в 30 с
+  useSellerNotifications(sellerId)
+  // Поллинг новых отзывов — уведомляет продавца раз в 60 с
+  useSellerReviewNotifications(sellerId)
 
   useEffect(() => {
     if (isLoading) return

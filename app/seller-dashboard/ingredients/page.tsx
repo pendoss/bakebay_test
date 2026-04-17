@@ -18,7 +18,8 @@ import { computeMinPurchaseCost, computeMaxProfit, MinPurchaseResult, MaxProfitR
 import { exportPurchaseList } from "@/app/actions/exportData";
 import { formatPrice } from "@/lib/formatters";
 import { downloadCsv } from "@/lib/downloadCsv";
-import {useUser} from "@/contexts/user-context";
+import {useUser} from "@/contexts/user-context"
+import {useIngredientAlerts} from "@/hooks/use-ingredient-alerts"
 
 export interface Ingredient {
     ingredient_id: number,
@@ -64,6 +65,9 @@ export default function IngredientsPage() {
   const [activeOrders, setActiveOrders] = useState<OrderDetails[]>([])
   const [allIngredients, setAllIngredients] = useState<AllIngredientsType>({})
   const [inventoryIngredients, setInventoryIngredients] = useState<Ingredient[]>([])
+
+  // Уведомляет при low/out ингредиентах после каждой загрузки данных
+  useIngredientAlerts(inventoryIngredients)
   const [checkedIngredients, setCheckedIngredients] = useState<CheckedIngredientsType>({})
   const [searchTerm, setSearchTerm] = useState("")
   const [inventorySearchTerm, setInventorySearchTerm] = useState("")
