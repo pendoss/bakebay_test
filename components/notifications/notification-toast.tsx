@@ -10,17 +10,17 @@
  */
 
 import {
-    X,
-    ShoppingBag,
-    Package,
     AlertTriangle,
+    type LucideProps,
+    MessageSquare,
+    Package,
     PackageX,
     RefreshCw,
+    ShoppingBag,
     Star,
-    MessageSquare,
-    type LucideProps
+    X
 } from "lucide-react"
-import {Alert, AlertTitle, AlertDescription} from "@/components/ui/alert"
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert"
 import {Avatar, AvatarFallback} from "@/components/ui/avatar"
 import {AppNotification, NOTIFICATION_CONFIGS} from "@/lib/notifications"
 import {useRouter} from "next/navigation"
@@ -70,7 +70,12 @@ export function NotificationToast({notification, onDismiss}: Props) {
             tabIndex={notification.deeplink ? 0 : undefined}
             onKeyDown={
                 notification.deeplink
-                    ? e => e.key === "Enter" && handleClick()
+                    ? e => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            handleClick()
+                        }
+                    }
                     : undefined
             }
         >

@@ -22,8 +22,21 @@ export interface DeliveredOrder {
     date: string  // дата заказа (формат может быть "DD MM YYYY" или ISO)
 }
 
+// noinspection NonAsciiCharacters
+const RU_MONTHS: Record<string, string> = {
+    "января": "01", "февраля": "02", "марта": "03", "апреля": "04",
+    "мая": "05", "июня": "06", "июля": "07", "августа": "08",
+    "сентября": "09", "октября": "10", "ноября": "11", "декабря": "12",
+}
+
 function parseOrderDate(dateStr: string): Date {
-    // Поддержка формата "DD MM YYYY" и ISO
+    // Поддержка ru-RU формата "18 апреля 2026 г." и ISO
+    const ruMatch = dateStr.match(/^(\d{1,2})\s+(\S+)\s+(\d{4})/)
+    if (ruMatch) {
+        const month = RU_MONTHS[ruMatch[2].toLowerCase()]
+        if (month) return new Date(`${ruMatch[3]}-${month}-${ruMatch[1].padStart(2, "0")}`)
+    }
+    // Fallback: "DD MM YYYY" или ISO
     const parts = dateStr.split(" ")
     if (parts.length === 3 && parts[0].length <= 2) {
         return new Date(parts.reverse().join("-"))

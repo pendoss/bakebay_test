@@ -1,7 +1,7 @@
 "use server"
 
 import {db, productIngredients} from "@/src/db"
-import { and, eq } from "drizzle-orm"
+import {and, eq} from "drizzle-orm"
 
 export async function addIngredient(name: string, amount: number, unit: string, alert: number, product_id: number): Promise<{error: string | null}> {
     try {
@@ -11,7 +11,12 @@ export async function addIngredient(name: string, amount: number, unit: string, 
         const currentStockValue = currentStock[0].value ?? 0
         const newStock = currentStockValue + amount
         await db.update(productIngredients)
-            .set({stock: newStock, unit: unit, alert: alert, status: newStock > alert ? "ok" : "low"})
+            .set({
+                stock: newStock,
+                unit: unit,
+                alert: alert,
+                status: newStock <= 0 ? "out" : (newStock <= alert ? "low" : "ok")
+            })
             .where(and(eq(productIngredients.name, name), eq(productIngredients.product_id, product_id)))
         return {error: ""}
     } catch(error){
@@ -35,7 +40,7 @@ export async function updateStockById(productId: number): Promise<{sucsess: bool
         await Promise.all(currentStock.map(async (item) => {
             const newStock = (item.value ?? 0) - item.amount;
             const alertVal = item.alert ?? 0;
-            const status = newStock > alertVal ? "ok" : (newStock - alertVal < alertVal * 2 ? "low" : "out");
+            const status = newStock <= 0 ? "out" : (newStock <= alertVal ? "low" : "ok");
             
             await db.update(productIngredients).set({stock: newStock,status: status}).where(eq(productIngredients.name, item.ing_name));
             

@@ -67,6 +67,7 @@ export default function SellerDashboardPage() {
 
     useEffect(() => {
         if (!sellerId) return
+        setLoading(true)
         let cancelled = false
         const loadAnalytics = async () => {
             try {
