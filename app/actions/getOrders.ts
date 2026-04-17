@@ -39,7 +39,7 @@ export async function getOrderIds(sellerId?: number | null): Promise<{ orderIds:
         }
 
         return {orderIds: result, error: null}
-    } catch (error) {
+    } catch {
         return {orderIds: [], error: "didn't get id's"}
     }
 
@@ -126,7 +126,8 @@ export async function getOrderDetails(id: number): Promise<{orderDetails: OrderD
             }
             
             if (row.ingredient_name) {
-                const product = productsMap.get(row.name)!;
+                const product = productsMap.get(row.name);
+                if (!product) continue;
                 
                 if (!product.ingredients.some(i => i.name === row.ingredient_name)) {
                     product.ingredients.push({
@@ -179,7 +180,8 @@ export async function getOrdersDetails(ids: number[]): Promise<{ orderDetails: O
                 ordersMap.set(row.id, { id: row.id, status: row.status, items: [] })
             }
 
-            const order = ordersMap.get(row.id)!
+            const order = ordersMap.get(row.id)
+            if (!order) continue
             if (!row.name) continue
 
             let product = order.items.find(i => i.name === row.name)

@@ -78,7 +78,7 @@ export default function OrdersPage() {
                 const data = await response.json()
                 
                 // Transform API data to match our component's expected format
-                const formattedOrders = data.map((order: any) => ({
+                const formattedOrders = data.map((order: Record<string, unknown>) => ({
                     id: order.id,
                     date: order.date,
                     orderStatus: order.status,

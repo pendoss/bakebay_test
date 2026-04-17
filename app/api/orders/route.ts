@@ -246,7 +246,7 @@ export async function PUT(request: Request) {
       for (const item of items) {
         try {
           console.log(`Updating stock for product ID: ${item.product_id}`);
-          await updateStockById(item.product_id!);
+            if (item.product_id) await updateStockById(item.product_id);
         } catch (stockError) {
           console.error(`Error updating stock for product ${item.product_id}:`, stockError);
         }

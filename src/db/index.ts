@@ -16,7 +16,7 @@ import {reviews} from './schema/reviews';
 
 // Create a PostgreSQL connection pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
+    connectionString: process.env.DATABASE_URL ?? "",
 });
 
 // Create a Drizzle ORM instance

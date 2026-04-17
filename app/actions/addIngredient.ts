@@ -1,15 +1,14 @@
 "use server"
 
-import { db, orders, productIngredients } from "@/src/db"
+import {db, productIngredients} from "@/src/db"
 import { and, eq } from "drizzle-orm"
-import { getOrderDetails, OrderDetails } from "./getOrders"
 
 export async function addIngredient(name: string, amount: number, unit: string, alert: number, product_id: number): Promise<{error: string | null}> {
     try {
         const currentStock = await db.selectDistinct({value: productIngredients.stock}).from(productIngredients)
             .where(and(eq(productIngredients.name, name), eq(productIngredients.product_id, product_id)))
         console.log("currentStock ", currentStock[0])
-        const currentStockValue = currentStock[0].value!
+        const currentStockValue = currentStock[0].value ?? 0
         const newStock = currentStockValue + amount
         await db.update(productIngredients)
             .set({stock: newStock, unit: unit, alert: alert, status: newStock > alert ? "ok" : "low"})
@@ -34,8 +33,9 @@ export async function updateStockById(productId: number): Promise<{sucsess: bool
         
         // Use Promise.all instead of forEach to handle async operations
         await Promise.all(currentStock.map(async (item) => {
-            const newStock = item.value! - item.amount;
-            const status = newStock > (item.alert || 0) ? "ok" : (newStock- item.alert! < item.alert! *2 ? ("low") : ("out"));
+            const newStock = (item.value ?? 0) - item.amount;
+            const alertVal = item.alert ?? 0;
+            const status = newStock > alertVal ? "ok" : (newStock - alertVal < alertVal * 2 ? "low" : "out");
             
             await db.update(productIngredients).set({stock: newStock,status: status}).where(eq(productIngredients.name, item.ing_name));
             

@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     let body: sellerRegisterData;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid JSON in request body' },
         { status: 400 }

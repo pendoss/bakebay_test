@@ -66,7 +66,7 @@ export default function EditProductPage() {
         if (ingredientsResponse.ok) {
           const ingredientsFromApi = await ingredientsResponse.json()
           // Map API response to the format expected by the UI
-          ingredientsData = ingredientsFromApi.map((ing : any) => ({
+            ingredientsData = ingredientsFromApi.map((ing: { name: string; unit: string }) => ({
             name: ing.name,
             amount: ing.unit
           }))

@@ -57,11 +57,21 @@ export default function SellerDashboardPage() {
 
     useEffect(() => {
         if (!sellerId) return
-        setLoading(true)
-        fetch(`/api/seller/analytics?sellerId=${sellerId}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(data => { if (data) setAnalytics(data) })
-            .finally(() => setLoading(false))
+        let cancelled = false
+        const loadAnalytics = async () => {
+            try {
+                const r = await fetch(`/api/seller/analytics?sellerId=${sellerId}`)
+                if (cancelled) return
+                const data = r.ok ? await r.json() : null
+                if (data && !cancelled) setAnalytics(data)
+            } finally {
+                if (!cancelled) setLoading(false)
+            }
+        }
+        loadAnalytics()
+        return () => {
+            cancelled = true
+        }
     }, [sellerId])
 
     const kpis = analytics?.kpis
@@ -78,8 +88,8 @@ export default function SellerDashboardPage() {
                     <CardContent>
                         {loading ? <KpiSkeleton /> : (
                             <>
-                                <div className="text-2xl font-bold">{formatPrice(kpis!.total_revenue)}</div>
-                                <ChangeIndicator value={kpis!.revenue_change} />
+                                <div className="text-2xl font-bold">{formatPrice(kpis?.total_revenue)}</div>
+                                <ChangeIndicator value={kpis?.revenue_change}/>
                             </>
                         )}
                     </CardContent>
@@ -93,8 +103,8 @@ export default function SellerDashboardPage() {
                     <CardContent>
                         {loading ? <KpiSkeleton /> : (
                             <>
-                                <div className="text-2xl font-bold">{kpis!.orders_count}</div>
-                                <ChangeIndicator value={kpis!.orders_change} />
+                                <div className="text-2xl font-bold">{kpis?.orders_count}</div>
+                                <ChangeIndicator value={kpis?.orders_change}/>
                             </>
                         )}
                     </CardContent>
@@ -108,9 +118,9 @@ export default function SellerDashboardPage() {
                     <CardContent>
                         {loading ? <KpiSkeleton /> : (
                             <>
-                                <div className="text-2xl font-bold">{kpis!.products_count}</div>
+                                <div className="text-2xl font-bold">{kpis?.products_count}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Ср. чек: {formatPrice(kpis!.avg_order_value)}
+                                    Ср. чек: {formatPrice(kpis?.avg_order_value)}
                                 </p>
                             </>
                         )}
@@ -125,10 +135,10 @@ export default function SellerDashboardPage() {
                     <CardContent>
                         {loading ? <KpiSkeleton /> : (
                             <>
-                                <div className="text-2xl font-bold">{kpis!.unique_customers}</div>
+                                <div className="text-2xl font-bold">{kpis?.unique_customers}</div>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                                     <Star className="h-3 w-3 fill-primary text-primary" />
-                                    {kpis!.avg_rating > 0 ? kpis!.avg_rating : "—"} средний рейтинг
+                                    {kpis?.avg_rating > 0 ? kpis?.avg_rating : "—"} средний рейтинг
                                 </p>
                             </>
                         )}
@@ -160,7 +170,7 @@ export default function SellerDashboardPage() {
                             <CardContent className="pl-2">
                                 {loading
                                     ? <Skeleton className="h-[300px] w-full" />
-                                    : <Overview data={analytics!.monthly_data} />
+                                    : <Overview data={analytics?.monthly_data}/>
                                 }
                             </CardContent>
                         </Card>
@@ -169,13 +179,13 @@ export default function SellerDashboardPage() {
                             <CardHeader>
                                 <CardTitle>Последние заказы</CardTitle>
                                 <CardDescription>
-                                    {!loading && `Всего ${kpis!.orders_count} заказов`}
+                                    {!loading && `Всего ${kpis?.orders_count} заказов`}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {loading
                                     ? <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-                                    : <RecentOrders orders={analytics!.recent_orders} />
+                                    : <RecentOrders orders={analytics?.recent_orders}/>
                                 }
                             </CardContent>
                         </Card>
@@ -186,13 +196,13 @@ export default function SellerDashboardPage() {
                             <CardHeader>
                                 <CardTitle>Последние отзывы</CardTitle>
                                 <CardDescription>
-                                    {!loading && kpis!.avg_rating > 0 && `Средний рейтинг: ${kpis!.avg_rating} ★`}
+                                    {!loading && kpis?.avg_rating > 0 && `Средний рейтинг: ${kpis?.avg_rating} ★`}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {loading
                                     ? <div className="space-y-3">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-                                    : <RecentReviews reviews={analytics!.recent_reviews} />
+                                    : <RecentReviews reviews={analytics?.recent_reviews}/>
                                 }
                             </CardContent>
                         </Card>
@@ -205,11 +215,11 @@ export default function SellerDashboardPage() {
                             <CardContent>
                                 {loading
                                     ? <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
-                                    : analytics!.top_products.length === 0
+                                    : analytics?.top_products.length === 0
                                         ? <p className="text-sm text-muted-foreground text-center py-4">Нет данных о продажах</p>
                                         : (
                                             <div className="space-y-4">
-                                                {analytics!.top_products.map((product, i) => (
+                                                {analytics?.top_products.map((product, i) => (
                                                     <div key={i} className="flex items-center">
                                                         <div className="w-6 text-sm text-muted-foreground font-medium">{i + 1}.</div>
                                                         <div className="flex-1 flex justify-between items-center">
@@ -239,7 +249,7 @@ export default function SellerDashboardPage() {
                         <CardContent>
                             {loading
                                 ? <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
-                                : analytics!.top_products.length === 0
+                                : analytics?.top_products.length === 0
                                     ? <p className="text-sm text-muted-foreground text-center py-8">Нет данных о продажах</p>
                                     : (
                                         <div className="rounded-md border">
@@ -250,8 +260,8 @@ export default function SellerDashboardPage() {
                                                 <div className="col-span-3 text-right">Выручка</div>
                                             </div>
                                             <div className="divide-y">
-                                                {analytics!.top_products.map((product, i) => {
-                                                    const maxRevenue = analytics!.top_products[0].revenue
+                                                {analytics?.top_products.map((product, i) => {
+                                                    const maxRevenue = analytics?.top_products[0].revenue
                                                     const barWidth = maxRevenue > 0 ? (product.revenue / maxRevenue * 100) : 0
                                                     return (
                                                         <div key={i} className="grid grid-cols-12 gap-4 p-3 items-center text-sm">

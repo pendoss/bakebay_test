@@ -4,9 +4,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChevronDown } from "lucide-react"
 
 
-interface Props {
+interface Props extends React.HTMLAttributes<HTMLElement> {
     className?: string
-    [key: string]: any
 }
 export function MainNav({ className, ...props } : Props) {
   // Категории для выпадающего меню

@@ -1,10 +1,12 @@
 import '@testing-library/jest-dom'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import {render, screen} from '@testing-library/react'
 import { MainNav } from './main-nav'
 
 // Мокаем next/link
 jest.mock('next/link', () => {
-  return ({ href, children }: any) => <a href={href}>{children}</a>
+    const MockLink = ({href, children}: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>
+    MockLink.displayName = 'MockLink'
+    return MockLink
 })
 
 describe('MainNav', () => {
@@ -20,7 +22,7 @@ describe('MainNav', () => {
     render(<MainNav />)
 
     const dropdownTrigger = screen.getByText('Категории')
-    expect(dropdownTrigger).toBeInTheDocument
+      expect(dropdownTrigger).toBeInTheDocument()
   })
 
   it('applies custom className', () => {

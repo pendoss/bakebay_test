@@ -68,9 +68,8 @@ async function signIn(
             throw unauthorized
         }
 
-        return Encode({ userId: user.user_id, role: user.user_role! })
-    }
-    catch (error) {
+        return Encode({userId: user.user_id, role: user.user_role ?? "customer"})
+    } catch {
         throw unauthorized
     }
 

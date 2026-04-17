@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { render, screen, waitFor } from '@testing-library/react'
+import {render, screen} from '@testing-library/react'
 import OrdersPage from './page'
 import { useState, useEffect } from 'react'
 
