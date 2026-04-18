@@ -131,35 +131,50 @@ export async function POST(request: Request) {
   }
 }
 
+interface SellerUpdateBody {
+  seller_name?: string;
+  description?: string;
+  location?: string;
+  website?: string | null;
+  contact_name?: string;
+  contact_email?: string;
+  contact_number?: string;
+  inn?: string | null;
+  about_products?: string | null;
+  image_url?: string | null;
+}
+
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    
-    // Validate required fields
-    if (!body.seller_id || !body.seller_name) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    const authPayload = await getAuthPayload();
+    if (!authPayload) {
+      return NextResponse.json({error: 'Unauthorized'}, {status: 401});
     }
-    
-    // Update seller
-    const updatedSeller = await db.update(sellers)
+
+    const body: SellerUpdateBody = await request.json();
+
+    const existing = await db.select().from(sellers).where(eq(sellers.user_id, authPayload.userId));
+    if (existing.length === 0) {
+      return NextResponse.json({error: 'Seller not found'}, {status: 404});
+    }
+
+    const updated = await db.update(sellers)
       .set({
-        seller_name: body.seller_name,
-        seller_rating: body.seller_rating,
+        ...(body.seller_name !== undefined && {seller_name: body.seller_name}),
+        ...(body.description !== undefined && {description: body.description}),
+        ...(body.location !== undefined && {location: body.location}),
+        ...(body.website !== undefined && {website: body.website}),
+        ...(body.contact_name !== undefined && {contact_name: body.contact_name}),
+        ...(body.contact_email !== undefined && {contact_email: body.contact_email}),
+        ...(body.contact_number !== undefined && {contact_number: body.contact_number}),
+        ...(body.inn !== undefined && {inn: body.inn}),
+        ...(body.about_products !== undefined && {about_products: body.about_products}),
+        ...(body.image_url !== undefined && {image_url: body.image_url}),
       })
-      .where(eq(sellers.seller_id, body.seller_id))
+      .where(eq(sellers.user_id, authPayload.userId))
       .returning();
-    
-    if (updatedSeller.length === 0) {
-      return NextResponse.json(
-        { error: 'Seller not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(updatedSeller[0]);
+
+    return NextResponse.json(updated[0]);
   } catch (error) {
     console.error('Error updating seller:', error);
     return NextResponse.json(
