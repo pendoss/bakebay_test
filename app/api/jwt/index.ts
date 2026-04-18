@@ -1,8 +1,10 @@
 import * as jwt from "jsonwebtoken"
 
 interface UserPayload {
-    userId: number 
+    userId: number
     role: string
+    email?: string
+    sellerId?: number
 }
 
 const secret = process.env.JWT_SECRET_KEY || ""

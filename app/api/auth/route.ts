@@ -1,4 +1,4 @@
-import { db, users } from "@/src/db";
+import { db, sellers, users } from "@/src/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { NextResponse } from 'next/server';
@@ -57,6 +57,7 @@ async function signIn(
             columns: {
                 user_id: true,
                 user_role: true,
+                email: true,
                 password: true
             }
         })
@@ -68,7 +69,19 @@ async function signIn(
             throw unauthorized
         }
 
-        return Encode({userId: user.user_id, role: user.user_role ?? "customer"})
+        const sellerRow = await db
+            .select({ seller_id: sellers.seller_id })
+            .from(sellers)
+            .where(eq(sellers.user_id, user.user_id))
+            .limit(1)
+        const sellerId = sellerRow[0]?.seller_id
+
+        return Encode({
+            userId: user.user_id,
+            role: user.user_role ?? "customer",
+            email: user.email,
+            ...(sellerId !== undefined ? { sellerId } : {}),
+        })
     } catch {
         throw unauthorized
     }
