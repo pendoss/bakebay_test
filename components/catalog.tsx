@@ -15,6 +15,9 @@ type CatalogFilters = {
   sellers: number[];
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApiProduct = Record<string, any>;
+
 export function Catalog({
                           initialCategory = null,
                           initialFilters = null,
@@ -23,7 +26,7 @@ export function Catalog({
   initialFilters?: CatalogFilters | null;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [products, setProducts] = useState<any[]>([])
+    const [products, setProducts] = useState<ApiProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [globalPriceRange, setGlobalPriceRange] = useState<[number, number]>([0, 10000])
@@ -57,7 +60,7 @@ export function Catalog({
       if (!response.ok) throw new Error(`Failed to fetch products: ${response.status}`)
 
       const data = await response.json()
-      const productsArray: any[] = Array.isArray(data)
+        const productsArray: ApiProduct[] = Array.isArray(data)
           ? data
           : data?.products && Array.isArray(data.products)
               ? data.products
@@ -66,8 +69,8 @@ export function Catalog({
       // Compute global price range from raw data (before client filtering)
       if (!priceRangeReady && productsArray.length > 0) {
         const prices = productsArray
-            .map((p: any) => p.price)
-            .filter((p: any) => typeof p === "number" && !isNaN(p))
+            .map((p: ApiProduct) => p.price)
+            .filter((p: ApiProduct) => typeof p === "number" && !isNaN(p))
         if (prices.length > 0) {
           const min = Math.floor(Math.min(...prices))
           const max = Math.ceil(Math.max(...prices))
@@ -86,7 +89,7 @@ export function Catalog({
     }
   }
 
-  const applyClientSideFilters = (productsData: any[]) => {
+    const applyClientSideFilters = (productsData: ApiProduct[]) => {
     if (!Array.isArray(productsData) || productsData.length === 0) return []
 
     return productsData.filter((product) => {
@@ -94,7 +97,7 @@ export function Catalog({
       if (filters.rating > 0 && (!product.rating || product.rating < filters.rating)) return false
       if (filters.dietary.length > 0) {
         if (!product.dietary_constraints?.length) return false
-        const names = product.dietary_constraints.map((c: any) => c.name)
+          const names = product.dietary_constraints.map((c: { name: string }) => c.name)
         if (!filters.dietary.some((d) => names.includes(d))) return false
       }
       return true
@@ -176,7 +179,7 @@ export function Catalog({
                       image: product.image || "/placeholder.svg?height=200&width=200",
                       category: product.category_info ? product.category_info.name : (product.category || "Uncategorized"),
                       dietary: product.dietary_constraints
-                          ? product.dietary_constraints.map((c: any) => c.name)
+                          ? product.dietary_constraints.map((c: { name: string }) => c.name)
                           : [],
                       rating: product.seller?.rating || 4.5,
                       seller: product.seller ? product.seller.name : "Unknown Seller",

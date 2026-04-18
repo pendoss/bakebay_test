@@ -1,19 +1,19 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
+import React, {useEffect, useState} from "react"
+import {useParams, useRouter} from "next/navigation"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
-import { Upload, X, Plus, Trash2 } from "lucide-react"
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Textarea} from "@/components/ui/textarea"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import {Separator} from "@/components/ui/separator"
+import {Checkbox} from "@/components/ui/checkbox"
+import {useToast} from "@/hooks/use-toast"
+import {Plus, Trash2, Upload, X} from "lucide-react"
 
 // Default product structure
 const defaultProduct = {
@@ -54,7 +54,12 @@ export default function EditProductPage() {
         const response = await fetch(`/api/products?id=${productId}`)
 
         if (!response.ok) {
-          throw new Error('Failed to fetch product')
+          toast({
+            title: "Ошибка",
+            description: "Не удалось загрузить данные товара.",
+            variant: "destructive"
+          })
+          return
         }
 
         const productFromApi = await response.json()
@@ -66,9 +71,9 @@ export default function EditProductPage() {
         if (ingredientsResponse.ok) {
           const ingredientsFromApi = await ingredientsResponse.json()
           // Map API response to the format expected by the UI
-          ingredientsData = ingredientsFromApi.map((ing : any) => ({
+          ingredientsData = ingredientsFromApi.map((ing: { name: string; amount: number; unit: string }) => ({
             name: ing.name,
-            amount: ing.unit
+            amount: ing.amount
           }))
         }
 
@@ -96,7 +101,7 @@ export default function EditProductPage() {
         console.error('Error fetching product:', error)
         toast({
           title: "Ошибка",
-          description: "Не удалось загрузить данные товара.",
+          description: "Произошла непредвиденная ошибка при загрузке товара.",
           variant: "destructive"
         })
       } finally {
@@ -140,7 +145,12 @@ export default function EditProductPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update product')
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить товар.",
+          variant: "destructive"
+        })
+        return
       }
 
       toast({
@@ -153,7 +163,7 @@ export default function EditProductPage() {
       console.error('Error updating product:', error)
       toast({
         title: "Ошибка",
-        description: "Не удалось обновить товар.",
+        description: "Произошла непредвиденная ошибка.",
         variant: "destructive"
       })
     } finally {

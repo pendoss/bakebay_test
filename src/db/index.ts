@@ -1,22 +1,25 @@
 import 'dotenv/config';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import {drizzle} from 'drizzle-orm/node-postgres';
+import {Pool} from 'pg';
 
 // Import all schemas
-import { users, roleEnum } from './schema/users';
-import { products } from './schema/products';
-import { orders, orderStatusEnum } from './schema/orders';
-import { orderItems } from './schema/order_items';
-import { categories } from './schema/categories';
-import { sellers } from './schema/sellers';
-import { dietaryConstrains } from './schema/dietary_constrains';
-import { productImages } from './schema/product_images';
-import { productIngredients, stockStatusEnum } from './schema/product_ingredients';
+import {roleEnum, users} from './schema/users';
+import {products} from './schema/products';
+import {orders, orderStatusEnum} from './schema/orders';
+import {orderItems} from './schema/order_items';
+import {categories} from './schema/categories';
+import {sellers} from './schema/sellers';
+import {dietaryConstrains} from './schema/dietary_constrains';
+import {productImages} from './schema/product_images';
+import {productIngredients, stockStatusEnum} from './schema/product_ingredients';
 import {reviews} from './schema/reviews';
 
 // Create a PostgreSQL connection pool
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set");
+}
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
+  connectionString: process.env.DATABASE_URL,
 });
 
 // Create a Drizzle ORM instance

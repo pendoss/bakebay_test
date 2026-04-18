@@ -19,18 +19,18 @@ jest.mock('next/navigation', () => ({
 // Mock Radix DropdownMenu so that it renders its content immediately
 // (without pointer-events workaround in jsdom)
 jest.mock('@/components/ui/dropdown-menu', () => {
-    const React = require('react')
-    const DropdownMenu = ({children}: any) => <div>{children}</div>
-    const DropdownMenuTrigger = ({children, asChild}: any) => {
+    const React = require('react') // eslint-disable-line
+    const DropdownMenu = ({children}: { children: React.ReactNode }) => <div>{children}</div>
+    const DropdownMenuTrigger = ({children, asChild}: { children: React.ReactElement; asChild?: boolean }) => {
         if (asChild) return React.cloneElement(children, {'data-testid': 'dropdown-trigger'})
         return <div data-testid="dropdown-trigger">{children}</div>
     }
-    const DropdownMenuContent = ({children}: any) => (
+    const DropdownMenuContent = ({children}: { children: React.ReactNode }) => (
         <div data-testid="dropdown-content">{children}</div>
     )
-    const DropdownMenuLabel = ({children}: any) => <div>{children}</div>
-    const DropdownMenuGroup = ({children}: any) => <div>{children}</div>
-    const DropdownMenuItem = ({children, onClick}: any) => (
+    const DropdownMenuLabel = ({children}: { children: React.ReactNode }) => <div>{children}</div>
+    const DropdownMenuGroup = ({children}: { children: React.ReactNode }) => <div>{children}</div>
+    const DropdownMenuItem = ({children, onClick}: { children: React.ReactNode; onClick?: () => void }) => (
         <button onClick={onClick}>{children}</button>
     )
     const DropdownMenuSeparator = () => <hr/>
@@ -233,7 +233,7 @@ describe('Авторизованный пользователь (customer)', () 
 
     it('выход вызывает POST /api/auth/logout и убирает данные пользователя', async () => {
         // After logout, /api/users/me returns 401
-        global.fetch = jest.fn().mockImplementation((url: string, opts?: any) => {
+        global.fetch = jest.fn().mockImplementation((url: string, opts?: RequestInit) => {
             if (url === '/api/users/me') {
                 return Promise.resolve({ok: true, json: () => Promise.resolve(CUSTOMER_USER)})
             }

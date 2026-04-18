@@ -98,7 +98,7 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
           if (ingredientsResponse.ok) {
             const ingredientsFromApi = await ingredientsResponse.json()
             // Map API response to the format expected by the UI
-            ingredientsData = ingredientsFromApi.map((ing : any) => ({
+              ingredientsData = ingredientsFromApi.map((ing: { name: string; amount: number; unit: string }) => ({
               name: ing.name,
               amount: ing.amount,
               unit: ing.unit
@@ -128,8 +128,10 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
 
             // Load existing product images into images state
             const existingImages: ProductImage[] = (productFromApi.images || [])
-                .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
-                .map((img: any) => ({
+                .sort((a: { display_order?: number }, b: {
+                    display_order?: number
+                }) => (a.display_order ?? 0) - (b.display_order ?? 0))
+                .map((img: { image_url: string; name?: string; s3_key?: string }) => ({
                     url: img.image_url,
                     name: img.name || img.s3_key || 'image',
                     isExisting: true,
@@ -156,7 +158,7 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
         setImages([])
       setIsLoading(false)
     }
-  }, [isOpen, productId, toast])
+  }, [isOpen, productId, toast, onOpenChangeAction, sellerId])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

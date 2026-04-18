@@ -1,9 +1,11 @@
 import { SiteHeader } from "@/components/site-header"
 import { CartProvider } from "@/contexts/cart-context"
 import {UserProvider} from "@/contexts/user-context"
+import {NotificationProvider} from "@/contexts/notification-context"
+import {NotificationContainer} from "@/components/notifications/notification-container"
 import "./globals.css"
-import {Footer} from "@/components/footer";
-import {Toaster} from "@/components/ui/toaster";
+import {Footer} from "@/components/footer"
+import {Toaster} from "@/components/ui/toaster"
 
 interface Props {
     children?: React.ReactNode
@@ -13,14 +15,17 @@ export default function RootLayout({ children } : Props) {
     <html lang="ru">
       <body>
       <UserProvider>
-        <CartProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <SiteHeader/>
-            <div className="flex-1">{children}</div>
-          </div>
-        </CartProvider>
-        <Footer/>
-        <Toaster/>
+          <NotificationProvider>
+              <CartProvider>
+                  <div className="relative flex min-h-screen flex-col">
+                      <SiteHeader/>
+                      <div className="flex-1">{children}</div>
+                  </div>
+              </CartProvider>
+              <Footer/>
+              <Toaster/>
+              <NotificationContainer/>
+          </NotificationProvider>
       </UserProvider>
       </body>
     </html>

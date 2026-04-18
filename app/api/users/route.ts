@@ -123,8 +123,8 @@ export async function POST(request: Request) {
       updated_at: new Date(),
       password: hashedPassword,
     }).returning();
-    
-    const jwt = Encode({userId: newUser[0].user_id, role: newUser[0].user_role!});
+
+      const jwt = Encode({userId: newUser[0].user_id, role: newUser[0].user_role ?? "customer"});
     const cookieStore = await cookies();
     cookieStore.set('auth_token', jwt, {
       httpOnly: true,

@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { render, screen } from '@testing-library/react'
+import {render, screen} from '@testing-library/react'
 import SellersPage from '@/app/sellers/page'
 
 jest.mock("next/navigation", () => ({
@@ -15,13 +15,24 @@ jest.mock("next/navigation", () => ({
     },
 }));
 
+jest.mock('@/contexts/user-context', () => ({
+    useUser: () => ({
+        user: null,
+        sellerId: null,
+        isLoading: false,
+        isAuthenticated: false,
+        login: jest.fn(),
+        logout: jest.fn(),
+        refreshUser: jest.fn(),
+    })
+}))
+
 describe('SellersPage', () => {
   it('renders a heading', () => {
     render(<SellersPage />)
- 
-    const heading = screen.getByRole('heading', { level: 1 })
- 
-    expect(heading).toBeInTheDocument()
+
+      const heading = screen.getByRole('heading', {level: 1})
+
+      expect(heading).toBeInTheDocument()
   })
 })
-

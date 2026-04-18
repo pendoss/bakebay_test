@@ -1,15 +1,14 @@
 import * as Minio from 'minio'
 import * as stream from "node:stream";
-import { Readable } from 'stream';
 
 const minioClient = new Minio.Client({
-    endPoint: process.env.S3_ENDPOINT!,
+    endPoint: process.env.S3_ENDPOINT ?? "",
     useSSL: true,
     accessKey: process.env.S3_ACCESS_KEY,
     secretKey: process.env.S3_SECRET_KEY,
 })
 
-const bucket = process.env.S3_BUCKET_NAME!
+const bucket = process.env.S3_BUCKET_NAME ?? ""
 
 function assembleUrl (key: string){
     let res = "";
@@ -31,13 +30,13 @@ export const UploadFile = async (key: string, obj: stream.Readable | Buffer | st
         const arrayBuffer = await obj.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         // Uploading the file to S3 bucket
-        const res = await minioClient.putObject(bucket, key, buffer, undefined, metaData);
+        await minioClient.putObject(bucket, key, buffer, undefined, metaData);
         return assembleUrl(key);
     }
 
     // Handle other types as before
     // Uploading the file to S3 bucket
-    const res = await minioClient.putObject(bucket, key, obj, undefined, metaData);
+    await minioClient.putObject(bucket, key, obj, undefined, metaData);
     return assembleUrl(key);
 }
 // await minioClient.fPutObject(bucket, destinationObject, sourceFile, metaData)

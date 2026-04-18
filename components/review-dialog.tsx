@@ -68,7 +68,7 @@ export function ReviewDialog({open, onOpenChange, items}: ReviewDialogProps) {
             setRating(0)
             setComment("")
             onOpenChange(false)
-        } catch (err) {
+        } catch {
             toast({title: "Ошибка отправки отзыва", variant: "destructive"})
         } finally {
             setIsSubmitting(false)

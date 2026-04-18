@@ -2,6 +2,8 @@
 
 import {useEffect, useState} from "react"
 import {useUser} from "@/contexts/user-context"
+import {useOrderStatusNotifications} from "@/hooks/use-order-status-notifications"
+import {useReviewReminder} from "@/hooks/use-review-reminder"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent} from "@/components/ui/card"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
@@ -47,6 +49,11 @@ type Order= {
 export default function OrdersPage() {
     const {user} = useUser()
     const [orders, setOrders] = useState<Order[]>([])
+
+    // Уведомляет покупателя при изменении статуса любого заказа
+    useOrderStatusNotifications(orders)
+    // Напоминание оставить отзыв через 2 дня после доставки
+    useReviewReminder(orders)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [searchTerm] = useState("")
@@ -65,13 +72,14 @@ export default function OrdersPage() {
                 const response = await fetch(`/api/orders?userId=${user.user_id}`)
 
                 if (!response.ok) {
-                    throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText}`)
+                    setError(`Failed to fetch orders: ${response.status} ${response.statusText}`)
+                    return
                 }
 
                 const data = await response.json()
-                
+
                 // Transform API data to match our component's expected format
-                const formattedOrders = data.map((order: any) => ({
+                const formattedOrders = data.map((order: Record<string, string>) => ({
                     id: order.id,
                     date: order.date,
                     orderStatus: order.status,

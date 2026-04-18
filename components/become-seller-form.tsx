@@ -35,7 +35,7 @@ export function BecomeSellerForm() {
     }
   })
 
-  function onSubmit(values: any) {
+    function onSubmit(values: Record<string, string>) {
       if (!user) return
 
       setIsSubmitting(true)

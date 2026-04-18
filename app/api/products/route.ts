@@ -60,7 +60,7 @@ export async function GET(request: Request) {
       }
     }
 
-    let query = db.select().from(products).where( categoryId ? eq(products.category,categoryId) : sellerId ? eq(products.seller_id, parseInt(sellerId)) : undefined);
+      const query = db.select().from(products).where(categoryId ? eq(products.category, categoryId) : sellerId ? eq(products.seller_id, parseInt(sellerId)) : undefined);
 
     const allProducts = await query.leftJoin(sellers, eq(products.seller_id, sellers.seller_id)).leftJoin(categories, eq(products.category_id, categories.id));
 

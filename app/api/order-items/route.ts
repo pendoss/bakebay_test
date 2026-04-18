@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     
     // Build query
 
-    let query = db.select()
+      const query = db.select()
       .from(orderItems)
       .leftJoin(products, eq(orderItems.product_id, products.product_id))
       .leftJoin(orders, eq(orderItems.order_id, orders.order_id)).where(orderId ? eq(orderItems.order_id, parseInt(orderId)) : undefined);

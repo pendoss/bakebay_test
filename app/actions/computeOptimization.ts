@@ -180,11 +180,12 @@ export async function computeMaxProfit(sellerId: number): Promise<MaxProfitResul
             qty: 0,
             ingredients: item.ingredients
               .filter(i => i.name)
-              .map(i => ({ name: i.name!, amountPerUnit: parseFloat(String(i.amount)) || 0 })),
+                .map(i => ({name: i.name ?? "", amountPerUnit: parseFloat(String(i.amount)) || 0})),
           },
         })
       }
-      const entry = orderedByProduct.find(e => e.name === item.name)!
+      const entry = orderedByProduct.find(e => e.name === item.name)
+      if (!entry) continue
       entry.data.qty += item.quantity || 1
     }
   }

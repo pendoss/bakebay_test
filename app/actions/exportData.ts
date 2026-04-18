@@ -1,6 +1,6 @@
 "use server"
 
-import { db, products, productIngredients, orders, orderItems } from "@/src/db"
+import {db, products, productIngredients, orderItems} from "@/src/db"
 import { eq } from "drizzle-orm"
 import { fetchIngredients } from "./fetchIngredients"
 import { getOrderIds, getOrdersDetails } from "./getOrders"

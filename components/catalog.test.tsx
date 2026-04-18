@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Catalog } from './catalog';
 import * as React from 'react';
@@ -66,8 +67,8 @@ describe('Catalog Component', () => {
 
   test('shows loading state when first rendered', () => {
     render(<Catalog initialCategory={null} />);
-    
-    expect(screen.getByText('Загрузка продуктов...')).toBeInTheDocument;
+
+      expect(screen.getByText('Загрузка продуктов...')).toBeInTheDocument();
   });
 
 //   test('displays products when fetch is successful', async () => {
@@ -77,8 +78,8 @@ describe('Catalog Component', () => {
 //     await waitFor(() => {
 //       expect(screen.queryByText('Загрузка продуктов...')).not.toBeInTheDocument;
 //     });
-    
-//     expect(screen.getByTestId('product-card')).toBeInTheDocument;
+
+//     expect(screen.getByTestId('product-card')).toBeInTheDocument();
 //   });
 
   test('shows error message when fetch fails', async () => {
@@ -92,10 +93,10 @@ describe('Catalog Component', () => {
     render(<Catalog initialCategory={null} />);
     
     await waitFor(() => {
-      expect(screen.getByText('Ошибка загрузки продуктов')).toBeInTheDocument;
+        expect(screen.getByText('Ошибка загрузки продуктов')).toBeInTheDocument();
     });
-    
-    expect(screen.getByText(/Failed to fetch products/)).toBeInTheDocument;
+
+      expect(screen.getByText(/Failed to fetch products/)).toBeInTheDocument();
   });
 
 
@@ -110,7 +111,7 @@ describe('Catalog Component', () => {
     render(<Catalog initialCategory={null} />);
     
     await waitFor(() => {
-      expect(screen.getByText('Ошибка загрузки продуктов')).toBeInTheDocument;
+        expect(screen.getByText('Ошибка загрузки продуктов')).toBeInTheDocument();
     });
     
     // Reset fetch mock for next call
@@ -136,7 +137,7 @@ describe('Catalog Component', () => {
     render(<Catalog initialCategory="Cakes" />);
     
     await waitFor(() => {
-      expect(screen.getByText('Нет товаров, соответствующих вашим фильтрам')).toBeInTheDocument;
+        expect(screen.getByText('Нет товаров, соответствующих вашим фильтрам')).toBeInTheDocument();
     });
     
     // Set up mock for second fetch after reset

@@ -56,18 +56,15 @@ type Product = {
 }
 
 export function ProductCard({ product } : {product : Product}) {
-  console.log('ProductCard received:', product);
-
-  // Check if product is valid
-  if (!product || typeof product !== 'object') {
-    console.error('Invalid product object:', product);
-    return null;
-  }
-
   const { toast } = useToast()
   const { addItem } = useCart()
   const [isOpen, setIsOpen] = useState(false)
   const isAddingToCartRef = useRef(false);
+
+  // Check if product is valid
+  if (!product || typeof product !== 'object') {
+    return null;
+  }
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation() // Предотвращаем открытие модального окна при нажатии на кнопку добавления в корзину

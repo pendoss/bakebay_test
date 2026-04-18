@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom'
-import { render, screen } from '@testing-library/react'
-import SellersPage from '@/app/sellers/page' // Adjust the import path as needed
+import {render} from '@testing-library/react'
 import Home from './page'
 
 describe('Home', () => {
