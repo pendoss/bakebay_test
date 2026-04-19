@@ -1,7 +1,7 @@
 import type {Product} from '@/src/domain/product'
 import type {ProductId, SellerId} from '@/src/domain/shared/id'
-import type {ProductListFilters} from '@/src/application/ports/product-storage'
 import {asProductId, asSellerId} from '@/src/domain/shared/id'
+import type {ProductListFilters} from '@/src/application/ports/product-storage'
 
 interface RawImage {
     image_url: string
@@ -126,7 +126,7 @@ function fromSingle(raw: RawSingleProduct): Product {
         mainImage: raw.image ?? images.find((i) => i.isMain)?.url ?? images[0]?.url ?? null,
         seller: null,
         categoryInfo: null,
-        rating: 4.5,
+        rating: 0,
     }
 }
 
