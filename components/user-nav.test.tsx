@@ -1,10 +1,10 @@
 import '@testing-library/jest-dom'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {UserNav} from './user-nav'
-import {UserProvider} from '@/contexts/user-context'
+import {RootStoreProvider} from '@/src/adapters/ui/react/stores'
 
 function renderWithUser(ui: React.ReactElement) {
-    return render(<UserProvider>{ui}</UserProvider>)
+    return render(<RootStoreProvider>{ui}</RootStoreProvider>)
 }
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────

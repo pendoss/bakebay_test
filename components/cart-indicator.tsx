@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import {Button} from '@/components/ui/button'
 import {ShoppingCart} from 'lucide-react'
-import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
+import {observer} from 'mobx-react-lite'
+import {useCartCount} from '@/src/adapters/ui/react/stores'
 
-export function CartIndicator() {
-    const {itemsCount} = useCart()
+export const CartIndicator = observer(function CartIndicator() {
+    const itemsCount = useCartCount()
 
     return (
         <Link href='/cart'>
@@ -21,4 +22,4 @@ export function CartIndicator() {
             </Button>
         </Link>
     )
-}
+})

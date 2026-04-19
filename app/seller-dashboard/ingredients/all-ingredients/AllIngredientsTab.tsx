@@ -1,7 +1,7 @@
 'use client'
 
 import {useEffect, useMemo, useState} from 'react'
-import {Pencil, Check, X} from 'lucide-react'
+import {Check, Pencil, X} from 'lucide-react'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
@@ -9,7 +9,8 @@ import {StatusBadge} from '@/components/StatusBadge'
 import {fetchIngredients} from '@/app/actions/fetchIngredients'
 import {exportPurchaseList} from '@/app/actions/exportData'
 import {downloadCsv} from '@/lib/downloadCsv'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {useIngredientAlerts} from '@/hooks/use-ingredient-alerts'
 import {Ingredient} from '../types'
 
@@ -20,8 +21,8 @@ type EditForm = {
     purchase_price: number
 }
 
-export function AllIngredientsTab() {
-    const {sellerId} = useUser()
+export const AllIngredientsTab = observer(function AllIngredientsTab() {
+    const sellerId = useSellerId()
     const [ingredients, setIngredients] = useState<Ingredient[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const [isLoading, setIsLoading] = useState(true)
@@ -275,4 +276,4 @@ export function AllIngredientsTab() {
             </CardContent>
         </Card>
     )
-}
+})

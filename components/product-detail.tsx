@@ -3,8 +3,9 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import {observer} from 'mobx-react-lite'
 import {useToast} from '@/hooks/use-toast'
-import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
+import {useCartActions} from '@/src/adapters/ui/react/stores'
 import {asProductId} from '@/src/domain/shared/id'
 import type {Product} from '@/src/domain/product'
 import type {ProductReview, ProductSellerInfo} from '@/src/adapters/ui/react/hooks/use-product-detail'
@@ -41,9 +42,9 @@ function initials(name: string): string {
     return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase()
 }
 
-export function ProductDetail({product, seller, reviews, related}: ProductDetailProps) {
+export const ProductDetail = observer(function ProductDetail({product, seller, reviews, related}: ProductDetailProps) {
     const {toast} = useToast()
-    const {addItem} = useCart()
+    const {addItem} = useCartActions()
     const [qty, setQty] = useState(1)
     const [activeImg, setActiveImg] = useState(0)
     const [stickyVisible, setStickyVisible] = useState(false)
@@ -358,7 +359,7 @@ export function ProductDetail({product, seller, reviews, related}: ProductDetail
             </div>
         </div>
     )
-}
+})
 
 export function ProductNotFound() {
     return (

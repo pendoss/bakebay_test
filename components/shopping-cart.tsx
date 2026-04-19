@@ -7,18 +7,29 @@ import {Card, CardContent, CardFooter, CardHeader, CardTitle} from '@/components
 import {Input} from '@/components/ui/input'
 import {Separator} from '@/components/ui/separator'
 import {Minus, Plus, Trash2} from 'lucide-react'
+import {observer} from 'mobx-react-lite'
 import {useRouter} from 'next/navigation'
-import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
+import {
+    useCartActions,
+    useCartCount,
+    useCartItems,
+    useCartRaw,
+    useCartTotals,
+    useCurrentUser
+} from '@/src/adapters/ui/react/stores'
 import {EmptyCartError, useCheckout} from '@/src/adapters/ui/react/hooks/use-checkout'
 import {useToast} from '@/hooks/use-toast'
-import {useUser} from '@/contexts/user-context'
 import {useAuthDialog} from '@/src/adapters/ui/react/providers/auth-dialog-provider'
 
-export function ShoppingCart() {
+export const ShoppingCart = observer(function ShoppingCart() {
     const router = useRouter()
     const {toast} = useToast()
-    const {items, removeItem, updateQuantity, clear: clearCart, applyPromo, totals, itemsCount, cart} = useCart()
-    const {user} = useUser()
+    const items = useCartItems()
+    const totals = useCartTotals()
+    const itemsCount = useCartCount()
+    const cart = useCartRaw()
+    const {removeItem, updateQuantity, clear: clearCart, applyPromo} = useCartActions()
+    const user = useCurrentUser()
     const {requireAuth} = useAuthDialog()
     const [promoCode, setPromoCode] = useState('')
     const checkout = useCheckout()
@@ -115,7 +126,7 @@ export function ShoppingCart() {
                                     <Button variant='ghost' size='sm' className='text-destructive'
                                             onClick={() => removeItem(item.productId)}>
                                         <Trash2 className='h-4 w-4 mr-1'/>
-                    Удалить
+                                        Удалить
                                     </Button>
                                 </div>
                             </div>
@@ -125,7 +136,7 @@ export function ShoppingCart() {
 
                 <div className='flex justify-between items-center'>
                     <Button variant='outline' onClick={() => router.push('/catalog')}>
-            Продолжить покупки
+                        Продолжить покупки
                     </Button>
                     <Button
                         variant='ghost'
@@ -137,7 +148,7 @@ export function ShoppingCart() {
                             })
                         }}
                     >
-            Очистить корзину
+                        Очистить корзину
                     </Button>
                 </div>
             </div>
@@ -187,7 +198,7 @@ export function ShoppingCart() {
                                 />
                                 <Button variant='outline' onClick={applyPromoCode}
                                         disabled={promoApplied || promoCode.trim() === ''}>
-                  Применить
+                                    Применить
                                 </Button>
                             </div>
 
@@ -211,11 +222,12 @@ export function ShoppingCart() {
                     </CardContent>
                     <CardFooter className='text-xs text-muted-foreground'>
                         <p>
-              Переходя к оформлению, вы соглашаетесь с нашими условиями обслуживания и политикой конфиденциальности.
+                            Переходя к оформлению, вы соглашаетесь с нашими условиями обслуживания и политикой
+                            конфиденциальности.
                         </p>
                     </CardFooter>
                 </Card>
             </div>
         </div>
     )
-}
+})

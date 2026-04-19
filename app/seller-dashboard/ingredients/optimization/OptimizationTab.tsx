@@ -5,18 +5,19 @@ import {TrendingDown, TrendingUp} from 'lucide-react'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card'
 import {Button} from '@/components/ui/button'
 import {
-    computeMinPurchaseCost,
     computeMaxProfit,
-    MinPurchaseResult,
+    computeMinPurchaseCost,
     MaxProfitResult,
+    MinPurchaseResult,
 } from '@/app/actions/computeOptimization'
 import {formatPrice} from '@/lib/formatters'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 
 type Mode = 'min-purchase' | 'max-profit'
 
-export function OptimizationTab() {
-    const {sellerId} = useUser()
+export const OptimizationTab = observer(function OptimizationTab() {
+    const sellerId = useSellerId()
     const [mode, setMode] = useState<Mode>('min-purchase')
     const [loading, setLoading] = useState(false)
     const [minPurchaseResult, setMinPurchaseResult] = useState<MinPurchaseResult | null>(null)
@@ -75,7 +76,7 @@ export function OptimizationTab() {
             </CardContent>
         </Card>
     )
-}
+})
 
 function MinPurchaseResultView({result}: { result: MinPurchaseResult }) {
     return (

@@ -1,6 +1,6 @@
 'use client'
 
-import {useState, useEffect} from 'react'
+import {useEffect, useState} from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {Button} from '@/components/ui/button'
@@ -20,21 +20,22 @@ import {Badge} from '@/components/ui/badge'
 import {EllipsisVertical, Plus, Star} from 'lucide-react'
 import {fetchProducts} from '@/app/actions/fetchProducts'
 import {ProductEditDialog} from '@/components/product-edit-dialog'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {exportProductSmeta} from '@/app/actions/exportData'
 import {downloadCsv} from '@/lib/downloadCsv'
 
 // Define interface for product objects
 interface Product {
-  id: number;
-  name: string;
-  price: number;
-  inventory: number;
-  category: string;
-  image: string;
-  status: string;
-  rating: number;
-  sales: number;
+    id: number;
+    name: string;
+    price: number;
+    inventory: number;
+    category: string;
+    image: string;
+    status: string;
+    rating: number;
+    sales: number;
 }
 
 // Пример данных для резервного отображения
@@ -107,8 +108,8 @@ const exampleProducts: Product[] = [
     },
 ]
 
-export default function ProductsPage() {
-    const {sellerId} = useUser()
+const ProductsPage = observer(function ProductsPage() {
+    const sellerId = useSellerId()
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -155,7 +156,7 @@ export default function ProductsPage() {
             (statusFilter === 'low' && product.status === 'Мало на складе') ||
             (statusFilter === 'out' && product.status === 'Нет в наличии');
         const matchesCategory = categoryFilter === 'all' ||
-                           product.category.toLowerCase() === categoryFilter.toLowerCase();
+            product.category.toLowerCase() === categoryFilter.toLowerCase();
 
         return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -188,7 +189,7 @@ export default function ProductsPage() {
                 <Link href='/seller-dashboard/products/new'>
                     <Button className='flex items-center gap-1'>
                         <Plus className='h-4 w-4'/>
-            Добавить товар
+                        Добавить товар
                     </Button>
                 </Link>
             </div>
@@ -257,10 +258,10 @@ export default function ProductsPage() {
             <Tabs defaultValue='grid' className='w-full'>
                 <TabsList className='w-full sm:w-auto'>
                     <TabsTrigger value='grid' className='flex-1 sm:flex-auto'>
-            Сетка
+                        Сетка
                     </TabsTrigger>
                     <TabsTrigger value='list' className='flex-1 sm:flex-auto'>
-            Список
+                        Список
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value='grid' className='mt-4'>
@@ -270,7 +271,7 @@ export default function ProductsPage() {
                             <Link href='/seller-dashboard/products/new'>
                                 <Button size='sm'>
                                     <Plus className='h-4 w-4 mr-1'/>
-                  Добавить товар
+                                    Добавить товар
                                 </Button>
                             </Link>
                         </div>
@@ -351,7 +352,7 @@ export default function ProductsPage() {
                                             setIsEditDialogOpen(true);
                                         }}
                                     >
-                    Управление товаром
+                                        Управление товаром
                                     </Button>
                                 </CardFooter>
                             </Card>
@@ -365,7 +366,7 @@ export default function ProductsPage() {
                             <Link href='/seller-dashboard/products/new'>
                                 <Button size='sm'>
                                     <Plus className='h-4 w-4 mr-1'/>
-                  Добавить товар
+                                    Добавить товар
                                 </Button>
                             </Link>
                         </div>
@@ -460,4 +461,5 @@ export default function ProductsPage() {
             />
         </div>
     )
-}
+})
+export default ProductsPage

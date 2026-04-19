@@ -8,8 +8,9 @@ import {Badge} from '@/components/ui/badge'
 import {Separator} from '@/components/ui/separator'
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from '@/components/ui/collapsible'
 import {OrderTimeline} from '@/components/order-timeline'
-import {ChevronDown, ChevronUp, Package, RefreshCw, XCircle, MessageSquare, Star} from 'lucide-react'
-import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
+import {ChevronDown, ChevronUp, MessageSquare, Package, RefreshCw, Star, XCircle} from 'lucide-react'
+import {observer} from 'mobx-react-lite'
+import {useCartActions} from '@/src/adapters/ui/react/stores'
 import {asProductId} from '@/src/domain/shared/id'
 import {useToast} from '@/hooks/use-toast'
 import {OrderStatus} from '@/app/orders/page';
@@ -50,20 +51,20 @@ export const statusColors: Record<OrderStatus, string> = {
 
 interface OrderCardProps {
     order: {
-    id: string;
-    date: string;
-    orderStatus: OrderStatus;
-    totalPrice: number;
-    address: string;
-    paymentMethod: string;
-    cancellationReason ? : string;
-    user_id: number;
-    items: Array <OrderItems> ;
-    statusHistory: Array < {
-        status: OrderStatus;
-        completed ? : boolean;
-        date ? : string | null;
-    } > ;
+        id: string;
+        date: string;
+        orderStatus: OrderStatus;
+        totalPrice: number;
+        address: string;
+        paymentMethod: string;
+        cancellationReason?: string;
+        user_id: number;
+        items: Array<OrderItems>;
+        statusHistory: Array<{
+            status: OrderStatus;
+            completed?: boolean;
+            date?: string | null;
+        }>;
     }
 
 }
@@ -72,13 +73,13 @@ export type OrderItems = {
     id?: number;
     name: string;
     price: number;
-    image ? : string;
+    image?: string;
     quantity: number;
 }
-export function OrderCard({ order } : OrderCardProps) {
+export const OrderCard = observer(function OrderCard({order}: OrderCardProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
-    const {addItem} = useCart()
+    const {addItem} = useCartActions()
     const {toast} = useToast()
 
     const handleRepeatOrder = () => {
@@ -226,4 +227,4 @@ export function OrderCard({ order } : OrderCardProps) {
             </CardFooter>
         </Card>
     )
-}
+})

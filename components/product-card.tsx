@@ -7,8 +7,9 @@ import {Card, CardContent, CardFooter} from '@/components/ui/card'
 import {Badge} from '@/components/ui/badge'
 import {Button} from '@/components/ui/button'
 import {ShoppingCart, Star} from 'lucide-react'
+import {observer} from 'mobx-react-lite'
 import {useToast} from '@/hooks/use-toast'
-import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
+import {useCartActions} from '@/src/adapters/ui/react/stores'
 import {asProductId} from '@/src/domain/shared/id'
 
 const dietaryTranslations: { [key: string]: string } = {
@@ -41,9 +42,9 @@ interface ProductCardProps {
     product: ProductCardInput
 }
 
-export function ProductCard({product}: ProductCardProps) {
+export const ProductCard = observer(function ProductCard({product}: ProductCardProps) {
     const {toast} = useToast()
-    const {addItem} = useCart()
+    const {addItem} = useCartActions()
 
     if (!product || typeof product !== 'object') return null
 
@@ -110,4 +111,4 @@ export function ProductCard({product}: ProductCardProps) {
             </Card>
         </Link>
     )
-}
+})

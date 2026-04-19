@@ -2,17 +2,31 @@ import '@testing-library/jest-dom'
 import {render, screen, waitFor} from '@testing-library/react'
 import OrdersPage from './page'
 
-// Mock useUser
-jest.mock('@/contexts/user-context', () => ({
-    useUser: () => ({
-        user: {user_id: 2, first_name: 'Test', last_name: 'User', email: 'test@test.com', user_role: 'buyer'},
-        sellerId: null,
-        isLoading: false,
-        isAuthenticated: true,
-        login: jest.fn(),
-        logout: jest.fn(),
-        refreshUser: jest.fn(),
-    })
+// Mock user store selectors
+jest.mock('@/src/adapters/ui/react/stores', () => ({
+    useCurrentUser: () => ({
+        user_id: 2,
+        first_name: 'Test',
+        last_name: 'User',
+        email: 'test@test.com',
+        user_role: 'buyer'
+    }),
+    useSellerId: () => null,
+    useIsUserLoading: () => false,
+    useIsAuthenticated: () => true,
+    useUserActions: () => ({login: jest.fn(), logout: jest.fn(), refreshUser: jest.fn()}),
+    useCartItems: () => [],
+    useCartTotals: () => ({subtotal: 0, discount: 0, shipping: 0, tax: 0, total: 0}),
+    useCartCount: () => 0,
+    useCartRaw: () => ({items: [], promoCode: null}),
+    useCartActions: () => ({
+        addItem: jest.fn(),
+        removeItem: jest.fn(),
+        updateQuantity: jest.fn(),
+        clear: jest.fn(),
+        applyPromo: jest.fn(),
+        setCart: jest.fn()
+    }),
 }))
 
 // Mock notification hooks
