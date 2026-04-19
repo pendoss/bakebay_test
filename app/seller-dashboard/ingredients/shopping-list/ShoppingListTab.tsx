@@ -93,7 +93,7 @@ export function ShoppingListTab() {
                             >
                                 <Checkbox
                                     id={`check-${ingredient}`}
-                                    checked={!!checkedIngredients[ingredient]}
+                                    checked={checkedIngredients[ingredient]}
                                     onCheckedChange={() => toggle(ingredient)}
                                     className='mt-1'
                                 />

@@ -180,7 +180,13 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
             const result = await updateProduct(productFormData, images)
 
             if (!result.success) {
-                throw new Error(result.error)
+                console.error('Error updating product:', result.error)
+                toast({
+                    title: 'Ошибка',
+                    description: 'Не удалось обновить товар.',
+                    variant: 'destructive',
+                })
+                return
             }
 
             // Update ingredients

@@ -11,14 +11,8 @@ const minioClient = new Minio.Client({
 const bucket = process.env.S3_BUCKET_NAME ?? ''
 
 function assembleUrl(key: string) {
-    let res = '';
-    if (process.env.S3_USE_SSL === 'true') {
-        res = 'https://' + process.env.S3_ENDPOINT + '/' + bucket + '/' + key;
-    } else {
-        res = 'http://' + process.env.S3_ENDPOINT + '/' + bucket + '/' + key;
-    }
-
-    return res;
+    const protocol = process.env.S3_USE_SSL === 'true' ? 'https' : 'http'
+    return `${protocol}://${process.env.S3_ENDPOINT}/${bucket}/${key}`
 }
 
 export const UploadFile = async (key: string, obj: stream.Readable | Buffer | string | File): Promise<string> => {

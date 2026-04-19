@@ -1,10 +1,10 @@
-import {test, expect} from "@playwright/test";
+import {expect, test} from "@playwright/test";
 import {
     ensureSeedData,
-    SELLER_EMAIL,
-    SELLER_PASSWORD,
     FOREIGN_SELLER_EMAIL,
-    FOREIGN_SELLER_PASSWORD
+    FOREIGN_SELLER_PASSWORD,
+    SELLER_EMAIL,
+    SELLER_PASSWORD
 } from "./utils/seed";
 
 test.describe("Товары и ингредиенты продавца", () => {
@@ -38,7 +38,7 @@ test.describe("Товары и ингредиенты продавца", () => {
         await expect(page.locator("body")).not.toContainText(/E2E Торт Шоколадный/i, {timeout: 15_000});
     });
 
-    test("Ингредиент существует и виден через products API", async ({request}) => {
+    test("Ингредиент существует и виден через products API", async () => {
         const seed = await ensureSeedData();
         expect(seed.ingredientId).toBeGreaterThan(0);
     });
