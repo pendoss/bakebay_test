@@ -20,8 +20,6 @@ export default [
         rules: {
             'quotes': ['error', 'single', {avoidEscape: true, allowTemplateLiterals: true}],
             'jsx-quotes': ['error', 'prefer-single'],
-            'indent': ['error', 'tab', {SwitchCase: 1}],
-            'no-tabs': 'off',
             'react-hooks/exhaustive-deps': 'error',
         },
     },
