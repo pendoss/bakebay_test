@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import {render, screen} from '@testing-library/react'
 import SellersPage from '@/app/sellers/page'
 
-jest.mock("next/navigation", () => ({
+jest.mock('next/navigation', () => ({
     useRouter() {
         return {
             push: jest.fn(),
@@ -28,11 +28,11 @@ jest.mock('@/contexts/user-context', () => ({
 }))
 
 describe('SellersPage', () => {
-  it('renders a heading', () => {
-    render(<SellersPage />)
+    it('renders a heading', () => {
+        render(<SellersPage/>)
 
-      const heading = screen.getByRole('heading', {level: 1})
+        const heading = screen.getByRole('heading', {level: 1})
 
-      expect(heading).toBeInTheDocument()
-  })
+        expect(heading).toBeInTheDocument()
+    })
 })

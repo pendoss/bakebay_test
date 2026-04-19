@@ -1,15 +1,15 @@
-"use client"
+'use client'
 
-import {useEffect, useState} from "react"
-import {useUser} from "@/contexts/user-context"
-import {useOrderStatusNotifications} from "@/hooks/use-order-status-notifications"
-import {useReviewReminder} from "@/hooks/use-review-reminder"
-import {Button} from "@/components/ui/button"
-import {Card, CardContent} from "@/components/ui/card"
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {OrderCard} from "@/components/order-card"
-import {Filter} from "lucide-react"
+import {useEffect, useState} from 'react'
+import {useUser} from '@/contexts/user-context'
+import {useOrderStatusNotifications} from '@/hooks/use-order-status-notifications'
+import {useReviewReminder} from '@/hooks/use-review-reminder'
+import {Button} from '@/components/ui/button'
+import {Card, CardContent} from '@/components/ui/card'
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
+import {OrderCard} from '@/components/order-card'
+import {Filter} from 'lucide-react'
 
 // Определение типа для заказов
 export type OrderStatus = 'ordering' | 'processing' | 'payed' | 'processed' | 'in_progress' | 'delivering' | 'delivered' | 'placed' | 'confirmed' | 'preparing' | 'cancelled';
@@ -56,9 +56,9 @@ export default function OrdersPage() {
     useReviewReminder(orders)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [searchTerm] = useState("")
-    const [statusFilter, setStatusFilter] = useState("all")
-    const [sortOrder] = useState("newest")
+    const [searchTerm] = useState('')
+    const [statusFilter, setStatusFilter] = useState('all')
+    const [sortOrder] = useState('newest')
 
     // Fetch orders from the API
     useEffect(() => {
@@ -90,11 +90,27 @@ export default function OrdersPage() {
                     items: order.items || [],
                     images: order.images || [],
                     statusHistory: [
-                        { status: 'placed', date: order.date, completed: true },
-                        { status: 'confirmed', date: order.status === 'ordering' ? null : order.date, completed: order.status !== 'ordering' },
-                        { status: 'preparing', date: ['ordering', 'processing'].includes(order.status) ? null : order.date, completed: !['ordering', 'processing'].includes(order.status) },
-                        { status: 'delivering', date: ['delivering', 'delivered'].includes(order.status) ? order.date : null, completed: ['delivering', 'delivered'].includes(order.status) },
-                        { status: 'delivered', date: order.status === 'delivered' ? order.date : null, completed: order.status === 'delivered' },
+                        {status: 'placed', date: order.date, completed: true},
+                        {
+                            status: 'confirmed',
+                            date: order.status === 'ordering' ? null : order.date,
+                            completed: order.status !== 'ordering'
+                        },
+                        {
+                            status: 'preparing',
+                            date: ['ordering', 'processing'].includes(order.status) ? null : order.date,
+                            completed: !['ordering', 'processing'].includes(order.status)
+                        },
+                        {
+                            status: 'delivering',
+                            date: ['delivering', 'delivered'].includes(order.status) ? order.date : null,
+                            completed: ['delivering', 'delivered'].includes(order.status)
+                        },
+                        {
+                            status: 'delivered',
+                            date: order.status === 'delivered' ? order.date : null,
+                            completed: order.status === 'delivered'
+                        },
                     ]
                 }))
 
@@ -119,14 +135,14 @@ export default function OrdersPage() {
             }
 
             // Фильтр по статусу
-            return !(statusFilter !== "all" && order.orderStatus !== statusFilter);
+            return !(statusFilter !== 'all' && order.orderStatus !== statusFilter);
         })
         .sort((a, b) => {
             // Сортировка по дате
-            const dateA = new Date(a.date.split(" ").reverse().join("-"))
-            const dateB = new Date(b.date.split(" ").reverse().join("-"))
+            const dateA = new Date(a.date.split(' ').reverse().join('-'))
+            const dateB = new Date(b.date.split(' ').reverse().join('-'))
 
-            if (sortOrder === "newest") {
+            if (sortOrder === 'newest') {
                 return dateB.getTime() - dateA.getTime()
             } else {
                 return dateA.getTime() - dateB.getTime()
@@ -134,14 +150,14 @@ export default function OrdersPage() {
         })
 
     return (
-        <div className="container py-10 px-4 md:px-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className='container py-10 px-4 md:px-6'>
+            <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8'>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Мои заказы</h1>
-                    <p className="text-muted-foreground">Просматривайте и отслеживайте ваши заказы</p>
+                    <h1 className='text-3xl font-bold tracking-tight mb-2'>Мои заказы</h1>
+                    <p className='text-muted-foreground'>Просматривайте и отслеживайте ваши заказы</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="bg-mint-frosting hover:bg-pistachio text-secondary">
+                <div className='flex gap-2'>
+                    <Button variant='outline' className='bg-mint-frosting hover:bg-pistachio text-secondary'>
                         Помощь с заказом
                     </Button>
                 </div>
@@ -150,12 +166,12 @@ export default function OrdersPage() {
             {/* Show loading state */}
             {loading && (
                 <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <div className="rounded-full bg-muted p-3 mb-4 animate-pulse">
-                            <div className="h-6 w-6 bg-muted-foreground rounded-full"></div>
+                    <CardContent className='flex flex-col items-center justify-center py-12'>
+                        <div className='rounded-full bg-muted p-3 mb-4 animate-pulse'>
+                            <div className='h-6 w-6 bg-muted-foreground rounded-full'></div>
                         </div>
-                        <h3 className="text-lg font-medium mb-2">Загрузка заказов...</h3>
-                        <p className="text-muted-foreground text-center max-w-md">
+                        <h3 className='text-lg font-medium mb-2'>Загрузка заказов...</h3>
+                        <p className='text-muted-foreground text-center max-w-md'>
                             Пожалуйста, подождите, пока мы загружаем ваши заказы.
                         </p>
                     </CardContent>
@@ -165,12 +181,12 @@ export default function OrdersPage() {
             {/* Show error state */}
             {error && !loading && (
                 <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <div className="rounded-full bg-red-100 p-3 mb-4">
-                            <div className="h-6 w-6 text-red-500">!</div>
+                    <CardContent className='flex flex-col items-center justify-center py-12'>
+                        <div className='rounded-full bg-red-100 p-3 mb-4'>
+                            <div className='h-6 w-6 text-red-500'>!</div>
                         </div>
-                        <h3 className="text-lg font-medium mb-2">Ошибка загрузки заказов</h3>
-                        <p className="text-muted-foreground text-center max-w-md">
+                        <h3 className='text-lg font-medium mb-2'>Ошибка загрузки заказов</h3>
+                        <p className='text-muted-foreground text-center max-w-md'>
                             {error}. Пожалуйста, попробуйте обновить страницу.
                         </p>
                     </CardContent>
@@ -180,7 +196,7 @@ export default function OrdersPage() {
             {/* Show content when not loading and no error */}
             {!loading && !error && (
                 <>
-                    <div className="flex flex-col sm:flex-row gap-4 items-end justify-between mb-6">
+                    <div className='flex flex-col sm:flex-row gap-4 items-end justify-between mb-6'>
                         {/*<div className="relative w-full sm:max-w-[360px]">*/}
                         {/*    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />*/}
                         {/*    <Input*/}
@@ -190,49 +206,49 @@ export default function OrdersPage() {
                         {/*        onChange={(e) => setSearchTerm(e.target.value)}*/}
                         {/*    />*/}
                         {/*</div>*/}
-                        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <div className='flex flex-wrap gap-2 w-full sm:w-auto'>
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-[140px]">
-                                    <SelectValue placeholder="Статус заказа" />
+                                <SelectTrigger className='w-[140px]'>
+                                    <SelectValue placeholder='Статус заказа'/>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Все заказы</SelectItem>
-                                    <SelectItem value="ordering">Оформляется</SelectItem>
-                                    <SelectItem value="processing">Обрабатывается</SelectItem>
-                                    <SelectItem value="payed">Оплачен</SelectItem>
-                                    <SelectItem value="processed">Обработан</SelectItem>
-                                    <SelectItem value="in_progress">В процессе</SelectItem>
-                                    <SelectItem value="delivering">Доставляется</SelectItem>
-                                    <SelectItem value="delivered">Доставлен</SelectItem>
+                                    <SelectItem value='all'>Все заказы</SelectItem>
+                                    <SelectItem value='ordering'>Оформляется</SelectItem>
+                                    <SelectItem value='processing'>Обрабатывается</SelectItem>
+                                    <SelectItem value='payed'>Оплачен</SelectItem>
+                                    <SelectItem value='processed'>Обработан</SelectItem>
+                                    <SelectItem value='in_progress'>В процессе</SelectItem>
+                                    <SelectItem value='delivering'>Доставляется</SelectItem>
+                                    <SelectItem value='delivered'>Доставлен</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
-                    <Tabs defaultValue="all" className="w-full">
-                        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex mb-6">
-                            <TabsTrigger value="all" className="flex-1 sm:flex-auto">
+                    <Tabs defaultValue='all' className='w-full'>
+                        <TabsList className='w-full sm:w-auto grid grid-cols-3 sm:flex mb-6'>
+                            <TabsTrigger value='all' className='flex-1 sm:flex-auto'>
                                 Все заказы
                             </TabsTrigger>
-                            <TabsTrigger value="active" className="flex-1 sm:flex-auto">
+                            <TabsTrigger value='active' className='flex-1 sm:flex-auto'>
                                 Активные
                             </TabsTrigger>
-                            <TabsTrigger value="completed" className="flex-1 sm:flex-auto">
+                            <TabsTrigger value='completed' className='flex-1 sm:flex-auto'>
                                 Завершенные
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="all" className="space-y-6">
+                        <TabsContent value='all' className='space-y-6'>
                             {filteredOrders.length > 0 ? (
-                                filteredOrders.map((order) => <OrderCard key={order.id} order={order} />)
+                                filteredOrders.map((order) => <OrderCard key={order.id} order={order}/>)
                             ) : (
                                 <Card>
-                                    <CardContent className="flex flex-col items-center justify-center py-12">
-                                        <div className="rounded-full bg-muted p-3 mb-4">
-                                            <Filter className="h-6 w-6 text-muted-foreground" />
+                                    <CardContent className='flex flex-col items-center justify-center py-12'>
+                                        <div className='rounded-full bg-muted p-3 mb-4'>
+                                            <Filter className='h-6 w-6 text-muted-foreground'/>
                                         </div>
-                                        <h3 className="text-lg font-medium mb-2">Заказы не найдены</h3>
-                                        <p className="text-muted-foreground text-center max-w-md">
+                                        <h3 className='text-lg font-medium mb-2'>Заказы не найдены</h3>
+                                        <p className='text-muted-foreground text-center max-w-md'>
                                             Не найдено заказов, соответствующих вашим критериям поиска. Попробуйте изменить параметры фильтрации.
                                         </p>
                                     </CardContent>
@@ -240,19 +256,19 @@ export default function OrdersPage() {
                             )}
                         </TabsContent>
 
-                        <TabsContent value="active" className="space-y-6">
+                        <TabsContent value='active' className='space-y-6'>
                             {filteredOrders
-                                .filter((order) => ["ordering", "processing", "payed", "processed", "in_progress", "delivering"].includes(order.orderStatus))
+                                .filter((order) => ['ordering', 'processing', 'payed', 'processed', 'in_progress', 'delivering'].includes(order.orderStatus))
                                 .map((order) => (
-                                    <OrderCard key={order.id} order={order} />
+                                    <OrderCard key={order.id} order={order}/>
                                 ))}
                         </TabsContent>
 
-                        <TabsContent value="completed" className="space-y-6">
+                        <TabsContent value='completed' className='space-y-6'>
                             {filteredOrders
-                                .filter((order) => ["delivered"].includes(order.orderStatus))
+                                .filter((order) => ['delivered'].includes(order.orderStatus))
                                 .map((order) => (
-                                    <OrderCard key={order.id} order={order} />
+                                    <OrderCard key={order.id} order={order}/>
                                 ))}
                         </TabsContent>
                     </Tabs>

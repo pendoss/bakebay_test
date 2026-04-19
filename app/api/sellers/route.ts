@@ -1,53 +1,53 @@
 import { NextResponse } from 'next/server';
-import {db, sellers, products, users} from '@/src/db';
+import {db, sellers, products, users} from '@/src/adapters/storage/drizzle';
 import { eq } from 'drizzle-orm';
 import {Encode} from '@/app/api/jwt';
 import {getAuthPayload} from '@/app/api/get-auth';
 import {cookies} from 'next/headers';
 
 export async function GET(request: Request) {
-  try {
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-    
-    // If ID is provided, return a single seller
-    if (id) {
-      const seller = await db.query.sellers.findFirst({
-        where: eq(sellers.seller_id, parseInt(id)),
-        with: {
-          products: true,
-        },
-      });
-      
-      if (!seller) {
+    try {
+        const url = new URL(request.url);
+        const id = url.searchParams.get('id');
+
+        // If ID is provided, return a single seller
+        if (id) {
+            const seller = await db.query.sellers.findFirst({
+                where: eq(sellers.seller_id, parseInt(id)),
+                with: {
+                    products: true,
+                },
+            });
+
+            if (!seller) {
+                return NextResponse.json(
+                    {error: 'Seller not found'},
+                    {status: 404}
+                );
+            }
+
+            return NextResponse.json(seller);
+        }
+
+        const userId = url.searchParams.get('userId');
+
+        // Filter by userId if provided
+        if (userId) {
+            const userSellers = await db.select().from(sellers).where(eq(sellers.user_id, parseInt(userId)));
+            return NextResponse.json(userSellers);
+        }
+
+        // Get all sellers
+        const allSellers = await db.select().from(sellers);
+
+        return NextResponse.json(allSellers);
+    } catch (error) {
+        console.error('Error fetching sellers:', error);
         return NextResponse.json(
-          { error: 'Seller not found' },
-          { status: 404 }
+            {error: 'Failed to fetch sellers'},
+            {status: 500}
         );
-      }
-      
-      return NextResponse.json(seller);
     }
-
-    const userId = url.searchParams.get('userId');
-
-    // Filter by userId if provided
-    if (userId) {
-      const userSellers = await db.select().from(sellers).where(eq(sellers.user_id, parseInt(userId)));
-      return NextResponse.json(userSellers);
-    }
-
-    // Get all sellers
-    const allSellers = await db.select().from(sellers);
-
-    return NextResponse.json(allSellers);
-  } catch (error) {
-    console.error('Error fetching sellers:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sellers' },
-      { status: 500 }
-    );
-  }
 }
 
 interface sellerRegisterData {
@@ -64,153 +64,153 @@ interface sellerRegisterData {
 }
 
 export async function POST(request: Request) {
-  try {
-    const authPayload = await getAuthPayload();
-    if (!authPayload) {
-      return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-    }
-    const userId = authPayload.userId;
-
-    let body: sellerRegisterData;
     try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400 }
-      );
+        const authPayload = await getAuthPayload();
+        if (!authPayload) {
+            return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+        }
+        const userId = authPayload.userId;
+
+        let body: sellerRegisterData;
+        try {
+            body = await request.json();
+        } catch {
+            return NextResponse.json(
+                {error: 'Invalid JSON in request body'},
+                {status: 400}
+            );
+        }
+
+        // Validate required fields
+        if (!body.seller_name || !body.image_url) {
+            return NextResponse.json(
+                {error: 'Missing required fields'},
+                {status: 400}
+            );
+        }
+
+        // Create new seller linked to the user
+        const newSeller = await db.insert(sellers).values({
+            seller_name: body.seller_name,
+            seller_rating: 0.0,
+            description: body.description,
+            location: body.location,
+            website: body.website,
+            contact_name: body.contact_name,
+            contact_email: body.contact_email,
+            contact_number: body.contact_number,
+            inn: body.inn,
+            about_products: body.about_products,
+            image_url: body.image_url,
+            user_id: userId,
+        }).returning();
+
+        // Promote user role to 'seller'
+        await db.update(users)
+            .set({user_role: 'seller', updated_at: new Date()})
+            .where(eq(users.user_id, userId));
+
+        // Issue a new token with the updated role and update the cookie
+        const newToken = Encode({userId, role: 'seller'});
+        const cookieStore = await cookies();
+        cookieStore.set('auth_token', newToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60,
+        });
+
+        return NextResponse.json({seller: newSeller[0]});
+    } catch (error) {
+        console.error('Error creating seller:', error);
+        return NextResponse.json(
+            {error: 'Failed to create seller'},
+            {status: 500}
+        );
     }
-
-    // Validate required fields
-    if (!body.seller_name || !body.image_url) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    // Create new seller linked to the user
-    const newSeller = await db.insert(sellers).values({
-      seller_name: body.seller_name,
-      seller_rating: 0.0,
-      description: body.description,
-      location: body.location,
-      website: body.website,
-      contact_name: body.contact_name,
-      contact_email: body.contact_email,
-      contact_number: body.contact_number,
-      inn: body.inn,
-      about_products: body.about_products,
-      image_url: body.image_url,
-      user_id: userId,
-    }).returning();
-
-    // Promote user role to 'seller'
-    await db.update(users)
-        .set({user_role: 'seller', updated_at: new Date()})
-        .where(eq(users.user_id, userId));
-
-    // Issue a new token with the updated role and update the cookie
-    const newToken = Encode({userId, role: 'seller'});
-    const cookieStore = await cookies();
-    cookieStore.set('auth_token', newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60,
-    });
-
-    return NextResponse.json({seller: newSeller[0]});
-  } catch (error) {
-    console.error('Error creating seller:', error);
-    return NextResponse.json(
-      { error: 'Failed to create seller' },
-      { status: 500 }
-    );
-  }
 }
 
 export async function PUT(request: Request) {
-  try {
-    const body = await request.json();
-    
-    // Validate required fields
-    if (!body.seller_id || !body.seller_name) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    try {
+        const body = await request.json();
+
+        // Validate required fields
+        if (!body.seller_id || !body.seller_name) {
+            return NextResponse.json(
+                {error: 'Missing required fields'},
+                {status: 400}
+            );
+        }
+
+        // Update seller
+        const updatedSeller = await db.update(sellers)
+            .set({
+                seller_name: body.seller_name,
+                seller_rating: body.seller_rating,
+            })
+            .where(eq(sellers.seller_id, body.seller_id))
+            .returning();
+
+        if (updatedSeller.length === 0) {
+            return NextResponse.json(
+                {error: 'Seller not found'},
+                {status: 404}
+            );
+        }
+
+        return NextResponse.json(updatedSeller[0]);
+    } catch (error) {
+        console.error('Error updating seller:', error);
+        return NextResponse.json(
+            {error: 'Failed to update seller'},
+            {status: 500}
+        );
     }
-    
-    // Update seller
-    const updatedSeller = await db.update(sellers)
-      .set({
-        seller_name: body.seller_name,
-        seller_rating: body.seller_rating,
-      })
-      .where(eq(sellers.seller_id, body.seller_id))
-      .returning();
-    
-    if (updatedSeller.length === 0) {
-      return NextResponse.json(
-        { error: 'Seller not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(updatedSeller[0]);
-  } catch (error) {
-    console.error('Error updating seller:', error);
-    return NextResponse.json(
-      { error: 'Failed to update seller' },
-      { status: 500 }
-    );
-  }
 }
 
 export async function DELETE(request: Request) {
-  try {
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-    
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Missing seller ID' },
-        { status: 400 }
-      );
+    try {
+        const url = new URL(request.url);
+        const id = url.searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json(
+                {error: 'Missing seller ID'},
+                {status: 400}
+            );
+        }
+
+        // Check if seller has any products
+        const productsWithSeller = await db.select()
+            .from(products)
+            .where(eq(products.seller_id, parseInt(id)));
+
+        if (productsWithSeller.length > 0) {
+            return NextResponse.json(
+                {error: 'Cannot delete seller that has products'},
+                {status: 400}
+            );
+        }
+
+        // Delete seller
+        const deletedSeller = await db.delete(sellers)
+            .where(eq(sellers.seller_id, parseInt(id)))
+            .returning();
+
+        if (deletedSeller.length === 0) {
+            return NextResponse.json(
+                {error: 'Seller not found'},
+                {status: 404}
+            );
+        }
+
+        return NextResponse.json({success: true});
+    } catch (error) {
+        console.error('Error deleting seller:', error);
+        return NextResponse.json(
+            {error: 'Failed to delete seller'},
+            {status: 500}
+        );
     }
-    
-    // Check if seller has any products
-    const productsWithSeller = await db.select()
-      .from(products)
-      .where(eq(products.seller_id, parseInt(id)));
-    
-    if (productsWithSeller.length > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete seller that has products' },
-        { status: 400 }
-      );
-    }
-    
-    // Delete seller
-    const deletedSeller = await db.delete(sellers)
-      .where(eq(sellers.seller_id, parseInt(id)))
-      .returning();
-    
-    if (deletedSeller.length === 0) {
-      return NextResponse.json(
-        { error: 'Seller not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting seller:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete seller' },
-      { status: 500 }
-    );
-  }
 }

@@ -1,4 +1,4 @@
-import {db, orderItems, productIngredients} from '@/src/db';
+import {db, orderItems, productIngredients} from '@/src/adapters/storage/drizzle';
 import {eq} from 'drizzle-orm';
 
 export async function adjustIngredientStock(

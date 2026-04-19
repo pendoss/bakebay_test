@@ -36,7 +36,7 @@ describe('OrdersPage', () => {
     })
 
     it('renders a heading', () => {
-        render(<OrdersPage />)
+        render(<OrdersPage/>)
         expect(screen.getByText('Мои заказы')).toBeInTheDocument()
     })
 
@@ -44,12 +44,12 @@ describe('OrdersPage', () => {
         // Make fetch hang so loading stays true
         fetchMock.mockReturnValue(new Promise(() => {
         }))
-        render(<OrdersPage />)
+        render(<OrdersPage/>)
         expect(screen.getByText('Загрузка заказов...')).toBeInTheDocument()
     })
 
     it('fetches orders from the API', async () => {
-        render(<OrdersPage />)
+        render(<OrdersPage/>)
 
         await waitFor(() => {
             expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -64,7 +64,7 @@ describe('OrdersPage', () => {
             statusText: 'Internal Server Error',
         })
 
-        render(<OrdersPage />)
+        render(<OrdersPage/>)
 
         await waitFor(() => {
             expect(screen.getByText(/Ошибка загрузки заказов/)).toBeInTheDocument()
@@ -72,7 +72,7 @@ describe('OrdersPage', () => {
     })
 
     it('renders order tabs correctly', async () => {
-        render(<OrdersPage />)
+        render(<OrdersPage/>)
 
         await waitFor(() => {
             expect(screen.getByText('Мои заказы')).toBeInTheDocument()

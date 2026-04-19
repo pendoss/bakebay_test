@@ -10,31 +10,31 @@ jest.mock('next/link', () => {
 })
 
 describe('MainNav', () => {
-  it('renders all static routes', () => {
-    render(<MainNav />)
+    it('renders all static routes', () => {
+        render(<MainNav/>)
 
-    expect(screen.getByText('Главная')).toBeInTheDocument()
-    expect(screen.getByText('Все товары')).toBeInTheDocument()
-    expect(screen.getByText('Кондитеры')).toBeInTheDocument()
-  })
+        expect(screen.getByText('Главная')).toBeInTheDocument()
+        expect(screen.getByText('Все товары')).toBeInTheDocument()
+        expect(screen.getByText('Кондитеры')).toBeInTheDocument()
+    })
 
-  it('renders dropdown trigger for categories', () => {
-    render(<MainNav />)
+    it('renders dropdown trigger for categories', () => {
+        render(<MainNav/>)
 
-    const dropdownTrigger = screen.getByText('Категории')
-      expect(dropdownTrigger).toBeInTheDocument()
-  })
+        const dropdownTrigger = screen.getByText('Категории')
+        expect(dropdownTrigger).toBeInTheDocument()
+    })
 
-  it('applies custom className', () => {
-    render(<MainNav className="test-class" />)
+    it('applies custom className', () => {
+        render(<MainNav className='test-class'/>)
 
-    const nav = screen.getByRole('navigation')
-    expect(nav).toHaveClass('test-class')
-  })
+        const nav = screen.getByRole('navigation')
+        expect(nav).toHaveClass('test-class')
+    })
 
-  it('spreads additional props to nav', () => {
-    render(<MainNav data-testid="main-nav" />)
+    it('spreads additional props to nav', () => {
+        render(<MainNav data-testid='main-nav'/>)
 
-    expect(screen.getByTestId('main-nav')).toBeInTheDocument()
-  })
+        expect(screen.getByTestId('main-nav')).toBeInTheDocument()
+    })
 })

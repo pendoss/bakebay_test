@@ -18,27 +18,27 @@ export async function userMiddleware(
     handler: (req: AuthenticatedRequest) => Promise<NextResponse>
 ): Promise<NextResponse> {
     try {
-        
+
         const authenticatedReq = req.clone() as AuthenticatedRequest;
-        
-        
+
+
         const token = req.headers.get('Authorization')?.replace('Bearer ', '');
-        
+
         if (token) {
             try {
-                const payload  = Decode(token)
+                const payload = Decode(token)
                 authenticatedReq.user = payload as User;
             } catch (error) {
                 console.error('Token verification failed:', error);
             }
         }
-        
+
         return handler(authenticatedReq);
     } catch (error) {
         console.error('Middleware error:', error);
         return NextResponse.json(
-            { error: 'Internal Server Error' },
-            { status: 500 }
+            {error: 'Internal Server Error'},
+            {status: 500}
         );
     }
 }

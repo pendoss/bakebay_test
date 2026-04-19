@@ -1,64 +1,58 @@
 'use server'
 
-import { db, products as productsTable, productImages } from "@/src/db";
-import { eq } from "drizzle-orm";
+import {productStorageDrizzle} from '@/src/adapters/storage/drizzle/product-storage-drizzle'
+import {listProductsBySeller, listProducts} from '@/src/application/use-cases/product'
+import {asSellerId} from '@/src/domain/shared/id'
 
-// Define interface for product objects
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  inventory: number;
-  category: string;
-  image: string;
-  status: string;
-  rating: number;
-  sales: number;
+interface ProductRow {
+    id: number
+    name: string
+    price: number
+    inventory: number
+    category: string
+    image: string
+    status: string
+    rating: number
+    sales: number
 }
 
-// Helper function to get status text
-function getStatusText(status: string | null | undefined): string {
-  if (!status) return "Неизвестно";
-
-  switch(status) {
-    case "active": return "Активен";
-    case "draft": return "Черновик";
-    case "hidden": return "Скрыт";
-    default: return status;
-  }
+function statusText(status: string): string {
+    switch (status) {
+        case 'active':
+            return 'Активен'
+        case 'draft':
+            return 'Черновик'
+        case 'hidden':
+            return 'Скрыт'
+        default:
+            return status
+    }
 }
 
-export async function fetchProducts(sellerId?: number | null): Promise<{ products: Product[], error: string | null }> {
-  try {
-    const dbProducts = sellerId
-        ? await db.select().from(productsTable).where(eq(productsTable.seller_id, sellerId))
-        : await db.select().from(productsTable);
-    const transformedProducts: Product[] = await Promise.all(dbProducts.map(async product => {
-      const images = await db.select()
-        .from(productImages)
-        .where(eq(productImages.product_id, product.product_id))
-        .orderBy(productImages.is_main, productImages.display_order);
+export async function fetchProducts(sellerId?: number | null): Promise<{
+    products: ProductRow[];
+    error: string | null
+}> {
+    try {
+        const deps = {productStorage: productStorageDrizzle()}
+        const products = sellerId
+            ? await listProductsBySeller(asSellerId(sellerId), deps)
+            : await listProducts({}, deps)
 
-      // Find main image or use first image
-      const mainImage = images.find(img => img.is_main)?.image_url || 
-                        (images.length > 0 ? images[0].image_url : null);
-
-      return {
-        id: product.product_id,
-        name: product.product_name,
-        price: product.price,
-        inventory: product.stock || 0,
-        category: product.category,
-        image: mainImage || "/placeholder.svg?height=200&width=200",
-        status: getStatusText(product.status),
-        rating: 4.5,
-        sales: 0,
-      };
-    }));
-
-    return { products: transformedProducts, error: null };
-  } catch (err) {
-    console.error("Error fetching products:", err);
-    return { products: [], error: "Failed to load products. Please try again later." };
-  }
+        const rows = products.map<ProductRow>((p) => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            inventory: p.stock,
+            category: p.category,
+            image: p.mainImage ?? '/placeholder.svg?height=200&width=200',
+            status: statusText(p.status),
+            rating: p.rating,
+            sales: 0,
+        }))
+        return {products: rows, error: null}
+    } catch (err) {
+        console.error('Error fetching products:', err)
+        return {products: [], error: 'Failed to load products. Please try again later.'}
+    }
 }

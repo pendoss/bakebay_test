@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { eq, inArray, desc } from 'drizzle-orm';
-import { db, orders, orderItems, products, reviews, users } from "@/src/db";
+import {db, orders, orderItems, products, reviews, users} from '@/src/adapters/storage/drizzle';
 
 const MONTH_NAMES = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const sellerId = url.searchParams.get('sellerId');
 
     if (!sellerId) {
-        return NextResponse.json({ error: 'Seller ID is required' }, { status: 400 });
+        return NextResponse.json({error: 'Seller ID is required'}, {status: 400});
     }
 
     const sellerIdNum = parseInt(sellerId);
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     }).from(products).where(eq(products.seller_id, sellerIdNum));
 
     if (sellerProducts.length === 0) {
-        return NextResponse.json({ ...EMPTY_RESPONSE, kpis: { ...EMPTY_RESPONSE.kpis, products_count: 0 } });
+        return NextResponse.json({...EMPTY_RESPONSE, kpis: {...EMPTY_RESPONSE.kpis, products_count: 0}});
     }
 
     const productIds = sellerProducts.map(p => p.product_id) as number[];
@@ -81,8 +81,13 @@ export async function GET(request: Request) {
         const d = new Date(order.date);
         totalRevenue += rev;
         if (order.user_id) uniqueCustomers.add(order.user_id);
-        if (d >= currentMonthStart) { curRevenue += rev; curOrders++; }
-        else if (d >= prevMonthStart) { prevRevenue += rev; prevOrders++; }
+        if (d >= currentMonthStart) {
+            curRevenue += rev;
+            curOrders++;
+        } else if (d >= prevMonthStart) {
+            prevRevenue += rev;
+            prevOrders++;
+        }
     }
 
     const pct = (cur: number, prev: number) =>
@@ -92,7 +97,7 @@ export async function GET(request: Request) {
     const monthlyMap = new Map<string, { revenue: number; orders: number }>();
     for (let i = 11; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        monthlyMap.set(`${d.getFullYear()}-${d.getMonth()}`, { revenue: 0, orders: 0 });
+        monthlyMap.set(`${d.getFullYear()}-${d.getMonth()}`, {revenue: 0, orders: 0});
     }
     for (const order of sellerOrders) {
         const d = new Date(order.date);
@@ -115,7 +120,7 @@ export async function GET(request: Request) {
         if (!item.product_id) continue;
         const p = sellerProducts.find(p => p.product_id === item.product_id);
         if (!p) continue;
-        const s = productStats.get(item.product_id) ?? { name: p.product_name ?? '', quantity: 0, revenue: 0 };
+        const s = productStats.get(item.product_id) ?? {name: p.product_name ?? '', quantity: 0, revenue: 0};
         s.quantity += item.quantity;
         s.revenue += (p.price ?? 0) * item.quantity;
         productStats.set(item.product_id, s);
@@ -123,14 +128,14 @@ export async function GET(request: Request) {
     const top_products = Array.from(productStats.values())
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 5)
-        .map(p => ({ ...p, revenue: Math.round(p.revenue) }));
+        .map(p => ({...p, revenue: Math.round(p.revenue)}));
 
     // 7. Recent orders (last 5) with customer names
     const sortedOrders = [...sellerOrders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const recent_orders = await Promise.all(sortedOrders.slice(0, 5).map(async order => {
         let customer = 'Гость';
         if (order.user_id) {
-            const u = await db.select({ first_name: users.first_name, last_name: users.last_name })
+            const u = await db.select({first_name: users.first_name, last_name: users.last_name})
                 .from(users).where(eq(users.user_id, order.user_id));
             if (u[0]) customer = `${u[0].first_name} ${u[0].last_name}`;
         }
@@ -161,11 +166,11 @@ export async function GET(request: Request) {
 
     const recent_reviews = await Promise.all(allReviews.slice(0, 3).map(async r => {
         const u = r.user_id
-            ? await db.select({ first_name: users.first_name, last_name: users.last_name })
+            ? await db.select({first_name: users.first_name, last_name: users.last_name})
                 .from(users).where(eq(users.user_id, r.user_id))
             : [];
         const p = r.product_id
-            ? await db.select({ product_name: products.product_name })
+            ? await db.select({product_name: products.product_name})
                 .from(products).where(eq(products.product_id, r.product_id))
             : [];
         return {

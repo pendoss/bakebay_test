@@ -2,10 +2,9 @@ name: PR Checks
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
     types: [ opened, synchronize, reopened ]
 
-# Отменяет предыдущий запуск для того же PR при новом пуше
 concurrency:
   group: pr-checks-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -30,21 +29,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # ── Typecheck ──────────────────────────────────────────────────────────
       - name: Typecheck
         run: pnpm tsc --noEmit
 
-      # ── Lint ───────────────────────────────────────────────────────────────
       - name: Lint
         run: pnpm lint
 
-      # ── Tests ──────────────────────────────────────────────────────────────
       - name: Tests
         run: pnpm test -- --ci --passWithNoTests
 
-      # ── Build ──────────────────────────────────────────────────────────────
-      # Используем заглушки для переменных окружения: build проверяет только
-      # компиляцию, а не реальное подключение к БД/S3.
       - name: Build
         run: pnpm build
         env:

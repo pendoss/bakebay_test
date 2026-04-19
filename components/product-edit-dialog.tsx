@@ -1,22 +1,25 @@
-"use client"
+'use client'
 
-import React, {ChangeEvent, DragEvent, useEffect, useRef, useState} from "react"
-import {useRouter} from "next/navigation"
-import Image from "next/image"
-import {useUser} from "@/contexts/user-context"
-import {Button} from "@/components/ui/button"
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
-import {Input} from "@/components/ui/input"
-import {Label} from "@/components/ui/label"
-import {Textarea} from "@/components/ui/textarea"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
-import {Separator} from "@/components/ui/separator"
-import {Checkbox} from "@/components/ui/checkbox"
-import {useToast} from "@/hooks/use-toast"
-import {GripVertical, ImagePlus, Plus, Trash2, X} from "lucide-react"
-import {Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
-import {updateProduct} from "@/app/actions/product"
+import React, {ChangeEvent, DragEvent, useEffect, useRef, useState} from 'react'
+import {useRouter} from 'next/navigation'
+import Image from 'next/image'
+import {useUser} from '@/contexts/user-context'
+import {Button} from '@/components/ui/button'
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
+import {Input} from '@/components/ui/input'
+import {Label} from '@/components/ui/label'
+import {Textarea} from '@/components/ui/textarea'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
+import {Separator} from '@/components/ui/separator'
+import {Checkbox} from '@/components/ui/checkbox'
+import {useToast} from '@/hooks/use-toast'
+import {GripVertical, ImagePlus, Plus, Trash2, X} from 'lucide-react'
+import {Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle,} from '@/components/ui/dialog'
+import {updateProduct} from '@/app/actions/product'
+import {useProduct} from '@/src/adapters/ui/react/hooks/use-products'
+import {isOwnedBySeller} from '@/src/domain/product'
+import {asSellerId} from '@/src/domain/shared/id'
 
 
 interface ProductImage {
@@ -28,23 +31,23 @@ interface ProductImage {
 }
 // Default product structure
 const defaultProduct = {
-  id: 0,
-  name: "",
-  description: "",
-  price: 0,
-  comparePrice: 0,
-  cost: 0,
-  inventory: 0,
-  sku: "",
-  category: "",
-  status: "Активен",
-  weight: 0,
-  size: "",
-  storage: "",
-  shelfLife: 0,
-  ingredients: [] as { name: string; amount: number, unit: string }[],
-  dietary: [] as string[],
-  images: [] as string[],
+    id: 0,
+    name: '',
+    description: '',
+    price: 0,
+    comparePrice: 0,
+    cost: 0,
+    inventory: 0,
+    sku: '',
+    category: '',
+    status: 'Активен',
+    weight: 0,
+    size: '',
+    storage: '',
+    shelfLife: 0,
+    ingredients: [] as { name: string; amount: number, unit: string }[],
+    dietary: [] as string[],
+    images: [] as string[],
 }
 
 interface ProductEditDialogProps {
@@ -54,782 +57,837 @@ interface ProductEditDialogProps {
 }
 
 export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: ProductEditDialogProps) {
-  const router = useRouter()
-  const { toast } = useToast()
+    const router = useRouter()
+    const {toast} = useToast()
     const {sellerId} = useUser()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [productData, setProductData] = useState(defaultProduct)
-  const [newIngredient, setNewIngredient] = useState({ name: "", amount: 0, unit: "г"})
-  const [images, setImages] = useState<ProductImage[]>([])
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
+    const [productData, setProductData] = useState(defaultProduct)
+    const [newIngredient, setNewIngredient] = useState({name: '', amount: 0, unit: 'г'})
+    const [images, setImages] = useState<ProductImage[]>([])
+    const [isDragging, setIsDragging] = useState<boolean>(false)
+    const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch product data when dialog opens and productId changes
-  useEffect(() => {
-    if (isOpen && productId) {
-      const fetchProduct = async () => {
-        try {
-          setIsLoading(true)
-          const response = await fetch(`/api/products?id=${productId}`)
+    const {product: loadedProduct, loading: productLoading, error: productError} = useProduct(
+        isOpen && productId ? productId : null,
+    )
 
-          if (!response.ok) {
-            throw new Error('Failed to fetch product')
-          }
+    useEffect(() => {
+        setIsLoading(productLoading)
+    }, [productLoading])
 
-          const productFromApi = await response.json()
+    useEffect(() => {
+        if (productError) {
+            toast({title: 'Ошибка', description: 'Не удалось загрузить данные товара.', variant: 'destructive'})
+        }
+    }, [productError, toast])
 
-            // Verify the product belongs to the current seller
-            if (sellerId && productFromApi.seller_id !== sellerId) {
-                toast({
-                    title: "Доступ запрещён",
-                    description: "Вы не можете редактировать чужой товар.",
-                    variant: "destructive"
-                })
-                onOpenChangeAction(false)
-                return
+    useEffect(() => {
+        if (isOpen && !productId) {
+            setProductData(defaultProduct)
+            setImages([])
+            setIsLoading(false)
+            return
+        }
+        if (!isOpen) {
+            setImages([])
+            return
+        }
+        if (!loadedProduct) return
+
+        if (sellerId !== null && sellerId !== undefined && !isOwnedBySeller(loadedProduct, asSellerId(sellerId))) {
+            toast({
+                title: 'Доступ запрещён',
+                description: 'Вы не можете редактировать чужой товар.',
+                variant: 'destructive',
+            })
+            onOpenChangeAction(false)
+            return
+        }
+
+        const fetchIngredients = async () => {
+            let ingredientsData: { name: string; amount: number; unit: string }[] = []
+            try {
+                const response = await fetch(`/api/product-ingredients?productId=${loadedProduct.id}`)
+                if (response.ok) {
+                    const raw = await response.json()
+                    ingredientsData = raw.map((i: { name: string; amount: number; unit: string }) => ({
+                        name: i.name,
+                        amount: i.amount,
+                        unit: i.unit,
+                    }))
+                }
+            } catch {
+                // ignore — ingredients are optional at the edit screen
             }
 
-          // Fetch ingredients for this product
-          const ingredientsResponse = await fetch(`/api/product-ingredients?productId=${productId}`)
-          let ingredientsData = []
+            setProductData({
+                id: loadedProduct.id,
+                name: loadedProduct.name,
+                description: loadedProduct.longDesc,
+                price: loadedProduct.price,
+                comparePrice: 0,
+                cost: loadedProduct.cost ?? 0,
+                inventory: loadedProduct.stock,
+                sku: loadedProduct.sku ?? '',
+                category: loadedProduct.category,
+                status: loadedProduct.status,
+                weight: loadedProduct.weight ?? 0,
+                size: loadedProduct.size ?? '',
+                storage: loadedProduct.storageConditions,
+                shelfLife: loadedProduct.shelfLife ?? 0,
+                ingredients: ingredientsData,
+                dietary: loadedProduct.dietary,
+                images: [],
+            })
 
-          if (ingredientsResponse.ok) {
-            const ingredientsFromApi = await ingredientsResponse.json()
-            // Map API response to the format expected by the UI
-              ingredientsData = ingredientsFromApi.map((ing: { name: string; amount: number; unit: string }) => ({
-              name: ing.name,
-              amount: ing.amount,
-              unit: ing.unit
-            }))
-          }
-
-          // Map API response to component state
-          setProductData({
-            id: productFromApi.product_id,
-            name: productFromApi.product_name || "",
-            description: productFromApi.long_desc || "",
-            price: productFromApi.price || 0,
-              comparePrice: 0,
-            cost: productFromApi.cost || 0,
-            inventory: productFromApi.stock || 0,
-            sku: productFromApi.sku || "",
-            category: productFromApi.category || "",
-            status: productFromApi.status || "Активен",
-            weight: productFromApi.weight || 0,
-            size: productFromApi.size || "",
-            storage: productFromApi.storage_conditions || "",
-            shelfLife: productFromApi.shelf_life || 0,
-            ingredients: ingredientsData,
-            dietary: productFromApi.dietary_constraints?.map((c: {id: number, name: string}) => c.name) || [],
-              images: [],
-          })
-
-            // Load existing product images into images state
-            const existingImages: ProductImage[] = (productFromApi.images || [])
-                .sort((a: { display_order?: number }, b: {
-                    display_order?: number
-                }) => (a.display_order ?? 0) - (b.display_order ?? 0))
-                .map((img: { image_url: string; name?: string; s3_key?: string }) => ({
-                    url: img.image_url,
-                    name: img.name || img.s3_key || 'image',
+            setImages(
+                loadedProduct.images.map((img) => ({
+                    url: img.url,
+                    name: img.name || img.s3Key || 'image',
                     isExisting: true,
-                    s3_key: img.s3_key,
-                }))
-            setImages(existingImages)
+                    s3_key: img.s3Key ?? undefined,
+                })),
+            )
+        }
+
+        fetchIngredients()
+    }, [isOpen, productId, loadedProduct, sellerId, toast, onOpenChangeAction])
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setIsSubmitting(true)
+
+        try {
+            const productFormData = {
+                product_id: productData.id,
+                product_name: productData.name,
+                price: productData.price,
+                cost: productData.cost,
+                short_desc: productData.description.substring(0, 100),
+                long_desc: productData.description,
+                category: productData.category,
+                storage_conditions: productData.storage,
+                stock: productData.inventory,
+                sku: productData.sku,
+                weight: productData.weight,
+                size: productData.size,
+                shelf_life: productData.shelfLife,
+                status: productData.status,
+            }
+
+            const result = await updateProduct(productFormData, images)
+
+            if (!result.success) {
+                throw new Error(result.error)
+            }
+
+            // Update ingredients
+            if (productId) {
+                const ingredientsResponse = await fetch('/api/product-ingredients', {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        product_id: productData.id,
+                        ingredients: productData.ingredients,
+                    }),
+                })
+                if (!ingredientsResponse.ok) {
+                    console.error('Failed to update ingredients, but product was updated')
+                }
+            }
+
+            toast({
+                title: 'Товар обновлен',
+                description: 'Ваш товар был успешно обновлен.',
+            })
+
+            onOpenChangeAction(false)
+            router.refresh()
         } catch (error) {
-          console.error('Error fetching product:', error)
-          toast({
-            title: "Ошибка",
-            description: "Не удалось загрузить данные товара.",
-            variant: "destructive"
-          })
+            console.error('Error updating product:', error)
+            toast({
+                title: 'Ошибка',
+                description: 'Не удалось обновить товар.',
+                variant: 'destructive',
+            })
         } finally {
-          setIsLoading(false)
+            setIsSubmitting(false)
         }
-      }
-
-      fetchProduct()
-    } else if (!isOpen) {
-        setImages([])
-    } else if (isOpen && !productId) {
-      setProductData(defaultProduct)
-        setImages([])
-      setIsLoading(false)
     }
-  }, [isOpen, productId, toast, onOpenChangeAction, sellerId])
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-        const productFormData = {
-        product_id: productData.id,
-        product_name: productData.name,
-        price: productData.price,
-        cost: productData.cost,
-            short_desc: productData.description.substring(0, 100),
-        long_desc: productData.description,
-        category: productData.category,
-        storage_conditions: productData.storage,
-        stock: productData.inventory,
-        sku: productData.sku,
-        weight: productData.weight,
-        size: productData.size,
-        shelf_life: productData.shelfLife,
-            status: productData.status,
-      }
-
-        const result = await updateProduct(productFormData, images)
-
-        if (!result.success) {
-            throw new Error(result.error)
-      }
-
-        // Update ingredients
-      if (productId) {
-        const ingredientsResponse = await fetch('/api/product-ingredients', {
-          method: 'PATCH',
-            headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            product_id: productData.id,
-              ingredients: productData.ingredients,
-          }),
-        })
-        if (!ingredientsResponse.ok) {
-          console.error('Failed to update ingredients, but product was updated')
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
+        const files = e.target.files
+        if (files && files.length > 0) {
+            addImageFiles(Array.from(files))
         }
-      }
-
-      toast({
-          title: "Товар обновлен",
-          description: "Ваш товар был успешно обновлен.",
-      })
-
-      onOpenChangeAction(false)
-      router.refresh()
-    } catch (error) {
-      console.error('Error updating product:', error)
-      toast({
-        title: "Ошибка",
-          description: "Не удалось обновить товар.",
-          variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
     }
-  }
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
-      const files = e.target.files
-      if (files && files.length > 0) {
-        addImageFiles(Array.from(files))
-      }
-    }
-  
     const addImageFiles = (files: File[]): void => {
-      const newImages: ProductImage[] = [...images]
-  
-      files.forEach((file) => {
-        if (file.type.startsWith("image/")) {
-          const imageUrl = URL.createObjectURL(file)
-          newImages.push({
-            url: imageUrl,
-            file: file,
-            name: file.name,
-          })
-        }
-      })
-  
-      setImages(newImages)
+        const newImages: ProductImage[] = [...images]
+
+        files.forEach((file) => {
+            if (file.type.startsWith('image/')) {
+                const imageUrl = URL.createObjectURL(file)
+                newImages.push({
+                    url: imageUrl,
+                    file: file,
+                    name: file.name,
+                })
+            }
+        })
+
+        setImages(newImages)
     }
-  
+
     const handleDragOver = (e: DragEvent<HTMLDivElement>): void => {
-      e.preventDefault()
-      setIsDragging(true)
+        e.preventDefault()
+        setIsDragging(true)
     }
-  
+
     const handleDragLeave = (): void => {
-      setIsDragging(false)
+        setIsDragging(false)
     }
-  
+
     const handleDrop = (e: DragEvent<HTMLDivElement>): void => {
-      e.preventDefault()
-      setIsDragging(false)
-  
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        addImageFiles(Array.from(e.dataTransfer.files))
-      }
+        e.preventDefault()
+        setIsDragging(false)
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            addImageFiles(Array.from(e.dataTransfer.files))
+        }
     }
-  
+
     const handleRemoveImage = (index: number): void => {
-      const newImages: ProductImage[] = [...images]
-  
-      // If the image has a URL.createObjectURL, free up memory
-      if (newImages[index].url && newImages[index].url.startsWith("blob:")) {
-        URL.revokeObjectURL(newImages[index].url)
-      }
-  
-      newImages.splice(index, 1)
-      setImages(newImages)
+        const newImages: ProductImage[] = [...images]
+
+        // If the image has a URL.createObjectURL, free up memory
+        if (newImages[index].url && newImages[index].url.startsWith('blob:')) {
+            URL.revokeObjectURL(newImages[index].url)
+        }
+
+        newImages.splice(index, 1)
+        setImages(newImages)
     }
-  
+
     const handleDragStart = (index: number): void => {
-      setDraggedImageIndex(index)
+        setDraggedImageIndex(index)
     }
-  
+
     const handleDragEnter = (index: number): void => {
-      if (draggedImageIndex === null || draggedImageIndex === index) return
-  
-      const newImages: ProductImage[] = [...images]
-      const draggedImage = newImages[draggedImageIndex]
-  
-      // Remove image from current position
-      newImages.splice(draggedImageIndex, 1)
-      // Insert at new position
-      newImages.splice(index, 0, draggedImage)
-  
-      setImages(newImages)
-      setDraggedImageIndex(index)
+        if (draggedImageIndex === null || draggedImageIndex === index) return
+
+        const newImages: ProductImage[] = [...images]
+        const draggedImage = newImages[draggedImageIndex]
+
+        // Remove image from current position
+        newImages.splice(draggedImageIndex, 1)
+        // Insert at new position
+        newImages.splice(index, 0, draggedImage)
+
+        setImages(newImages)
+        setDraggedImageIndex(index)
     }
-  
+
     const handleDragEnd = (): void => {
-      setDraggedImageIndex(null)
+        setDraggedImageIndex(null)
     }
 
-  const handleAddIngredient = () => {
-    if (!newIngredient.name || !newIngredient.amount || !newIngredient.unit) return
+    const handleAddIngredient = () => {
+        if (!newIngredient.name || !newIngredient.amount || !newIngredient.unit) return
 
-    setProductData({
-      ...productData,
-      ingredients: [...productData.ingredients, { ...newIngredient }],
-    })
-    setNewIngredient({ name: "", amount: 0, unit: "г" })
-  }
+        setProductData({
+            ...productData,
+            ingredients: [...productData.ingredients, {...newIngredient}],
+        })
+        setNewIngredient({name: '', amount: 0, unit: 'г'})
+    }
 
-  const handleRemoveIngredient = (index: number) => {
-    const newIngredients = [...productData.ingredients]
-    newIngredients.splice(index, 1)
-    setProductData({
-      ...productData,
-      ingredients: newIngredients,
-    })
-  }
+    const handleRemoveIngredient = (index: number) => {
+        const newIngredients = [...productData.ingredients]
+        newIngredients.splice(index, 1)
+        setProductData({
+            ...productData,
+            ingredients: newIngredients,
+        })
+    }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChangeAction}>
-      <DialogContent className="sm:max-w-[90%] max-h-[90vh] overflow-y-auto">
-        <DialogClose className="absolute right-4 top-4 z-10">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Закрыть</span>
-        </DialogClose>
-        
-        <DialogHeader>
-          <DialogTitle className="text-2xl">
-            {productId ? "Редактировать товар" : "Создать новый товар"}
-          </DialogTitle>
-        </DialogHeader>
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChangeAction}>
+            <DialogContent className='sm:max-w-[90%] max-h-[90vh] overflow-y-auto'>
+                <DialogClose className='absolute right-4 top-4 z-10'>
+                    <X className='h-4 w-4'/>
+                    <span className='sr-only'>Закрыть</span>
+                </DialogClose>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center h-[50vh]">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold tracking-tight mb-2">Загрузка товара...</h2>
-              <p className="text-muted-foreground">Пожалуйста, подождите</p>
-            </div>
-          </div>
-        ) : (
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="w-full sm:w-auto grid grid-cols-5 sm:flex">
-              <TabsTrigger value="basic" className="flex-1 sm:flex-auto">
+                <DialogHeader>
+                    <DialogTitle className='text-2xl'>
+                        {productId ? 'Редактировать товар' : 'Создать новый товар'}
+                    </DialogTitle>
+                </DialogHeader>
+
+                {isLoading ? (
+                    <div className='flex items-center justify-center h-[50vh]'>
+                        <div className='text-center'>
+                            <h2 className='text-2xl font-bold tracking-tight mb-2'>Загрузка товара...</h2>
+                            <p className='text-muted-foreground'>Пожалуйста, подождите</p>
+                        </div>
+                    </div>
+                ) : (
+                    <Tabs defaultValue='basic' className='w-full'>
+                        <TabsList className='w-full sm:w-auto grid grid-cols-5 sm:flex'>
+                            <TabsTrigger value='basic' className='flex-1 sm:flex-auto'>
                 Основная информация
-              </TabsTrigger>
-              <TabsTrigger value="details" className="flex-1 sm:flex-auto">
+                            </TabsTrigger>
+                            <TabsTrigger value='details' className='flex-1 sm:flex-auto'>
                 Детали
-              </TabsTrigger>
-              <TabsTrigger value="ingredients" className="flex-1 sm:flex-auto">
+                            </TabsTrigger>
+                            <TabsTrigger value='ingredients' className='flex-1 sm:flex-auto'>
                 Ингредиенты
-              </TabsTrigger>
-              <TabsTrigger value="pricing" className="flex-1 sm:flex-auto">
+                            </TabsTrigger>
+                            <TabsTrigger value='pricing' className='flex-1 sm:flex-auto'>
                 Цены
-              </TabsTrigger>
-              <TabsTrigger value="images" className="flex-1 sm:flex-auto">
+                            </TabsTrigger>
+                            <TabsTrigger value='images' className='flex-1 sm:flex-auto'>
                 Изображения
-              </TabsTrigger>
-            </TabsList>
+                            </TabsTrigger>
+                        </TabsList>
 
-            <form onSubmit={handleSubmit}>
-              <TabsContent value="basic" className="mt-4 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Основная информация</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="productName">Название товара</Label>
-                      <Input
-                        id="productName"
-                        value={productData.name}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, name: e.target.value })}
-                        required
-                      />
-                    </div>
+                        <form onSubmit={handleSubmit}>
+                            <TabsContent value='basic' className='mt-4 space-y-4'>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Основная информация</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className='space-y-4'>
+                                        <div className='space-y-2'>
+                                            <Label htmlFor='productName'>Название товара</Label>
+                                            <Input
+                                                id='productName'
+                                                value={productData.name}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                    ...productData,
+                                                    name: e.target.value
+                                                })}
+                                                required
+                                            />
+                                        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Описание</Label>
-                      <Textarea
-                        id="description"
-                        value={productData.description}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setProductData({ ...productData, description: e.target.value })}
-                        className="min-h-[120px]"
-                        required
-                      />
-                    </div>
+                                        <div className='space-y-2'>
+                                            <Label htmlFor='description'>Описание</Label>
+                                            <Textarea
+                                                id='description'
+                                                value={productData.description}
+                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setProductData({
+                                                    ...productData,
+                                                    description: e.target.value
+                                                })}
+                                                className='min-h-[120px]'
+                                                required
+                                            />
+                                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="category">Категория</Label>
-                        <Select
-                          value={productData.category}
-                          onValueChange={(value) => setProductData({ ...productData, category: value })}
-                          required
-                        >
-                          <SelectTrigger id="category">
-                            <SelectValue placeholder="Выберите категорию" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Торты">Торты</SelectItem>
-                            <SelectItem value="Печенье">Печенье</SelectItem>
-                            <SelectItem value="Выпечка">Выпечка</SelectItem>
-                            <SelectItem value="Итальянские десерты">Итальянские десерты</SelectItem>
-                            <SelectItem value="Шоколад">Шоколад</SelectItem>
-                            <SelectItem value="Капкейки">Капкейки</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='category'>Категория</Label>
+                                                <Select
+                                                    value={productData.category}
+                                                    onValueChange={(value) => setProductData({
+                                                        ...productData,
+                                                        category: value
+                                                    })}
+                                                    required
+                                                >
+                                                    <SelectTrigger id='category'>
+                                                        <SelectValue placeholder='Выберите категорию'/>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value='Торты'>Торты</SelectItem>
+                                                        <SelectItem value='Печенье'>Печенье</SelectItem>
+                                                        <SelectItem value='Выпечка'>Выпечка</SelectItem>
+                                                        <SelectItem value='Итальянские десерты'>Итальянские
+                                                            десерты</SelectItem>
+                                                        <SelectItem value='Шоколад'>Шоколад</SelectItem>
+                                                        <SelectItem value='Капкейки'>Капкейки</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="status">Статус</Label>
-                        <Select
-                          value={productData.status}
-                          onValueChange={(value) => setProductData({ ...productData, status: value })}
-                          required
-                        >
-                          <SelectTrigger id="status">
-                            <SelectValue placeholder="Выберите статус" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Активен">Активен</SelectItem>
-                            <SelectItem value="Черновик">Черновик</SelectItem>
-                            <SelectItem value="Скрыт">Скрыт</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='status'>Статус</Label>
+                                                <Select
+                                                    value={productData.status}
+                                                    onValueChange={(value) => setProductData({
+                                                        ...productData,
+                                                        status: value
+                                                    })}
+                                                    required
+                                                >
+                                                    <SelectTrigger id='status'>
+                                                        <SelectValue placeholder='Выберите статус'/>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value='Активен'>Активен</SelectItem>
+                                                        <SelectItem value='Черновик'>Черновик</SelectItem>
+                                                        <SelectItem value='Скрыт'>Скрыт</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
 
-              <TabsContent value="details" className="mt-4 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Детали товара</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Диетическая информация</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {[
-                          "Без глютена",
-                          "Веганское",
-                          "Без молочных продуктов",
-                          "Содержит орехи",
-                          "Содержит глютен",
-                          "Содержит молочные продукты",
-                          "Может содержать орехи",
-                        ].map((option: string) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`diet-${option}`}
-                              checked={productData.dietary.includes(option)}
-                              onCheckedChange={(checked: boolean) => {
-                                if (checked) {
-                                  setProductData({
-                                    ...productData,
-                                    dietary: [...productData.dietary, option],
-                                  })
-                                } else {
-                                  setProductData({
-                                    ...productData,
-                                    dietary: productData.dietary.filter((item: string) => item !== option),
-                                  })
-                                }
-                              }}
-                            />
-                            <Label htmlFor={`diet-${option}`} className="text-sm font-normal">
-                              {option}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                            <TabsContent value='details' className='mt-4 space-y-4'>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Детали товара</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className='space-y-4'>
+                                        <div className='space-y-2'>
+                                            <Label>Диетическая информация</Label>
+                                            <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+                                                {[
+                                                    'Без глютена',
+                                                    'Веганское',
+                                                    'Без молочных продуктов',
+                                                    'Содержит орехи',
+                                                    'Содержит глютен',
+                                                    'Содержит молочные продукты',
+                                                    'Может содержать орехи',
+                                                ].map((option: string) => (
+                                                    <div key={option} className='flex items-center space-x-2'>
+                                                        <Checkbox
+                                                            id={`diet-${option}`}
+                                                            checked={productData.dietary.includes(option)}
+                                                            onCheckedChange={(checked: boolean) => {
+                                                                if (checked) {
+                                                                    setProductData({
+                                                                        ...productData,
+                                                                        dietary: [...productData.dietary, option],
+                                                                    })
+                                                                } else {
+                                                                    setProductData({
+                                                                        ...productData,
+                                                                        dietary: productData.dietary.filter((item: string) => item !== option),
+                                                                    })
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Label htmlFor={`diet-${option}`}
+                                                               className='text-sm font-normal'>
+                                                            {option}
+                                                        </Label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
 
-                    <Separator />
+                                        <Separator/>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="weight">Вес (граммы)</Label>
-                        <Input
-                          id="weight"
-                          type="number"
-                          min="0"
-                          value={productData.weight}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, weight: +e.target.value })}
-                        />
-                      </div>
+                                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='weight'>Вес (граммы)</Label>
+                                                <Input
+                                                    id='weight'
+                                                    type='number'
+                                                    min='0'
+                                                    value={productData.weight}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                        ...productData,
+                                                        weight: +e.target.value
+                                                    })}
+                                                />
+                                            </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="size">Размер</Label>
-                        <Select
-                          value={productData.size}
-                          onValueChange={(value) => setProductData({ ...productData, size: value })}
-                        >
-                          <SelectTrigger id="size">
-                            <SelectValue placeholder="Выберите размер" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Маленький">Маленький</SelectItem>
-                            <SelectItem value="Стандартный">Стандартный</SelectItem>
-                            <SelectItem value="Большой">Большой</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='size'>Размер</Label>
+                                                <Select
+                                                    value={productData.size}
+                                                    onValueChange={(value) => setProductData({
+                                                        ...productData,
+                                                        size: value
+                                                    })}
+                                                >
+                                                    <SelectTrigger id='size'>
+                                                        <SelectValue placeholder='Выберите размер'/>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value='Маленький'>Маленький</SelectItem>
+                                                        <SelectItem value='Стандартный'>Стандартный</SelectItem>
+                                                        <SelectItem value='Большой'>Большой</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="storage">Инструкции по хранению</Label>
-                      <Input
-                        id="storage"
-                        value={productData.storage}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, storage: e.target.value })}
-                      />
-                    </div>
+                                        <div className='space-y-2'>
+                                            <Label htmlFor='storage'>Инструкции по хранению</Label>
+                                            <Input
+                                                id='storage'
+                                                value={productData.storage}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                    ...productData,
+                                                    storage: e.target.value
+                                                })}
+                                            />
+                                        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="shelfLife">Срок годности (дни)</Label>
-                      <Input
-                        id="shelfLife"
-                        type="number"
-                        min="1"
-                        value={productData.shelfLife}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, shelfLife: +e.target.value })}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                                        <div className='space-y-2'>
+                                            <Label htmlFor='shelfLife'>Срок годности (дни)</Label>
+                                            <Input
+                                                id='shelfLife'
+                                                type='number'
+                                                min='1'
+                                                value={productData.shelfLife}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                    ...productData,
+                                                    shelfLife: +e.target.value
+                                                })}
+                                            />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
 
-              <TabsContent value="ingredients" className="mt-4 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ингредиенты</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                      <div className="rounded-md border">
-                        <div className="grid grid-cols-12 gap-4 p-4 font-medium border-b">
-                          <div className="col-span-3">Ингредиент</div>
-                          <div className="col-span-3">Количество</div>
-                          <div className="col-span-3">Ед. измерения</div>
-                          <div className="col-span-1"></div>
-                        </div>
+                            <TabsContent value='ingredients' className='mt-4 space-y-4'>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Ингредиенты</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className='space-y-4'>
+                                        <div className='space-y-4'>
+                                            <div className='rounded-md border'>
+                                                <div className='grid grid-cols-12 gap-4 p-4 font-medium border-b'>
+                                                    <div className='col-span-3'>Ингредиент</div>
+                                                    <div className='col-span-3'>Количество</div>
+                                                    <div className='col-span-3'>Ед. измерения</div>
+                                                    <div className='col-span-1'></div>
+                                                </div>
 
-                        <div className="divide-y">
-                          {productData.ingredients.map((ingredient: { name: string; amount: number, unit: string }, index: number) => (
-                            <div key={index} className="grid grid-cols-12 gap-4 p-4 items-center">
-                              <div className="col-span-3">{ingredient.name}</div>
-                              <div className="col-span-3">{ingredient.amount}</div>
-                              <div className="col-span-3">{ingredient.unit}</div>
-                              
-                              <div className="col-span-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive"
-                                  type="button"
-                                  onClick={() => handleRemoveIngredient(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Удалить</span>
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                                                <div className='divide-y'>
+                                                    {productData.ingredients.map((ingredient: {
+                                                        name: string;
+                                                        amount: number,
+                                                        unit: string
+                                                    }, index: number) => (
+                                                        <div key={index}
+                                                             className='grid grid-cols-12 gap-4 p-4 items-center'>
+                                                            <div className='col-span-3'>{ingredient.name}</div>
+                                                            <div className='col-span-3'>{ingredient.amount}</div>
+                                                            <div className='col-span-3'>{ingredient.unit}</div>
 
-                      <div className="flex gap-4 items-end">
-                        <div className="space-y-2 flex-1">
-                          <Label htmlFor="ingredientName">Название ингредиента</Label>
-                          <Input
-                            id="ingredientName"
-                            value={newIngredient.name}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({ ...newIngredient, name: e.target.value })}
-                            placeholder="например, Мука"
-                          />
-                        </div>
-                        <div className="space-y-2 flex-1">
-                          <Label htmlFor="ingredientAmount">Количество</Label>
-                          <Input
-                            id="ingredientAmount"
-                            type="number"
-                            min="0"
-                            value={newIngredient.amount}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({ ...newIngredient, amount: +e.target.value })}
-                            placeholder="например, 250"
-                          />
-                        </div>
-                        <div className="space-y-2 w-32">
-                          <Label htmlFor="ingredientUnit">Ед. измерения</Label>
-                          <Select
-                            value={newIngredient.unit}
-                            onValueChange={(value) => setNewIngredient({ ...newIngredient, unit: value })}
-                          >
-                            <SelectTrigger id="ingredientUnit">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="г">г</SelectItem>
-                              <SelectItem value="кг">кг</SelectItem>
-                              <SelectItem value="мл">мл</SelectItem>
-                              <SelectItem value="л">л</SelectItem>
-                              <SelectItem value="шт">шт</SelectItem>
-                              <SelectItem value="ч.л.">ч.л.</SelectItem>
-                              <SelectItem value="ст.л.">ст.л.</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleAddIngredient}
-                          className="flex items-center gap-1"
-                        >
-                          <Plus className="h-4 w-4" />
+                                                            <div className='col-span-1'>
+                                                                <Button
+                                                                    variant='ghost'
+                                                                    size='icon'
+                                                                    className='h-8 w-8 text-destructive'
+                                                                    type='button'
+                                                                    onClick={() => handleRemoveIngredient(index)}
+                                                                >
+                                                                    <Trash2 className='h-4 w-4'/>
+                                                                    <span className='sr-only'>Удалить</span>
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className='flex gap-4 items-end'>
+                                                <div className='space-y-2 flex-1'>
+                                                    <Label htmlFor='ingredientName'>Название ингредиента</Label>
+                                                    <Input
+                                                        id='ingredientName'
+                                                        value={newIngredient.name}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({
+                                                            ...newIngredient,
+                                                            name: e.target.value
+                                                        })}
+                                                        placeholder='например, Мука'
+                                                    />
+                                                </div>
+                                                <div className='space-y-2 flex-1'>
+                                                    <Label htmlFor='ingredientAmount'>Количество</Label>
+                                                    <Input
+                                                        id='ingredientAmount'
+                                                        type='number'
+                                                        min='0'
+                                                        value={newIngredient.amount}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewIngredient({
+                                                            ...newIngredient,
+                                                            amount: +e.target.value
+                                                        })}
+                                                        placeholder='например, 250'
+                                                    />
+                                                </div>
+                                                <div className='space-y-2 w-32'>
+                                                    <Label htmlFor='ingredientUnit'>Ед. измерения</Label>
+                                                    <Select
+                                                        value={newIngredient.unit}
+                                                        onValueChange={(value) => setNewIngredient({
+                                                            ...newIngredient,
+                                                            unit: value
+                                                        })}
+                                                    >
+                                                        <SelectTrigger id='ingredientUnit'>
+                                                            <SelectValue/>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value='г'>г</SelectItem>
+                                                            <SelectItem value='кг'>кг</SelectItem>
+                                                            <SelectItem value='мл'>мл</SelectItem>
+                                                            <SelectItem value='л'>л</SelectItem>
+                                                            <SelectItem value='шт'>шт</SelectItem>
+                                                            <SelectItem value='ч.л.'>ч.л.</SelectItem>
+                                                            <SelectItem value='ст.л.'>ст.л.</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <Button
+                                                    type='button'
+                                                    variant='outline'
+                                                    onClick={handleAddIngredient}
+                                                    className='flex items-center gap-1'
+                                                >
+                                                    <Plus className='h-4 w-4'/>
                           Добавить
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
 
-              <TabsContent value="pricing" className="mt-4 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Цены и запасы</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="price">Цена (₽)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2">₽</span>
-                          <Input
-                            id="price"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            className="pl-7"
-                            value={productData.price}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, price: +e.target.value })}
-                            required
-                          />
-                        </div>
-                      </div>
+                            <TabsContent value='pricing' className='mt-4 space-y-4'>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Цены и запасы</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className='space-y-4'>
+                                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='price'>Цена (₽)</Label>
+                                                <div className='relative'>
+                                                    <span className='absolute left-3 top-1/2 -translate-y-1/2'>₽</span>
+                                                    <Input
+                                                        id='price'
+                                                        type='number'
+                                                        min='0.01'
+                                                        step='0.01'
+                                                        className='pl-7'
+                                                        value={productData.price}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                            ...productData,
+                                                            price: +e.target.value
+                                                        })}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="comparePrice">Сравнительная цена (Необязательно)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2">₽</span>
-                          <Input
-                            id="comparePrice"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            className="pl-7"
-                            value={productData.comparePrice}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, comparePrice: +e.target.value })}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='comparePrice'>Сравнительная цена (Необязательно)</Label>
+                                                <div className='relative'>
+                                                    <span className='absolute left-3 top-1/2 -translate-y-1/2'>₽</span>
+                                                    <Input
+                                                        id='comparePrice'
+                                                        type='number'
+                                                        min='0.01'
+                                                        step='0.01'
+                                                        className='pl-7'
+                                                        value={productData.comparePrice}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                            ...productData,
+                                                            comparePrice: +e.target.value
+                                                        })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="cost">Себестоимость за единицу (₽)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2">₽</span>
-                          <Input
-                            id="cost"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            className="pl-7"
-                            value={productData.cost}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, cost: +e.target.value })}
-                          />
-                        </div>
-                      </div>
+                                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='cost'>Себестоимость за единицу (₽)</Label>
+                                                <div className='relative'>
+                                                    <span className='absolute left-3 top-1/2 -translate-y-1/2'>₽</span>
+                                                    <Input
+                                                        id='cost'
+                                                        type='number'
+                                                        min='0.01'
+                                                        step='0.01'
+                                                        className='pl-7'
+                                                        value={productData.cost}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                            ...productData,
+                                                            cost: +e.target.value
+                                                        })}
+                                                    />
+                                                </div>
+                                            </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="profit">Прибыль</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2">₽</span>
-                          <Input 
-                            id="profit" 
-                            className="pl-7" 
-                            disabled 
-                            value={(productData.price - productData.cost).toFixed(2)} 
-                          />
-                        </div>
-                      </div>
-                    </div>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='profit'>Прибыль</Label>
+                                                <div className='relative'>
+                                                    <span className='absolute left-3 top-1/2 -translate-y-1/2'>₽</span>
+                                                    <Input
+                                                        id='profit'
+                                                        className='pl-7'
+                                                        disabled
+                                                        value={(productData.price - productData.cost).toFixed(2)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-                    <Separator />
+                                        <Separator/>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="inventory">Количество на складе</Label>
-                        <Input
-                          id="inventory"
-                          type="number"
-                          min="0"
-                          value={productData.inventory}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, inventory: +e.target.value })}
-                          required
-                        />
-                      </div>
+                                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='inventory'>Количество на складе</Label>
+                                                <Input
+                                                    id='inventory'
+                                                    type='number'
+                                                    min='0'
+                                                    value={productData.inventory}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                        ...productData,
+                                                        inventory: +e.target.value
+                                                    })}
+                                                    required
+                                                />
+                                            </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="sku">Артикул (SKU)</Label>
-                        <Input
-                          id="sku"
-                          value={productData.sku}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({ ...productData, sku: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                                            <div className='space-y-2'>
+                                                <Label htmlFor='sku'>Артикул (SKU)</Label>
+                                                <Input
+                                                    id='sku'
+                                                    value={productData.sku}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductData({
+                                                        ...productData,
+                                                        sku: e.target.value
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
 
-              <TabsContent value="images" className="mt-4 space-y-4">
-                <Card>
-                <CardHeader>
-                  <CardTitle>Изображения товара</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                      className={`border-2 border-dashed rounded-lg p-6 mb-6 transition-colors ${
-                          isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                  >
-                    <div className="flex flex-col items-center justify-center gap-2 text-center">
-                      <ImagePlus className="h-10 w-10 text-muted-foreground" />
-                      <h3 className="font-medium">Перетащите изображения сюда</h3>
-                      <p className="text-sm text-muted-foreground mb-2">или нажмите кнопку ниже для выбора файлов</p>
-                      <input
-                          name="images"
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={handleFileChange}
-                      />
-                      <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                            <TabsContent value='images' className='mt-4 space-y-4'>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Изображения товара</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div
+                                            className={`border-2 border-dashed rounded-lg p-6 mb-6 transition-colors ${
+                                                isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+                                            }`}
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                        >
+                                            <div
+                                                className='flex flex-col items-center justify-center gap-2 text-center'>
+                                                <ImagePlus className='h-10 w-10 text-muted-foreground'/>
+                                                <h3 className='font-medium'>Перетащите изображения сюда</h3>
+                                                <p className='text-sm text-muted-foreground mb-2'>или нажмите кнопку
+                                                    ниже для выбора файлов</p>
+                                                <input
+                                                    name='images'
+                                                    ref={fileInputRef}
+                                                    type='file'
+                                                    accept='image/*'
+                                                    multiple
+                                                    className='hidden'
+                                                    onChange={handleFileChange}
+                                                />
+                                                <Button type='button' variant='outline'
+                                                        onClick={() => fileInputRef.current?.click()}>
                         Выбрать изображения
-                      </Button>
-                    </div>
-                  </div>
+                                                </Button>
+                                            </div>
+                                        </div>
 
-                  {images.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <h3 className="font-medium">Загруженные изображения</h3>
-                          <p className="text-sm text-muted-foreground">Перетаскивайте изображения для изменения порядка</p>
-                        </div>
+                                        {images.length > 0 && (
+                                            <div className='space-y-2'>
+                                                <div className='flex justify-between items-center'>
+                                                    <h3 className='font-medium'>Загруженные изображения</h3>
+                                                    <p className='text-sm text-muted-foreground'>Перетаскивайте
+                                                        изображения для изменения порядка</p>
+                                                </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {images.map((image, index) => (
-                              <div
-                                  key={index}
-                                  className={`relative border rounded-lg overflow-hidden group ${
-                                      draggedImageIndex === index ? "opacity-50" : ""
-                                  }`}
-                                  draggable
-                                  onDragStart={() => handleDragStart(index)}
-                                  onDragEnter={() => handleDragEnter(index)}
-                                  onDragEnd={handleDragEnd}
-                                  onDragOver={(e) => e.preventDefault()}
-                              >
-                                <div className="aspect-square relative">
-                                  <Image
-                                      src={image.url || "/placeholder.svg?height=300&width=300"}
-                                      alt={image.name || `Изображение товара ${index + 1}`}
-                                      fill
-                                      className="object-cover"
-                                  />
-                                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="absolute top-2 right-2 flex gap-1">
-                                      <button
-                                          type="button"
-                                          onClick={() => handleRemoveImage(index)}
-                                          className="bg-white rounded-full p-1 shadow-sm hover:bg-red-50"
-                                      >
-                                        <X className="h-4 w-4 text-red-500" />
-                                        <span className="sr-only">Удалить изображение</span>
-                                      </button>
-                                    </div>
-                                    <div className="absolute top-2 left-2">
-                                      <GripVertical className="h-5 w-5 text-white drop-shadow-md cursor-move" />
-                                    </div>
-                                  </div>
-                                </div>
-                                {index === 0 && (
-                                    <div className="absolute bottom-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded shadow-sm">
+                                                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                                                    {images.map((image, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className={`relative border rounded-lg overflow-hidden group ${
+                                                                draggedImageIndex === index ? 'opacity-50' : ''
+                                                            }`}
+                                                            draggable
+                                                            onDragStart={() => handleDragStart(index)}
+                                                            onDragEnter={() => handleDragEnter(index)}
+                                                            onDragEnd={handleDragEnd}
+                                                            onDragOver={(e) => e.preventDefault()}
+                                                        >
+                                                            <div className='aspect-square relative'>
+                                                                <Image
+                                                                    src={image.url || '/placeholder.svg?height=300&width=300'}
+                                                                    alt={image.name || `Изображение товара ${index + 1}`}
+                                                                    fill
+                                                                    className='object-cover'
+                                                                />
+                                                                <div
+                                                                    className='absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity'>
+                                                                    <div className='absolute top-2 right-2 flex gap-1'>
+                                                                        <button
+                                                                            type='button'
+                                                                            onClick={() => handleRemoveImage(index)}
+                                                                            className='bg-white rounded-full p-1 shadow-sm hover:bg-red-50'
+                                                                        >
+                                                                            <X className='h-4 w-4 text-red-500'/>
+                                                                            <span className='sr-only'>Удалить изображение</span>
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className='absolute top-2 left-2'>
+                                                                        <GripVertical
+                                                                            className='h-5 w-5 text-white drop-shadow-md cursor-move'/>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {index === 0 && (
+                                                                <div
+                                                                    className='absolute bottom-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded shadow-sm'>
                                       Главное изображение
-                                    </div>
-                                )}
-                                <div className="absolute bottom-2 right-2 text-xs bg-black/60 text-white px-2 py-1 rounded">
-                                  {index + 1} / {images.length}
-                                </div>
-                              </div>
-                          ))}
-                        </div>
-                      </div>
-                  )}
-                </CardContent>
-              </Card>
-              </TabsContent>
+                                                                </div>
+                                                            )}
+                                                            <div
+                                                                className='absolute bottom-2 right-2 text-xs bg-black/60 text-white px-2 py-1 rounded'>
+                                                                {index + 1} / {images.length}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
 
-              <div className="mt-6 flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => onOpenChangeAction(false)}>
+                            <div className='mt-6 flex justify-end gap-4'>
+                                <Button type='button' variant='outline' onClick={() => onOpenChangeAction(false)}>
                   Отмена
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Сохранение..." : "Сохранить изменения"}
-                </Button>
-              </div>
-            </form>
-          </Tabs>
-        )}
-      </DialogContent>
-    </Dialog>
-  )
+                                </Button>
+                                <Button type='submit' disabled={isSubmitting}>
+                                    {isSubmitting ? 'Сохранение...' : 'Сохранить изменения'}
+                                </Button>
+                            </div>
+                        </form>
+                    </Tabs>
+                )}
+            </DialogContent>
+        </Dialog>
+    )
 }
