@@ -9,18 +9,45 @@ import {Separator} from '@/components/ui/separator'
 import {Minus, Plus, Trash2} from 'lucide-react'
 import {useRouter} from 'next/navigation'
 import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
-import {useCheckout, EmptyCartError} from '@/src/adapters/ui/react/hooks/use-checkout'
+import {EmptyCartError, useCheckout} from '@/src/adapters/ui/react/hooks/use-checkout'
 import {useToast} from '@/hooks/use-toast'
 import {useUser} from '@/contexts/user-context'
+import {useAuthDialog} from '@/src/adapters/ui/react/providers/auth-dialog-provider'
 
 export function ShoppingCart() {
     const router = useRouter()
     const {toast} = useToast()
     const {items, removeItem, updateQuantity, clear: clearCart, applyPromo, totals, itemsCount, cart} = useCart()
     const {user} = useUser()
+    const {requireAuth} = useAuthDialog()
     const [promoCode, setPromoCode] = useState('')
     const checkout = useCheckout()
     const promoApplied = cart.promoCode !== null
+
+    const performCheckout = async () => {
+        try {
+            const {orderId} = await checkout()
+            toast({
+                title: 'Заказ успешно оформлен',
+                description: `Ваш заказ #${orderId} был успешно создан.`,
+            })
+            router.push('/orders')
+        } catch (err) {
+            if (err instanceof EmptyCartError) {
+                toast({
+                    title: 'Корзина пуста',
+                    description: 'Добавьте товары в корзину перед оформлением заказа.',
+                    variant: 'destructive',
+                })
+                return
+            }
+            toast({
+                title: 'Ошибка при оформлении заказа',
+                description: err instanceof Error ? err.message : 'Произошла ошибка при оформлении заказа.',
+                variant: 'destructive',
+            })
+        }
+    }
 
     const applyPromoCode = () => {
         if (promoCode.trim() === '') return
@@ -165,45 +192,21 @@ export function ShoppingCart() {
                             </div>
 
                             {promoApplied &&
-                                <div className='text-sm text-green-600 mb-4'>Промокод успешно применен!</div>}
+                                <div className='text-sm text-green-600 mb-4'>Промокод успешно применен!</div>
+                            }
+                            {user ? (
+                                <Button className='w-full' onClick={performCheckout}>
+                                    Перейти к оформлению
+                                </Button>
+                            ) : (
+                                <Button
+                                    className='w-full'
+                                    onClick={() => requireAuth(performCheckout)}
+                                >
+                                    Зарегестрируйтесь или войдите, чтобы оформить заказ
+                                </Button>
+                            )}
 
-                            <Button
-                                className='w-full'
-                                onClick={async () => {
-                                    if (!user) {
-                                        toast({
-                                            title: 'Необходима авторизация',
-                                            description: 'Войдите в аккаунт, чтобы оформить заказ.',
-                                            variant: 'destructive',
-                                        })
-                                        return
-                                    }
-                                    try {
-                                        const {orderId} = await checkout()
-                                        toast({
-                                            title: 'Заказ успешно оформлен',
-                                            description: `Ваш заказ #${orderId} был успешно создан.`,
-                                        })
-                                        router.push('/orders')
-                                    } catch (err) {
-                                        if (err instanceof EmptyCartError) {
-                                            toast({
-                                                title: 'Корзина пуста',
-                                                description: 'Добавьте товары в корзину перед оформлением заказа.',
-                                                variant: 'destructive',
-                                            })
-                                            return
-                                        }
-                                        toast({
-                                            title: 'Ошибка при оформлении заказа',
-                                            description: err instanceof Error ? err.message : 'Произошла ошибка при оформлении заказа.',
-                                            variant: 'destructive',
-                                        })
-                                    }
-                                }}
-                            >
-                Перейти к оформлению
-                            </Button>
                         </div>
                     </CardContent>
                     <CardFooter className='text-xs text-muted-foreground'>

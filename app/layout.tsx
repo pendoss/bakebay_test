@@ -1,5 +1,6 @@
 import {SiteHeader} from '@/components/site-header'
 import {CartProvider} from '@/src/adapters/ui/react/providers/cart-provider'
+import {AuthDialogProvider} from '@/src/adapters/ui/react/providers/auth-dialog-provider'
 import {UserProvider} from '@/contexts/user-context'
 import {NotificationProvider} from '@/contexts/notification-context'
 import {NotificationContainer} from '@/components/notifications/notification-container'
@@ -17,10 +18,12 @@ export default function RootLayout({ children } : Props) {
 		<UserProvider>
 			<NotificationProvider>
 				<CartProvider>
-					<div className='relative flex min-h-screen flex-col'>
-						<SiteHeader/>
-						<div className='flex-1'>{children}</div>
-					</div>
+					<AuthDialogProvider>
+						<div className='relative flex min-h-screen flex-col'>
+							<SiteHeader/>
+							<div className='flex-1'>{children}</div>
+						</div>
+					</AuthDialogProvider>
 				</CartProvider>
 				<Footer/>
 				<Toaster/>
