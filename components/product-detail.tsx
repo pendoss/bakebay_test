@@ -146,7 +146,7 @@ export function ProductDetail({product, seller, reviews, related}: ProductDetail
                 {hasReviews ? (
                     <>
                         <StarSvg/>
-                        {avgRating!.toFixed(1)} <span className={styles.sub}>({reviews.length} отзывов)</span>
+                        {(avgRating ?? 0).toFixed(1)} <span className={styles.sub}>({reviews.length} отзывов)</span>
                     </>
                 ) : (
                     <span className={styles.sub}>Пока без отзывов</span>
@@ -267,11 +267,11 @@ export function ProductDetail({product, seller, reviews, related}: ProductDetail
                     padding: 20
                 }}>
                     <div className={styles.revHead}>
-                        <div className={styles.revBig}>{hasReviews ? avgRating!.toFixed(1) : '—'}<span
+                        <div className={styles.revBig}>{hasReviews ? (avgRating ?? 0).toFixed(1) : '—'}<span
                             className={styles.sl}>/5</span></div>
                         <div>
                             <h3>Отзывы покупателей</h3>
-                            <p>{hasReviews ? `${reviews.length} отзывов · средняя оценка ${avgRating!.toFixed(1)}` : 'Отзывов пока нет'}</p>
+                            <p>{hasReviews ? `${reviews.length} отзывов · средняя оценка ${(avgRating ?? 0).toFixed(1)}` : 'Отзывов пока нет'}</p>
                         </div>
                     </div>
                     {reviews.length > 0 && (

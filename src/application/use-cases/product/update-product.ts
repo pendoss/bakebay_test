@@ -28,8 +28,9 @@ export interface UpdateProductDeps {
 export async function updateProduct(input: UpdateProductInput, deps: UpdateProductDeps): Promise<void> {
     const existing = await deps.productStorage.findById(input.patch.id)
     if (!existing) throw new ProductNotFoundError(input.patch.id)
-    if (input.actorSellerId !== undefined && input.actorSellerId !== null) {
-        if (!isOwnedBySeller(existing, input.actorSellerId)) throw new ProductForbiddenError()
+    if (input.actorSellerId !== undefined && input.actorSellerId !== null
+        && !isOwnedBySeller(existing, input.actorSellerId)) {
+        throw new ProductForbiddenError()
     }
 
     const updated = await deps.productStorage.update(input.patch)

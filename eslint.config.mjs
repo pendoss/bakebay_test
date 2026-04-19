@@ -2,6 +2,7 @@ import {globalIgnores} from 'eslint/config'
 import nextVitals from 'eslint-config-next/core-web-vitals'
 import nextConfig from 'eslint-config-next'
 import tseslint from 'typescript-eslint'
+import sonarjs from 'eslint-plugin-sonarjs'
 
 export default [
     globalIgnores([
@@ -67,21 +68,51 @@ export default [
     {
         files: ['**/*.ts', '**/*.tsx'],
         rules: {
-            // Запрет any — предупреждение, не ошибка (удобно при миграции)
-            '@typescript-eslint/no-explicit-any': 'warn',
-            // Явные типы возврата — отключено (громоздко для React/Next.js компонентов)
+            '@typescript-eslint/no-explicit-any': 'error',
             '@typescript-eslint/explicit-function-return-type': 'off',
-            // Неиспользуемые переменные с исключением для _prefixed
             '@typescript-eslint/no-unused-vars': ['error', {
                 argsIgnorePattern: '^_',
                 varsIgnorePattern: '^_',
                 caughtErrorsIgnorePattern: '^_'
             }],
             'no-unused-vars': 'off',
-            // non-null assertions (!) — предупреждение
-            '@typescript-eslint/no-non-null-assertion': 'warn',
-            // Пустые интерфейсы
+            '@typescript-eslint/no-non-null-assertion': 'error',
             '@typescript-eslint/no-empty-object-type': 'warn',
+            '@typescript-eslint/consistent-type-assertions': ['error', {
+                assertionStyle: 'as',
+                objectLiteralTypeAssertions: 'allow-as-parameter',
+            }],
+        },
+    },
+    // shadcn/ui — сгенерированные обёртки, собственных правил не навязываем
+    {
+        files: ['components/ui/**/*.ts', 'components/ui/**/*.tsx'],
+        rules: {
+            '@typescript-eslint/consistent-type-assertions': 'off',
+        },
+    },
+    // Антидублирование и сложность для клиентских/общих компонентов
+    {
+        files: ['**/*.ts', '**/*.tsx'],
+        plugins: {sonarjs},
+        rules: {
+            'sonarjs/no-identical-functions': 'error',
+            'sonarjs/no-duplicate-string': ['warn', {threshold: 5}],
+            'sonarjs/cognitive-complexity': ['warn', 20],
+            'sonarjs/no-collapsible-if': 'error',
+            'sonarjs/no-redundant-boolean': 'error',
+            'sonarjs/no-useless-catch': 'error',
+            'react/jsx-max-depth': ['error', {max: 11}],
+        },
+    },
+    // shadcn/ui — отключаем и sonarjs (генерированный код)
+    {
+        files: ['components/ui/**/*.ts', 'components/ui/**/*.tsx'],
+        rules: {
+            'sonarjs/no-identical-functions': 'off',
+            'sonarjs/no-duplicate-string': 'off',
+            'sonarjs/cognitive-complexity': 'off',
+            'react/jsx-max-depth': 'off',
         },
     },
 ]
