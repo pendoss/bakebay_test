@@ -3,13 +3,7 @@
 import {useState} from 'react'
 import {useUser} from '@/contexts/user-context'
 import {Button} from '@/components/ui/button'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog'
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from '@/components/ui/dialog'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 import {Textarea} from '@/components/ui/textarea'
 import {Label} from '@/components/ui/label'
@@ -62,7 +56,10 @@ export function ReviewDialog({open, onOpenChange, items}: ReviewDialogProps) {
                 }),
             })
 
-            if (!resp.ok) throw new Error('Failed to submit review')
+            if (!resp.ok) {
+                toast({title: 'Ошибка отправки отзыва', variant: 'destructive'})
+                return
+            }
 
             toast({title: 'Отзыв отправлен!', description: 'Спасибо за ваш отзыв.'})
             setRating(0)

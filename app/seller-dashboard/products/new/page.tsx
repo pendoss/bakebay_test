@@ -1,6 +1,6 @@
 'use client'
 
-import {useState, useRef, FormEvent, ChangeEvent, DragEvent} from 'react'
+import {ChangeEvent, DragEvent, FormEvent, useRef, useState} from 'react'
 import {useRouter} from 'next/navigation'
 import {useUser} from '@/contexts/user-context'
 import Image from 'next/image'
@@ -14,7 +14,7 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
 import {Separator} from '@/components/ui/separator'
 import {Checkbox} from '@/components/ui/checkbox'
 import {useToast} from '@/hooks/use-toast'
-import {X, Plus, Trash2, GripVertical, ImagePlus} from 'lucide-react'
+import {GripVertical, ImagePlus, Plus, Trash2, X} from 'lucide-react'
 import {createProduct} from '@/app/actions/product'
 
 // Define interfaces for the product page
@@ -170,7 +170,12 @@ export default function NewProductPage() {
 
                 router.push('/seller-dashboard/products');
             } else {
-                throw new Error(result.error);
+                console.error('Error creating product:', result.error);
+                toast({
+                    title: 'Ошибка',
+                    description: 'Произошла ошибка при создании товара. Пожалуйста, попробуйте снова.',
+                    variant: 'destructive'
+                });
             }
         } catch (error) {
             console.error('Error creating product:', error);

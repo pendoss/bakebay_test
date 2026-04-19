@@ -8,7 +8,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/compo
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
 import {Input} from '@/components/ui/input'
-import {LayoutList, LayoutDashboard} from 'lucide-react'
+import {LayoutDashboard, LayoutList} from 'lucide-react'
 
 import {statusTranslations} from '@/components/order-card'
 import {OrderStatus} from '@/app/orders/page'
@@ -72,7 +72,10 @@ export default function SellerOrdersPage() {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({order_id: parseInt(orderId), order_status: newStatus}),
             })
-            if (!resp.ok) throw new Error('Failed to update order status')
+            if (!resp.ok) {
+                console.error('Error updating order status:', resp.status, resp.statusText)
+                return
+            }
             setOrders(prev =>
                 prev.map(o => o.id === orderId ? {...o, status: newStatus} : o)
             )
@@ -88,7 +91,10 @@ export default function SellerOrdersPage() {
             try {
                 setLoading(true)
                 const response = await fetch(`/api/seller/orders?sellerId=${sellerId}`)
-                if (!response.ok) throw new Error(`Failed to fetch orders: ${response.status}`)
+                if (!response.ok) {
+                    setError(`Failed to fetch orders: ${response.status}`)
+                    return
+                }
                 const data = await response.json()
                 setOrders(data)
             } catch (err) {

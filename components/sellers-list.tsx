@@ -54,7 +54,9 @@ export function SellersList() {
         const response = await fetch('/api/sellers')
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch sellers: ${response.status} ${response.statusText}`)
+          console.error('Error fetching sellers:', response.status, response.statusText)
+          setError(`Failed to fetch sellers: ${response.status} ${response.statusText}`)
+          return
         }
 
         const data = await response.json()

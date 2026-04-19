@@ -1,13 +1,4 @@
-import {
-    EMPTY_CART,
-    addItem,
-    removeItem,
-    updateQuantity,
-    clear,
-    applyPromo,
-    itemsCount,
-    isEmpty,
-} from '../cart'
+import {addItem, applyPromo, clear, EMPTY_CART, isEmpty, itemsCount, removeItem, updateQuantity,} from '../cart'
 import {calcTotals} from '../totals'
 import {asProductId} from '@/src/domain/shared/id'
 
@@ -65,6 +56,6 @@ describe('cart', () => {
         const c = applyPromo(addItem(EMPTY_CART, sample(1, 100)), 'SUMMER')
         const t = calcTotals(c)
         expect(t.discount).toBe(10)
-        expect(t.total).toBeCloseTo(100 - 10 + 0 + (100 - 10) * 0.08)
+        expect(t.total).toBeCloseTo(100 - 10 + (100 - 10) * 0.08)
     })
 })

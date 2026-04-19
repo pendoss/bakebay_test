@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react'
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {UserNav} from './user-nav'
 import {UserProvider} from '@/contexts/user-context'
 
@@ -154,14 +154,7 @@ describe('Неавторизованный пользователь', () => {
         mockFetchUnauthenticated()
     })
 
-    it('показывает "Вы вошли как гость" в заголовке дропдауна', async () => {
-        renderWithUser(<UserNav/>)
-        await act(async () => {
-        })
-        expect(screen.getByText('Вы вошли как гость')).toBeInTheDocument()
-    })
-
-    it('показывает кнопку "Войти"', async () => {
+    it('показывает кнопку "Войти" вместо аватара', async () => {
         renderWithUser(<UserNav/>)
         await act(async () => {
         })

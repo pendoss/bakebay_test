@@ -1,6 +1,6 @@
 'use client'
 
-import {useState, useEffect, useRef} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {useRouter} from 'next/navigation'
 import {useUser} from '@/contexts/user-context'
 import {cn} from '@/lib/utils'
@@ -149,7 +149,10 @@ export default function ProfilePage() {
                 credentials: 'include',
                 body: JSON.stringify(data),
             })
-            if (!resp.ok) throw new Error()
+            if (!resp.ok) {
+                toast({title: 'Ошибка', description: 'Не удалось сохранить изменения', variant: 'destructive'})
+                return
+            }
             const updated: UserInfo = await resp.json()
             setUserInfo(updated)
             refreshUser()
