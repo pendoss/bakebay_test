@@ -1,6 +1,6 @@
 'use client'
 
-import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts'
+import {CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts'
 
 interface MonthlyData {
     name: string
@@ -18,9 +18,12 @@ export function Overview({ data }: { data: MonthlyData[] }) {
                     <YAxis yAxisId='left'/>
                     <YAxis yAxisId='right' orientation='right'/>
                     <Tooltip
-                        formatter={(value: number, name: string) =>
-                            name === 'Доход' ? [`${value.toLocaleString('ru-RU')} ₽`, name] : [value, name]
-                        }
+                        formatter={(value, name) => {
+                            if (typeof value !== 'number') return [String(value), name]
+                            return name === 'Доход'
+                                ? [`${value.toLocaleString('ru-RU')} ₽`, name]
+                                : [value, name]
+                        }}
                     />
                     <Legend/>
                     <Line yAxisId='left' type='monotone' dataKey='revenue' stroke='#E06680' activeDot={{r: 8}}
