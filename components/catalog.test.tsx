@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { Catalog } from './catalog';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {Catalog} from './catalog';
 import * as React from 'react';
 
 // Simplified mocks
@@ -65,10 +65,14 @@ describe('Catalog Component', () => {
         jest.clearAllMocks();
     });
 
-    test('shows loading state when first rendered', () => {
+    test('shows loading state when first rendered', async () => {
         render(<Catalog initialCategory={null}/>);
 
         expect(screen.getByText('Загрузка продуктов...')).toBeInTheDocument();
+
+        await waitFor(() => {
+            expect(screen.queryByText('Загрузка продуктов...')).not.toBeInTheDocument();
+        });
     });
 
     //   test('displays products when fetch is successful', async () => {
@@ -153,10 +157,13 @@ describe('Catalog Component', () => {
         expect(global.fetch).toHaveBeenCalledWith('/api/products');
     });
 
-    test('initial category is used in first fetch request', () => {
+    test('initial category is used in first fetch request', async () => {
         render(<Catalog initialCategory='Cakes'/>);
 
-        // Verify fetch was called with correct category param
         expect(global.fetch).toHaveBeenCalledWith('/api/products?category=Cakes');
+
+        await waitFor(() => {
+            expect(screen.queryByText('Загрузка продуктов...')).not.toBeInTheDocument();
+        });
     });
 });
