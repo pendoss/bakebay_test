@@ -2,49 +2,80 @@ name: PR Checks
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
     types: [ opened, synchronize, reopened ]
 
-# Отменяет предыдущий запуск для того же PR при новом пуше
 concurrency:
   group: pr-checks-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  checks:
-    name: Typecheck / Lint / Test / Build
+  typecheck:
+    name: Typecheck
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      # ── Typecheck ──────────────────────────────────────────────────────────
       - name: Typecheck
         run: pnpm tsc --noEmit
 
-      # ── Lint ───────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Lint
         run: pnpm lint
 
-      # ── Tests ──────────────────────────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Tests
-        run: pnpm test --ci --passWithNoTests
+        run: pnpm test -- --ci --passWithNoTests
 
-      # ── Build ──────────────────────────────────────────────────────────────
-      # Используем заглушки для переменных окружения: build проверяет только
-      # компиляцию, а не реальное подключение к БД/S3.
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [ typecheck, lint, test ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Build
         run: pnpm build
         env:

@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server';
-import {db, products} from '@/src/db';
+import {db, products} from '@/src/adapters/storage/drizzle';
 import {eq, count} from 'drizzle-orm';
 
 export async function GET(request: Request) {

@@ -1,24 +1,24 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ShoppingCart } from "lucide-react"
-import { useCart } from "@/contexts/cart-context"
+import Link from 'next/link'
+import {Button} from '@/components/ui/button'
+import {ShoppingCart} from 'lucide-react'
+import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
 
 export function CartIndicator() {
-  const { getItemsCount } = useCart()
-  const itemsCount = getItemsCount()
+    const {itemsCount} = useCart()
 
-  return (
-    <Link href="/cart">
-      <Button variant="ghost" size="icon" className="relative">
-        <ShoppingCart className="h-5 w-5" />
-        {itemsCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
-            {itemsCount}
-          </span>
-        )}
-      </Button>
-    </Link>
-  )
+    return (
+        <Link href='/cart'>
+            <Button variant='ghost' size='icon' className='relative'>
+                <ShoppingCart className='h-5 w-5'/>
+                {itemsCount > 0 && (
+                    <span
+                        className='absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center'>
+						{itemsCount}
+					</span>
+                )}
+            </Button>
+        </Link>
+    )
 }

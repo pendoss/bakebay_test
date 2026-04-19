@@ -1,246 +1,224 @@
-import { NextResponse } from 'next/server';
-import { db, products, sellers, categories, dietaryConstrains } from '@/src/db';
-import { productImages } from '@/src/db/schema/product_images';
-import { eq, count } from 'drizzle-orm';
+import {NextResponse} from 'next/server'
+import {productStorageDrizzle} from '@/src/adapters/storage/drizzle/product-storage-drizzle'
+import {
+    getProduct,
+    listProducts,
+    countProductsBySeller,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+} from '@/src/application/use-cases/product'
+import {fileStorageS3} from '@/src/adapters/storage/s3/file-storage-s3'
+import {
+    ProductForbiddenError,
+    ProductNotFoundError,
+    ProductValidationError,
+} from '@/src/domain/product'
+import {asProductId, asSellerId} from '@/src/domain/shared/id'
+import type {Product} from '@/src/domain/product'
+
+function productStorage() {
+    return productStorageDrizzle()
+}
+
+function toListResponse(product: Product) {
+    return {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        short_desc: product.shortDesc,
+        long_desc: product.longDesc,
+        category: product.category,
+        storage_conditions: product.storageConditions,
+        shelf_life: product.shelfLife,
+        size: product.size,
+        stock: product.stock,
+        seller: product.seller
+            ? {id: product.seller.id, name: product.seller.name, rating: product.seller.rating}
+            : null,
+        category_info: product.categoryInfo,
+        dietary_constraints: product.dietary.map((name, idx) => ({id: idx, name})),
+        images: product.images.map((img) => ({
+            image_url: img.url,
+            name: img.name,
+            is_main: img.isMain,
+            display_order: img.displayOrder,
+            s3_key: img.s3Key,
+        })),
+        image: product.mainImage,
+    }
+}
+
+function toSingleResponse(product: Product) {
+    return {
+        product_id: product.id,
+        seller_id: product.sellerId,
+        product_name: product.name,
+        price: product.price,
+        cost: product.cost,
+        short_desc: product.shortDesc,
+        long_desc: product.longDesc,
+        category: product.category,
+        storage_conditions: product.storageConditions,
+        stock: product.stock,
+        category_id: product.categoryId,
+        sku: product.sku,
+        weight: product.weight,
+        size: product.size,
+        shelf_life: product.shelfLife,
+        track_inventory: product.trackInventory,
+        low_stock_alert: product.lowStockAlert,
+        status: product.status,
+        dietary_constraints: product.dietary.map((name, idx) => ({id: idx, name})),
+        images: product.images.map((img) => ({
+            image_url: img.url,
+            name: img.name,
+            is_main: img.isMain,
+            display_order: img.displayOrder,
+            s3_key: img.s3Key,
+        })),
+        image: product.mainImage,
+    }
+}
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const id = url.searchParams.get('id');
-  const categoryId = url.searchParams.get('category');
-  const sellerId = url.searchParams.get('seller');
-  const countOnly = url.searchParams.get('count');
-  console.log('url', url);
-  console.log('id', id);
-  try {
+    const url = new URL(request.url)
+    const id = url.searchParams.get('id')
+    const categoryName = url.searchParams.get('category')
+    const sellerParam = url.searchParams.get('seller')
+    const countOnly = url.searchParams.get('count')
+    const deps = {productStorage: productStorage()}
 
-    if (id) {
-      try {
-
-        if (countOnly === 'true' && sellerId) {
-          const counter = await db.select({
-            counter: count()
-          })
-          .from(products)
-          .where(eq(products.seller_id, parseInt(sellerId)))
-          .then(result => result[0]?.counter || 0);
-          
-          return NextResponse.json({ count: counter });
-        }
-        console.log(id)
-        const product = await db.query.products.findFirst({
-          where: eq(products.product_id, parseInt(id)),
-        });
-
-        if (!product) {
-          return NextResponse.json(
-            { error: 'Product not found' },
-            { status: 404 }
-          );
+    try {
+        if (countOnly === 'true' && sellerParam) {
+            const counter = await countProductsBySeller(asSellerId(parseInt(sellerParam, 10)), deps)
+            return NextResponse.json({count: counter})
         }
 
-        const images = await db.select()
-          .from(productImages)
-          .where(eq(productImages.product_id, parseInt(id)))
-          .orderBy(productImages.is_main, productImages.display_order);
+        if (id) {
+            const product = await getProduct(asProductId(parseInt(id, 10)), deps)
+            return NextResponse.json(toSingleResponse(product))
+        }
 
-        const productWithImages = {
-          ...product,
-          images: images,
-          image: images.find(img => img.is_main)?.image_url || 
-                 (images.length > 0 ? images[0].image_url : null)
-        };
-
-        return NextResponse.json(productWithImages);
-      } catch (error) {
-        console.error('Error fetching product by ID:', error);
-        return NextResponse.json(
-          { error: 'Failed to fetch product', details: error },
-          { status: 500 }
-        );
-      }
+        const products = await listProducts(
+            {
+                categoryName: categoryName ?? undefined,
+                sellerId: sellerParam ? asSellerId(parseInt(sellerParam, 10)) : undefined,
+            },
+            deps,
+        )
+        return NextResponse.json(products.map(toListResponse))
+    } catch (err) {
+        if (err instanceof ProductNotFoundError) {
+            return NextResponse.json({error: 'Product not found'}, {status: 404})
+        }
+        console.error('Error fetching products:', err)
+        return NextResponse.json({error: 'Failed to fetch products'}, {status: 500})
     }
-
-    let query = db.select().from(products).where( categoryId ? eq(products.category,categoryId) : sellerId ? eq(products.seller_id, parseInt(sellerId)) : undefined);
-
-    const allProducts = await query.leftJoin(sellers, eq(products.seller_id, sellers.seller_id)).leftJoin(categories, eq(products.category_id, categories.id));
-
-    const formattedProducts = await Promise.all(allProducts.map(async row => {
-      const dietaryConstraints = await db.select({
-        id: dietaryConstrains.id,
-        name: dietaryConstrains.name,
-      })
-      .from(dietaryConstrains)
-      .where(eq(dietaryConstrains.product_id, row.products.product_id));
-
-      // Get product images
-      const images = await db.select()
-        .from(productImages)
-        .where(eq(productImages.product_id, row.products.product_id))
-        .orderBy(productImages.is_main, productImages.display_order);
-
-      // Find main image or use first image
-      const mainImage = images.find(img => img.is_main)?.image_url || 
-                        (images.length > 0 ? images[0].image_url : null);
-
-      return {
-        id: row.products.product_id,
-        name: row.products.product_name,
-        price: row.products.price,
-        short_desc: row.products.short_desc,
-        long_desc: row.products.long_desc,
-        category: row.products.category,
-        storage_conditions: row.products.storage_conditions,
-        shelf_life: row.products.shelf_life,
-        size: row.products.size,
-        stock: row.products.stock,
-        seller: row.sellers ? {
-          id: row.sellers.seller_id,
-          name: row.sellers.seller_name,
-          rating: row.sellers.seller_rating,
-        } : null,
-        category_info: row.categories ? {
-          id: row.categories.id,
-          name: row.categories.name,
-        } : null,
-        dietary_constraints: dietaryConstraints,
-        images: images,
-        image: mainImage,
-      };
-    }));
-
-    return NextResponse.json(formattedProducts);
-  } catch (error) {
-    console.error('Error fetching products: ', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch products' },
-      { status: 500 }
-    );
-  }
 }
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-
-    // Validate required fields
-    if (!body.product_name || !body.price || !body.short_desc || !body.long_desc || 
+    try {
+        const body = (await request.json()) as {
+            product_name?: string
+            price?: number
+            short_desc?: string
+            long_desc?: string
+            category?: string
+            storage_conditions?: string
+            seller_id?: number
+            stock?: number
+            category_id?: number
+        }
+        if (!body.product_name || !body.price || !body.short_desc || !body.long_desc ||
         !body.category || !body.storage_conditions || !body.seller_id) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+            return NextResponse.json({error: 'Missing required fields'}, {status: 400})
+        }
+        const {productId} = await createProduct(
+            {
+                draft: {
+                    name: body.product_name,
+                    price: body.price,
+                    shortDesc: body.short_desc,
+                    longDesc: body.long_desc,
+                    category: body.category,
+                    storageConditions: body.storage_conditions,
+                    sellerId: asSellerId(body.seller_id),
+                    stock: body.stock ?? 0,
+                    categoryId: body.category_id,
+                },
+                imageUploads: [],
+            },
+            {productStorage: productStorage(), fileStorage: fileStorageS3()},
+        )
+        return NextResponse.json({product_id: productId})
+    } catch (err) {
+        if (err instanceof ProductValidationError) {
+            return NextResponse.json({error: err.message}, {status: 400})
+        }
+        console.error('Error creating product:', err)
+        return NextResponse.json({error: 'Failed to create product'}, {status: 500})
     }
-
-    // Check if seller exists
-    const seller = await db.query.sellers.findFirst({
-      where: eq(sellers.seller_id, body.seller_id),
-    });
-
-    if (!seller) {
-      return NextResponse.json(
-        { error: 'Seller not found' },
-        { status: 404 }
-      );
-    }
-
-    // Create new product
-    const newProduct = await db.insert(products).values({
-      seller_id: body.seller_id,
-      product_name: body.product_name,
-      price: body.price,
-      short_desc: body.short_desc,
-      long_desc: body.long_desc,
-      category: body.category,
-      storage_conditions: body.storage_conditions,
-      stock: body.stock || 0,
-      category_id: body.category_id,
-    }).returning();
-
-    return NextResponse.json(newProduct[0]);
-  } catch (error) {
-    console.error('Error creating product:', error);
-    return NextResponse.json(
-      { error: 'Failed to create product' },
-      { status: 500 }
-    );
-  }
 }
 
 export async function PUT(request: Request) {
-  try {
-    const body = await request.json();
-
-    // Validate required fields
-    if (!body.product_id) {
-      return NextResponse.json(
-        { error: 'Missing product ID' },
-        { status: 400 }
-      );
+    try {
+        const body = (await request.json()) as {
+            product_id?: number
+            product_name?: string
+            price?: number
+            short_desc?: string
+            long_desc?: string
+            category?: string
+            storage_conditions?: string
+            stock?: number
+            seller_id?: number
+            category_id?: number
+        }
+        if (!body.product_id) {
+            return NextResponse.json({error: 'Missing product ID'}, {status: 400})
+        }
+        await updateProduct(
+            {
+                patch: {
+                    id: asProductId(body.product_id),
+                    name: body.product_name ?? '',
+                    price: body.price ?? 0,
+                    shortDesc: body.short_desc ?? '',
+                    longDesc: body.long_desc ?? '',
+                    category: body.category ?? '',
+                    storageConditions: body.storage_conditions ?? '',
+                    stock: body.stock ?? 0,
+                },
+                images: [],
+            },
+            {productStorage: productStorage(), fileStorage: fileStorageS3()},
+        )
+        return NextResponse.json({success: true})
+    } catch (err) {
+        if (err instanceof ProductNotFoundError) {
+            return NextResponse.json({error: 'Product not found'}, {status: 404})
+        }
+        if (err instanceof ProductForbiddenError) {
+            return NextResponse.json({error: err.message}, {status: 403})
+        }
+        console.error('Error updating product:', err)
+        return NextResponse.json({error: 'Failed to update product'}, {status: 500})
     }
-
-    // Update product
-    const updatedProduct = await db.update(products)
-      .set({
-        product_name: body.product_name,
-        price: body.price,
-        short_desc: body.short_desc,
-        long_desc: body.long_desc,
-        category: body.category,
-        storage_conditions: body.storage_conditions,
-        stock: body.stock,
-        seller_id: body.seller_id,
-        category_id: body.category_id,
-      })
-      .where(eq(products.product_id, body.product_id))
-      .returning();
-
-    if (updatedProduct.length === 0) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(updatedProduct[0]);
-  } catch (error) {
-    console.error('Error updating product:', error);
-    return NextResponse.json(
-      { error: 'Failed to update product' },
-      { status: 500 }
-    );
-  }
 }
 
 export async function DELETE(request: Request) {
-  try {
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Missing product ID' },
-        { status: 400 }
-      );
+    try {
+        const url = new URL(request.url)
+        const id = url.searchParams.get('id')
+        if (!id) return NextResponse.json({error: 'Missing product ID'}, {status: 400})
+        await deleteProduct(asProductId(parseInt(id, 10)), {productStorage: productStorage()})
+        return NextResponse.json({success: true})
+    } catch (err) {
+        if (err instanceof ProductNotFoundError) {
+            return NextResponse.json({error: 'Product not found'}, {status: 404})
+        }
+        console.error('Error deleting product:', err)
+        return NextResponse.json({error: 'Failed to delete product'}, {status: 500})
     }
-
-    // Delete product
-    const deletedProduct = await db.delete(products)
-      .where(eq(products.product_id, parseInt(id)))
-      .returning();
-
-    if (deletedProduct.length === 0) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting product:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete product' },
-      { status: 500 }
-    );
-  }
 }

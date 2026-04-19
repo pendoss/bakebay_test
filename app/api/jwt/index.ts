@@ -1,35 +1,20 @@
-import * as jwt from "jsonwebtoken"
+import {tokenServiceJwt} from '@/src/adapters/auth/token-service-jwt'
+import type {UserRole} from '@/src/domain/user'
+import {asUserId} from '@/src/domain/shared/id'
 
 interface UserPayload {
-    userId: number 
-    role: string
+	userId: number
+	role: string
 }
 
-const secret = process.env.JWT_SECRET_KEY || ""
-
-
 export const Encode = (payload: UserPayload): string => {
-
-    try {
-        const encoded = jwt.sign(payload, secret, { expiresIn: '1h' })
-        return encoded
-    } catch (error) {
-        console.log("Error encoding:", error)
-        throw error;
-    }
+	return tokenServiceJwt().issue({
+		userId: asUserId(payload.userId),
+		role: (payload.role ?? 'customer') as UserRole,
+	})
 }
 
 export const Decode = (token: string): UserPayload => {
-    try {
-        const secret = process.env.JWT_SECRET_KEY;
-        if (!secret) {
-            throw new Error("JWT_SECRET_KEY is not defined");
-        }
-        const decoded = jwt.verify(token, secret);
-        return decoded as UserPayload;
-    } catch (error) {
-        console.error("decode error:", error);
-        throw error;
-    }
+	const session = tokenServiceJwt().verify(token)
+	return {userId: session.userId as unknown as number, role: session.role}
 }
-

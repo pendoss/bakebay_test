@@ -1,13 +1,14 @@
-"use client"
+'use client'
 
-import React, {useState, useRef, useEffect} from "react"
-import Image from "next/image"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Star, ShoppingCart, X } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { useCart } from "@/contexts/cart-context"
+import React, {useState, useRef, useEffect} from 'react'
+import Image from 'next/image'
+import {Card, CardContent, CardFooter} from '@/components/ui/card'
+import {Badge} from '@/components/ui/badge'
+import {Button} from '@/components/ui/button'
+import {Star, ShoppingCart, X} from 'lucide-react'
+import {useToast} from '@/hooks/use-toast'
+import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
+import {asProductId} from '@/src/domain/shared/id'
 import {
   Dialog,
   DialogContent,
@@ -15,20 +16,20 @@ import {
   DialogHeader,
   DialogTitle,
   DialogClose,
-} from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
+} from '@/components/ui/dialog'
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
+import {RadioGroup, RadioGroupItem} from '@/components/ui/radio-group'
+import {Label} from '@/components/ui/label'
 
 // Словарь для перевода диетических опций
 const dietaryTranslations: { [key: string]: string } = {
-  "Gluten-Free": "Без глютена",
-  Vegan: "Веганское",
-  "Dairy-Free": "Без молочных продуктов",
-  "Contains Nuts": "Содержит орехи",
-  "Contains Gluten": "Содержит глютен",
-  "Contains Dairy": "Содержит молочные продукты",
-  "May Contain Nuts": "Может содержать орехи",
+  'Gluten-Free': 'Без глютена',
+  Vegan: 'Веганское',
+  'Dairy-Free': 'Без молочных продуктов',
+  'Contains Nuts': 'Содержит орехи',
+  'Contains Gluten': 'Содержит глютен',
+  'Contains Dairy': 'Содержит молочные продукты',
+  'May Contain Nuts': 'Может содержать орехи',
 }
 
 type Review = {
@@ -56,29 +57,30 @@ type Product = {
 }
 
 export function ProductCard({ product } : {product : Product}) {
-  console.log('ProductCard received:', product);
+  const {toast} = useToast()
+  const {addItem} = useCart()
+  const [isOpen, setIsOpen] = useState(false)
+  const isAddingToCartRef = useRef(false);
 
   // Check if product is valid
   if (!product || typeof product !== 'object') {
-    console.error('Invalid product object:', product);
     return null;
   }
-
-  const { toast } = useToast()
-  const { addItem } = useCart()
-  const [isOpen, setIsOpen] = useState(false)
-  const isAddingToCartRef = useRef(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation() // Предотвращаем открытие модального окна при нажатии на кнопку добавления в корзину
     e.preventDefault(); // Предотвращаем любое стандартное поведение
 
-    console.log("handleAddToCart called", product)
-    // Добавляем товар в корзину
-    addItem(product)
+    addItem({
+      productId: asProductId(product.id),
+      name: product.name,
+      price: product.price,
+      image: product.image ?? '/placeholder.svg',
+      seller: product.seller,
+    })
 
     toast({
-      title: "Добавлено в корзину",
+      title: 'Добавлено в корзину',
       description: `${product.name} добавлен в вашу корзину.`,
     })
 
@@ -89,57 +91,57 @@ export function ProductCard({ product } : {product : Product}) {
   }
 
   return (
-    <>
-      <Card
-        className="overflow-hidden transition-all duration-200 hover:shadow-md group relative"
-        onClick={() => setIsOpen(true)}
-      >
-        <div className="aspect-square relative items-end" >
-          <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
-          <div className="absolute bottom-1 left-1 p-2 flex flex-wrap gap-1 transition-opacity">
-            {product.dietary.slice(0, 2).map((diet, index) => (
-                <Badge key={index} variant="secondary" className="text-xs text-white">
-                  {dietaryTranslations[diet] || diet}
-                </Badge>
-            ))}
-            {product.dietary.length > 2 && (
-                <Badge variant="secondary" className="text-xs text-white">
+      <>
+        <Card
+            className='overflow-hidden transition-all duration-200 hover:shadow-md group relative'
+            onClick={() => setIsOpen(true)}
+        >
+          <div className='aspect-square relative items-end'>
+            <Image src={product.image || '/placeholder.svg'} alt={product.name} fill className='object-cover'/>
+            <div className='absolute bottom-1 left-1 p-2 flex flex-wrap gap-1 transition-opacity'>
+              {product.dietary.slice(0, 2).map((diet, index) => (
+                  <Badge key={index} variant='secondary' className='text-xs text-white'>
+                    {dietaryTranslations[diet] || diet}
+                  </Badge>
+              ))}
+              {product.dietary.length > 2 && (
+                  <Badge variant='secondary' className='text-xs text-white'>
                   +{product.dietary.length - 2}
-                </Badge>
-            )}
-          </div>
-        </div>
-        <CardContent className="p-4 min-h-[160px] flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-lg line-clamp-1">{product.name}</h3>
-            {/*<Badge variant="outline" className="ml-2 shrink-0">*/}
-            {/*  {product.category}*/}
-            {/*</Badge>*/}
-          </div>
-          <div>
-            <p className="text-muted-foreground text-sm line-clamp-2 mb-2">{product.description}</p>
-            <div className="flex items-center gap-1 text-sm mb-1">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span>{product.rating}</span>
+                  </Badge>
+              )}
             </div>
-            <p className="text-sm text-muted-foreground">Продавец: {product.seller}</p>
           </div>
-        </CardContent>
-        <CardFooter className="p-4 pt-0 pr-6 pb-6 flex justify-between items-center">
-          <div className="font-semibold">{product.price.toFixed(2)} руб.</div>
-          <Button
-              size="sm"
-              className="absolute bottom-4 right-4 opacity-100 transition-opacity"
-              onClick={handleAddToCart}
-          >
-            <ShoppingCart className="h-4 w-4 mr-2" />
+          <CardContent className='p-4 min-h-[160px] flex flex-col justify-between'>
+            <div className='flex justify-between items-start mb-2'>
+              <h3 className='font-semibold text-lg line-clamp-1'>{product.name}</h3>
+              {/*<Badge variant="outline" className="ml-2 shrink-0">*/}
+              {/*  {product.category}*/}
+              {/*</Badge>*/}
+            </div>
+            <div>
+              <p className='text-muted-foreground text-sm line-clamp-2 mb-2'>{product.description}</p>
+              <div className='flex items-center gap-1 text-sm mb-1'>
+                <Star className='h-4 w-4 fill-primary text-primary'/>
+                <span>{product.rating}</span>
+              </div>
+              <p className='text-sm text-muted-foreground'>Продавец: {product.seller}</p>
+            </div>
+          </CardContent>
+          <CardFooter className='p-4 pt-0 pr-6 pb-6 flex justify-between items-center'>
+            <div className='font-semibold'>{product.price.toFixed(2)} руб.</div>
+            <Button
+                size='sm'
+                className='absolute bottom-4 right-4 opacity-100 transition-opacity'
+                onClick={handleAddToCart}
+            >
+              <ShoppingCart className='h-4 w-4 mr-2'/>
             Добавить
-          </Button>
-        </CardFooter>
-      </Card>
+            </Button>
+          </CardFooter>
+        </Card>
 
-      <ProductDetailDialog product={product} isOpen={isOpen} setIsOpen={setIsOpen} onAddToCart={handleAddToCart} />
-    </>
+        <ProductDetailDialog product={product} isOpen={isOpen} setIsOpen={setIsOpen} onAddToCart={handleAddToCart}/>
+      </>
   )
 }
 
@@ -151,180 +153,181 @@ interface ProductDetailDialogProps {
     onAddToCart: (e: React.MouseEvent) => void
 }
 function ProductDetailDialog({ product, isOpen, setIsOpen, onAddToCart } : ProductDetailDialogProps) {
-    const [reviews, setReviews] = useState<Review[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
 
-    useEffect(() => {
-        if (isOpen && product.id) {
-            fetch(`/api/reviews?productId=${product.id}`)
-                .then(r => r.json())
-                .then(data => setReviews(Array.isArray(data) ? data : []))
-                .catch(() => setReviews([]))
-        }
-    }, [isOpen, product.id])
+  useEffect(() => {
+    if (isOpen && product.id) {
+      fetch(`/api/reviews?productId=${product.id}`)
+          .then(r => r.json())
+          .then(data => setReviews(Array.isArray(data) ? data : []))
+          .catch(() => setReviews([]))
+    }
+  }, [isOpen, product.id])
 
   const handleDialogOpenChange = (open: boolean) => {
-    console.log("Dialog onOpenChange called", open);
+    console.log('Dialog onOpenChange called', open);
     setIsOpen(open);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden">
-        <DialogClose className="absolute right-4 top-4 z-10">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Закрыть</span>
-        </DialogClose>
+      <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className='sm:max-w-[900px] p-0 overflow-hidden'>
+          <DialogClose className='absolute right-4 top-4 z-10'>
+            <X className='h-4 w-4'/>
+            <span className='sr-only'>Закрыть</span>
+          </DialogClose>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          <div className="relative aspect-square md:aspect-auto">
-            <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
-          </div>
+          <div className='grid grid-cols-1 md:grid-cols-2'>
+            <div className='relative aspect-square md:aspect-auto'>
+              <Image src={product.image || '/placeholder.svg'} alt={product.name} fill className='object-cover'/>
+            </div>
 
-          <div className="p-6 overflow-y-auto max-h-[80vh]">
-            <DialogHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <DialogTitle className="text-2xl">{product.name}</DialogTitle>
-                  <DialogDescription className="text-sm">Продавец: {product.seller}</DialogDescription>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star className="h-5 w-5 fill-primary text-primary" />
-                  <span className="font-medium">{product.rating}</span>
-                </div>
-              </div>
-            </DialogHeader>
-
-            <div className="mt-6">
-              <div className="text-2xl font-bold mb-4">{product.price.toFixed(2)} руб.</div>
-
-              <p className="text-muted-foreground mb-6">{product.description}</p>
-
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-medium mb-2">Диетическая информация</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {product.dietary.map((diet, index) => (
-                      <Badge key={index} variant="secondary" className="text-white">
-                        {dietaryTranslations[diet] || diet}
-                      </Badge>
-                    ))}
+            <div className='p-6 overflow-y-auto max-h-[80vh]'>
+              <DialogHeader>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <DialogTitle className='text-2xl'>{product.name}</DialogTitle>
+                    <DialogDescription className='text-sm'>Продавец: {product.seller}</DialogDescription>
+                  </div>
+                  <div className='flex items-center gap-1'>
+                    <Star className='h-5 w-5 fill-primary text-primary'/>
+                    <span className='font-medium'>{product.rating}</span>
                   </div>
                 </div>
+              </DialogHeader>
+
+              <div className='mt-6'>
+                <div className='text-2xl font-bold mb-4'>{product.price.toFixed(2)} руб.</div>
+
+                <p className='text-muted-foreground mb-6'>{product.description}</p>
+
+                <div className='space-y-6'>
+                  <div>
+                    <h4 className='font-medium mb-2'>Диетическая информация</h4>
+                    <div className='flex flex-wrap gap-2'>
+                      {product.dietary.map((diet, index) => (
+                          <Badge key={index} variant='secondary' className='text-white'>
+                            {dietaryTranslations[diet] || diet}
+                          </Badge>
+                      ))}
+                    </div>
+                  </div>
 
                   {product.size && (
-                <div>
-                  <h4 className="font-medium mb-2">Размер</h4>
-                    <RadioGroup defaultValue={product.size}>
-                    <div className="flex flex-wrap gap-4">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="small" id="size-small" />
-                        <Label htmlFor="size-small">Маленький</Label>
+                      <div>
+                        <h4 className='font-medium mb-2'>Размер</h4>
+                        <RadioGroup defaultValue={product.size}>
+                          <div className='flex flex-wrap gap-4'>
+                            <div className='flex items-center space-x-2'>
+                              <RadioGroupItem value='small' id='size-small'/>
+                              <Label htmlFor='size-small'>Маленький</Label>
+                            </div>
+                            <div className='flex items-center space-x-2'>
+                              <RadioGroupItem value='medium' id='size-medium'/>
+                              <Label htmlFor='size-medium'>Стандартный</Label>
+                            </div>
+                            <div className='flex items-center space-x-2'>
+                              <RadioGroupItem value='large' id='size-large'/>
+                              <Label htmlFor='size-large'>Большой</Label>
+                            </div>
+                          </div>
+                        </RadioGroup>
                       </div>
-                      <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="medium" id="size-medium"/>
-                          <Label htmlFor="size-medium">Стандартный</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="large" id="size-large" />
-                        <Label htmlFor="size-large">Большой</Label>
-                      </div>
-                    </div>
-                  </RadioGroup>
-                </div>
                   )}
-              </div>
+                </div>
 
-              <Tabs defaultValue="details" className="mt-6">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="details">Детали</TabsTrigger>
-                  <TabsTrigger value="ingredients">Ингредиенты</TabsTrigger>
-                  <TabsTrigger value="reviews">Отзывы</TabsTrigger>
-                </TabsList>
+                <Tabs defaultValue='details' className='mt-6'>
+                  <TabsList className='grid w-full grid-cols-3'>
+                    <TabsTrigger value='details'>Детали</TabsTrigger>
+                    <TabsTrigger value='ingredients'>Ингредиенты</TabsTrigger>
+                    <TabsTrigger value='reviews'>Отзывы</TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="details" className="space-y-4 mt-4">
-                  <p>
-                    {product.name} - это вкусное лакомство, приготовленное из лучших ингредиентов. Идеально подходит для
+                  <TabsContent value='details' className='space-y-4 mt-4'>
+                    <p>
+                      {product.name} - это вкусное лакомство, приготовленное из лучших ингредиентов. Идеально подходит
+                      для
                     любого случая, это сладкое удовольствие удовлетворит ваши желания.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Категория:</span>
-                      <span className="font-medium">{product.category}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Срок годности:</span>
+                    </p>
+                    <div className='grid grid-cols-2 gap-2 text-sm'>
+                      <div className='flex justify-between'>
+                        <span className='text-muted-foreground'>Категория:</span>
+                        <span className='font-medium'>{product.category}</span>
+                      </div>
+                      <div className='flex justify-between'>
+                        <span className='text-muted-foreground'>Срок годности:</span>
                         <span
-                            className="font-medium">{product.shelfLife ? `${product.shelfLife} дн.` : "Не указано"}</span>
+                            className='font-medium'>{product.shelfLife ? `${product.shelfLife} дн.` : 'Не указано'}</span>
+                      </div>
+                      <div className='flex justify-between'>
+                        <span className='text-muted-foreground'>Хранение:</span>
+                        <span className='font-medium'>{product.storageConditions || 'Не указано'}</span>
+                      </div>
+                      <div className='flex justify-between'>
+                        <span className='text-muted-foreground'>Произведено в:</span>
+                        <span className='font-medium'>России</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Хранение:</span>
-                        <span className="font-medium">{product.storageConditions || "Не указано"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Произведено в:</span>
-                      <span className="font-medium">России</span>
-                    </div>
-                  </div>
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="ingredients" className="space-y-4 mt-4">
+                  <TabsContent value='ingredients' className='space-y-4 mt-4'>
                     {product.ingredients && product.ingredients.length > 0 ? (
-                        <div className="space-y-1">
-                            {product.ingredients.map((ing, i) => (
-                                <div key={i} className="flex justify-between text-sm">
-                                    <span>{ing.name}</span>
-                                    <span className="text-muted-foreground">{ing.amount} {ing.unit}</span>
-                                </div>
-                            ))}
+                        <div className='space-y-1'>
+                          {product.ingredients.map((ing, i) => (
+                              <div key={i} className='flex justify-between text-sm'>
+                                <span>{ing.name}</span>
+                                <span className='text-muted-foreground'>{ing.amount} {ing.unit}</span>
+                              </div>
+                          ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground">Состав не указан продавцом.</p>
+                        <p className='text-sm text-muted-foreground'>Состав не указан продавцом.</p>
                     )}
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="reviews" className="space-y-4 mt-4">
+                  <TabsContent value='reviews' className='space-y-4 mt-4'>
                     {reviews.length > 0 ? (
-                        <div className="space-y-4">
-                            {reviews.map((review) => (
-                                <div key={review.id} className="border-b pb-4 last:border-0">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-medium">{review.customer.name}</span>
-                                        <div className="flex">
-                                            {Array(5)
-                                                .fill(0)
-                                                .map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`h-4 w-4 ${i < review.rating ? "fill-primary text-primary" : "fill-muted text-muted-foreground"}`}
-                                                    />
-                                                ))}
-                                        </div>
-                                    </div>
-                                    <p className="text-sm mt-1">{review.comment}</p>
+                        <div className='space-y-4'>
+                          {reviews.map((review) => (
+                              <div key={review.id} className='border-b pb-4 last:border-0'>
+                                <div className='flex items-center justify-between'>
+                                  <span className='font-medium'>{review.customer.name}</span>
+                                  <div className='flex'>
+                                    {Array(5)
+                                        .fill(0)
+                                        .map((_, i) => (
+                                            <Star
+                                                key={i}
+                                                className={`h-4 w-4 ${i < review.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'}`}
+                                            />
+                                        ))}
+                                  </div>
                                 </div>
-                            ))}
+                                <p className='text-sm mt-1'>{review.comment}</p>
+                              </div>
+                          ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground">Отзывов пока нет.</p>
+                        <p className='text-sm text-muted-foreground'>Отзывов пока нет.</p>
                     )}
-                </TabsContent>
-              </Tabs>
+                  </TabsContent>
+                </Tabs>
 
-              <div className="mt-8 flex gap-4">
-                <Button className="flex-1" onClick={(e) => {
-                  console.log("Dialog Add to Cart button clicked");
-                  e.stopPropagation();
-                  e.preventDefault();
-                  console.log("ProductDetailDialog onAddToCart called", product);
-                  onAddToCart(e);
-                }}>
-                  <ShoppingCart className="h-4 w-4 mr-2" />В корзину
-                </Button>
+                <div className='mt-8 flex gap-4'>
+                  <Button className='flex-1' onClick={(e) => {
+                    console.log('Dialog Add to Cart button clicked');
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log('ProductDetailDialog onAddToCart called', product);
+                    onAddToCart(e);
+                  }}>
+                    <ShoppingCart className='h-4 w-4 mr-2'/>В корзину
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
   )
 }

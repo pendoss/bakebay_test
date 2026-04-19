@@ -1,77 +1,34 @@
-import { db, users } from "@/src/db";
-import { eq } from "drizzle-orm";
-import bcrypt from "bcryptjs";
-import { NextResponse } from 'next/server';
-import { Encode } from '../jwt';
-import { cookies } from 'next/headers';
-
-
-const unauthorized = 'bebe chel'
-
-interface credentials {
-    email: string
-    password: string
-}
+import {NextResponse} from 'next/server'
+import {cookies} from 'next/headers'
+import {loginUser} from '@/src/application/use-cases/auth'
+import {InvalidCredentialsError} from '@/src/domain/auth'
+import {userStorageDrizzle} from '@/src/adapters/storage/drizzle/user-storage-drizzle'
+import {passwordHasherBcrypt} from '@/src/adapters/auth/password-hasher-bcrypt'
+import {tokenServiceJwt} from '@/src/adapters/auth/token-service-jwt'
 
 export async function POST(req: Request) {
-    try {
-        const creds: credentials = await req.json()
+	try {
+		const creds = await req.json() as { email: string; password: string }
+		const {token} = await loginUser(creds, {
+			userStorage: userStorageDrizzle(),
+			passwordHasher: passwordHasherBcrypt(),
+			tokenService: tokenServiceJwt(),
+		})
 
-        const jwt = await signIn(creds)
-
-        const cookieStore = await cookies();
-        cookieStore.set('auth_token', jwt, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60, // 1 hour
-        });
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        if (error === unauthorized) {
-            return NextResponse.json(
-                { error: 'Invalid credentials.' },
-                { status: 401 }
-            )
-
-        } else {
-            return NextResponse.json(
-                { error: 'Something went wrong.' },
-                { status: 500 }
-            )
-        }
-    }
-}
-
-async function signIn(
-    credentials: {
-        email: string,
-        password: string
-    },
-): Promise<string> {
-    try {
-        const user = await db.query.users.findFirst({
-            where: eq(users.email, credentials.email),
-            columns: {
-                user_id: true,
-                user_role: true,
-                password: true
-            }
-        })
-        if (user === undefined) {
-            throw unauthorized
-        }
-
-        if (!bcrypt.compareSync(credentials.password, user.password)) {
-            throw unauthorized
-        }
-
-        return Encode({ userId: user.user_id, role: user.user_role! })
-    }
-    catch (error) {
-        throw unauthorized
-    }
-
+		const cookieStore = await cookies()
+		cookieStore.set('auth_token', token, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'lax',
+			path: '/',
+			maxAge: 60 * 60,
+		})
+		return NextResponse.json({success: true})
+	} catch (error) {
+		if (error instanceof InvalidCredentialsError) {
+			return NextResponse.json({error: 'Invalid credentials.'}, {status: 401})
+		}
+		console.error('auth login error:', error)
+		return NextResponse.json({error: 'Something went wrong.'}, {status: 500})
+	}
 }

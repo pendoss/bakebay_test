@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server';
-import {db, users} from '@/src/db';
+import {db, users} from '@/src/adapters/storage/drizzle';
 import {eq} from 'drizzle-orm';
 import {getAuthPayload} from '../../get-auth';
 

@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react'
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {UserNav} from './user-nav'
 import {UserProvider} from '@/contexts/user-context'
 
@@ -19,18 +19,18 @@ jest.mock('next/navigation', () => ({
 // Mock Radix DropdownMenu so that it renders its content immediately
 // (without pointer-events workaround in jsdom)
 jest.mock('@/components/ui/dropdown-menu', () => {
-    const React = require('react')
-    const DropdownMenu = ({children}: any) => <div>{children}</div>
-    const DropdownMenuTrigger = ({children, asChild}: any) => {
+    const React = require('react') // eslint-disable-line
+    const DropdownMenu = ({children}: { children: React.ReactNode }) => <div>{children}</div>
+    const DropdownMenuTrigger = ({children, asChild}: { children: React.ReactElement; asChild?: boolean }) => {
         if (asChild) return React.cloneElement(children, {'data-testid': 'dropdown-trigger'})
-        return <div data-testid="dropdown-trigger">{children}</div>
+        return <div data-testid='dropdown-trigger'>{children}</div>
     }
-    const DropdownMenuContent = ({children}: any) => (
-        <div data-testid="dropdown-content">{children}</div>
+    const DropdownMenuContent = ({children}: { children: React.ReactNode }) => (
+        <div data-testid='dropdown-content'>{children}</div>
     )
-    const DropdownMenuLabel = ({children}: any) => <div>{children}</div>
-    const DropdownMenuGroup = ({children}: any) => <div>{children}</div>
-    const DropdownMenuItem = ({children, onClick}: any) => (
+    const DropdownMenuLabel = ({children}: { children: React.ReactNode }) => <div>{children}</div>
+    const DropdownMenuGroup = ({children}: { children: React.ReactNode }) => <div>{children}</div>
+    const DropdownMenuItem = ({children, onClick}: { children: React.ReactNode; onClick?: () => void }) => (
         <button onClick={onClick}>{children}</button>
     )
     const DropdownMenuSeparator = () => <hr/>
@@ -154,21 +154,17 @@ describe('Неавторизованный пользователь', () => {
         mockFetchUnauthenticated()
     })
 
-    it('показывает "Вы вошли как гость" в заголовке дропдауна', async () => {
+    it('показывает кнопку "Войти" вместо аватара', async () => {
         renderWithUser(<UserNav/>)
-        await act(async () => {})
-        expect(screen.getByText('Вы вошли как гость')).toBeInTheDocument()
-    })
-
-    it('показывает кнопку "Войти"', async () => {
-        renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
         expect(screen.getByText('Войти')).toBeInTheDocument()
     })
 
     it('НЕ показывает пункты меню Профиль, Заказы, Избранное', async () => {
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
         expect(screen.queryByText('Профиль')).not.toBeInTheDocument()
         expect(screen.queryByText('Заказы')).not.toBeInTheDocument()
         expect(screen.queryByText('Избранное')).not.toBeInTheDocument()
@@ -176,13 +172,15 @@ describe('Неавторизованный пользователь', () => {
 
     it('НЕ показывает "Панель продавца"', async () => {
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
         expect(screen.queryByText('Панель продавца')).not.toBeInTheDocument()
     })
 
     it('проверяет сессию через /api/users/me при монтировании', async () => {
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
         const calls = (global.fetch as jest.Mock).mock.calls
         const meCall = calls.find(([url]: [string]) => url === '/api/users/me')
         expect(meCall).toBeDefined()
@@ -233,7 +231,7 @@ describe('Авторизованный пользователь (customer)', () 
 
     it('выход вызывает POST /api/auth/logout и убирает данные пользователя', async () => {
         // After logout, /api/users/me returns 401
-        global.fetch = jest.fn().mockImplementation((url: string, opts?: any) => {
+        global.fetch = jest.fn().mockImplementation((url: string, opts?: RequestInit) => {
             if (url === '/api/users/me') {
                 return Promise.resolve({ok: true, json: () => Promise.resolve(CUSTOMER_USER)})
             }
@@ -321,7 +319,8 @@ describe('Форма входа', () => {
         mockFetchLoginSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
-        await act(async () => {}) // flush initial /api/users/me (returns user after login)
+        await act(async () => {
+        }) // flush initial /api/users/me (returns user after login)
 
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
@@ -346,7 +345,8 @@ describe('Форма входа', () => {
         mockFetchLoginSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
 
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
@@ -376,7 +376,8 @@ describe('Форма входа', () => {
         mockFetchLoginSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
 
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
@@ -407,7 +408,8 @@ describe('Форма входа', () => {
         mockFetchLoginSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
 
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
@@ -443,7 +445,8 @@ describe('Форма регистрации', () => {
         mockFetchRegisterSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
 
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
@@ -478,7 +481,8 @@ describe('Форма регистрации', () => {
         mockFetchRegisterSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
 
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
@@ -512,7 +516,8 @@ describe('Форма регистрации', () => {
         mockFetchRegisterSuccess(CUSTOMER_USER)
 
         renderWithUser(<UserNav/>)
-        await act(async () => {})
+        await act(async () => {
+        })
 
         fireEvent.click(screen.getByText('Войти'))
         await waitFor(() => screen.getByText('Вход в систему'))
