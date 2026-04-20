@@ -1,12 +1,11 @@
 'use client'
 
 import {useState} from 'react'
-import Image from 'next/image'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardFooter, CardHeader, CardTitle} from '@/components/ui/card'
 import {Input} from '@/components/ui/input'
 import {Separator} from '@/components/ui/separator'
-import {Minus, Plus, Trash2} from 'lucide-react'
+import {CartItemRow} from '@/components/cart/cart-item-row'
 import {observer} from 'mobx-react-lite'
 import {useRouter} from 'next/navigation'
 import {
@@ -29,7 +28,7 @@ export const ShoppingCart = observer(function ShoppingCart() {
     const totals = useCartTotals()
     const itemsCount = useCartCount()
     const cart = useCartRaw()
-    const {removeItem, updateQuantity, clear: clearCart, applyPromo} = useCartActions()
+    const {clear: clearCart, applyPromo} = useCartActions()
     const user = useCurrentUser()
     const {requireAuth} = useAuthDialog()
     const [promoCode, setPromoCode] = useState('')
@@ -85,58 +84,9 @@ export const ShoppingCart = observer(function ShoppingCart() {
     return (
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
             <div className='lg:col-span-2 space-y-4'>
-                {items.map((item) => {
-                    const lineId = cartLineId(item)
-                    return (
-                        <Card key={lineId} className='overflow-hidden'>
-                            <div className='flex flex-col sm:flex-row'>
-                                <div className='w-full sm:w-32 h-32 relative'>
-                                    <Image src={item.image || '/placeholder.svg'} alt={item.name} fill
-                                           className='object-cover'/>
-                                </div>
-                                <div className='flex-1 p-4'>
-                                    <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4'>
-                                        <div>
-                                            <h3 className='font-semibold text-lg'>{item.name}</h3>
-                                            <p className='text-sm text-muted-foreground'>Продавец: {item.seller}</p>
-                                        </div>
-                                        <div className='text-lg font-semibold'>
-                                            {(item.price * item.quantity).toFixed(2)} руб.
-                                        </div>
-                                    </div>
-                                    <div className='flex justify-between items-center mt-4'>
-                                        <div className='flex items-center'>
-                                            <Button
-                                                variant='outline'
-                                                size='icon'
-                                                className='h-8 w-8 rounded-full'
-                                                onClick={() => updateQuantity(lineId, item.quantity - 1)}
-                                            >
-                                                <Minus className='h-3 w-3'/>
-                                                <span className='sr-only'>Уменьшить количество</span>
-                                            </Button>
-                                            <span className='w-12 text-center'>{item.quantity}</span>
-                                            <Button
-                                                variant='outline'
-                                                size='icon'
-                                                className='h-8 w-8 rounded-full'
-                                                onClick={() => updateQuantity(lineId, item.quantity + 1)}
-                                            >
-                                                <Plus className='h-3 w-3'/>
-                                                <span className='sr-only'>Увеличить количество</span>
-                                            </Button>
-                                        </div>
-                                        <Button variant='ghost' size='sm' className='text-destructive'
-                                                onClick={() => removeItem(lineId)}>
-                                            <Trash2 className='h-4 w-4 mr-1'/>
-                                            Удалить
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    )
-                })}
+                {items.map((item) => (
+                    <CartItemRow key={cartLineId(item)} item={item}/>
+                ))}
 
                 <div className='flex justify-between items-center'>
                     <Button variant='outline' onClick={() => router.push('/catalog')}>

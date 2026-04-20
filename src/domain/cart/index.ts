@@ -1,4 +1,4 @@
-export type {Cart, CartItem} from './cart'
+export type {Cart, CartItem, CartItemOptionSelection} from './cart'
 export {
     EMPTY_CART,
     addItem,
