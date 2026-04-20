@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import {useEffect, useMemo, useState} from 'react'
-import {Minus, Plus, Trash2} from 'lucide-react'
+import {MessageSquarePlus, Minus, Pencil, Plus, Trash2, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Card} from '@/components/ui/card'
 import {Textarea} from '@/components/ui/textarea'
@@ -211,25 +211,96 @@ interface NoteFieldProps {
 }
 
 function NoteField({initialNote, onCommit}: NoteFieldProps) {
-    // Локальный буфер — обновляется на каждый ввод, коммитится в стор
-    // только на blur, чтобы lineId не пересчитывался посимвольно.
+    const hasNote = initialNote.trim().length > 0
+    const [editing, setEditing] = useState(false)
+    // Локальный буфер, пока поле открыто; коммит в стор — по blur
+    // или по кнопке «Сохранить», чтобы lineId не пересчитывался посимвольно.
     const [value, setValue] = useState(initialNote)
 
     useEffect(() => {
-        setValue(initialNote)
-    }, [initialNote])
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync buffer with store when not editing
+        if (!editing) setValue(initialNote)
+    }, [initialNote, editing])
+
+    if (editing) {
+        const commit = () => {
+            onCommit(value)
+            setEditing(false)
+        }
+        return (
+            <div>
+                <div className='flex items-center justify-between mb-1'>
+                    <label className='text-xs font-medium text-secondary'>Комментарий продавцу</label>
+                    <button
+                        type='button'
+                        onClick={() => {
+                            setValue(initialNote)
+                            setEditing(false)
+                        }}
+                        className='inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
+                    >
+                        <X className='h-3 w-3'/>
+                        Отмена
+                    </button>
+                </div>
+                <Textarea
+                    value={value}
+                    autoFocus
+                    onChange={(e) => setValue(e.target.value)}
+                    onBlur={commit}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                            e.preventDefault()
+                            commit()
+                        }
+                        if (e.key === 'Escape') {
+                            e.preventDefault()
+                            setValue(initialNote)
+                            setEditing(false)
+                        }
+                    }}
+                    placeholder='Пожелания к оформлению, аллергии, дата получения…'
+                    rows={2}
+                    className='min-h-[52px] text-sm'
+                />
+                <p className='mt-1 text-[11px] text-muted-foreground'>
+                    Сохранится автоматически, когда уйдёшь из поля
+                </p>
+            </div>
+        )
+    }
+
+    if (!hasNote) {
+        return (
+            <button
+                type='button'
+                onClick={() => setEditing(true)}
+                className='inline-flex items-center gap-1.5 text-xs text-primary hover:underline'
+            >
+                <MessageSquarePlus className='h-3.5 w-3.5'/>
+                Добавить пожелание продавцу
+            </button>
+        )
+    }
 
     return (
-        <div>
-            <label className='text-xs font-medium text-secondary'>Комментарий продавцу</label>
-            <Textarea
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                onBlur={() => onCommit(value)}
-                placeholder='Пожелания к оформлению, аллергии, дата получения…'
-                rows={2}
-                className='mt-1 min-h-[52px] text-sm'
-            />
+        <div className='rounded-md border border-lavender-dessert/40 bg-lavender-dessert/10 px-3 py-2'>
+            <div className='flex items-start justify-between gap-2'>
+                <div className='min-w-0'>
+                    <p className='text-[11px] uppercase tracking-wider text-muted-foreground'>Комментарий продавцу</p>
+                    <p className='mt-0.5 text-sm text-foreground italic whitespace-pre-wrap break-words'>
+                        «{initialNote}»
+                    </p>
+                </div>
+                <button
+                    type='button'
+                    onClick={() => setEditing(true)}
+                    className='shrink-0 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
+                >
+                    <Pencil className='h-3 w-3'/>
+                    Изменить
+                </button>
+            </div>
         </div>
     )
 }
