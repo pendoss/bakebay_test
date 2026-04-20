@@ -191,51 +191,52 @@ export function CartItemRow({item}: Props) {
                     onCommit={(next) => commitNoteNow(next)}
                 />
 
-                <footer className='mt-1 flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-4'>
-                    {/* qty pill */}
-                    <div
-                        role='group'
-                        aria-label='Количество'
-                        className='inline-flex items-center rounded-full border border-border bg-muted/30 p-1 shrink-0'
-                    >
-                        <button
-                            type='button'
-                            onClick={() => updateQuantity(item.clientId, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                            aria-label='Уменьшить'
-                            className='h-8 w-8 flex items-center justify-center rounded-full bg-white text-foreground shadow-sm transition active:scale-90 hover:bg-primary/10 hover:text-primary disabled:opacity-40 disabled:hover:bg-white'
+                <footer className='mt-1 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border/60 pt-4'>
+                    <div className='flex items-center gap-5 shrink-0'>
+                        {/* qty pill */}
+                        <div
+                            role='group'
+                            aria-label='Количество'
+                            className='inline-flex items-center rounded-full border border-border bg-muted/30 p-1 shrink-0'
                         >
-                            <Minus className='h-3.5 w-3.5'/>
-                        </button>
-                        <div className='min-w-[40px] text-center font-semibold tabular-nums text-[15px]'>
-                            {item.quantity}
+                            <button
+                                type='button'
+                                onClick={() => updateQuantity(item.clientId, item.quantity - 1)}
+                                disabled={item.quantity <= 1}
+                                aria-label='Уменьшить'
+                                className='h-8 w-8 flex items-center justify-center rounded-full bg-white text-foreground shadow-sm transition active:scale-90 hover:bg-primary/10 hover:text-primary disabled:opacity-40 disabled:hover:bg-white'
+                            >
+                                <Minus className='h-3.5 w-3.5'/>
+                            </button>
+                            <div className='min-w-[40px] text-center font-semibold tabular-nums text-[15px]'>
+                                {item.quantity}
+                            </div>
+                            <button
+                                type='button'
+                                onClick={() => updateQuantity(item.clientId, item.quantity + 1)}
+                                aria-label='Увеличить'
+                                className='h-8 w-8 flex items-center justify-center rounded-full bg-white text-foreground shadow-sm transition active:scale-90 hover:bg-primary/10 hover:text-primary'
+                            >
+                                <Plus className='h-3.5 w-3.5'/>
+                            </button>
                         </div>
-                        <button
-                            type='button'
-                            onClick={() => updateQuantity(item.clientId, item.quantity + 1)}
-                            aria-label='Увеличить'
-                            className='h-8 w-8 flex items-center justify-center rounded-full bg-white text-foreground shadow-sm transition active:scale-90 hover:bg-primary/10 hover:text-primary'
-                        >
-                            <Plus className='h-3.5 w-3.5'/>
-                        </button>
-                    </div>
 
-                    <div className='flex items-center gap-4 ml-auto'>
                         <Breakdown
                             basePrice={basePrice}
                             selections={draftSelections}
                             quantity={item.quantity}
                             total={draftTotal}
                         />
-                        <button
-                            type='button'
-                            onClick={() => removeItem(item.clientId)}
-                            className='inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary transition hover:bg-primary/10 shrink-0'
-                        >
-                            <Trash2 className='h-4 w-4'/>
-                            Удалить
-                        </button>
                     </div>
+
+                    <button
+                        type='button'
+                        onClick={() => removeItem(item.clientId)}
+                        className='inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary transition hover:bg-primary/10 shrink-0 ml-auto'
+                    >
+                        <Trash2 className='h-4 w-4'/>
+                        Удалить
+                    </button>
                 </footer>
             </div>
         </article>
