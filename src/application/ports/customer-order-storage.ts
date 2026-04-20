@@ -6,7 +6,7 @@ import type {
     UserId,
 } from '@/src/domain/shared/id'
 import type {CustomerOrder, CustomerOrderDerivedStatus} from '@/src/domain/customer-order'
-import type {SellerOrder} from '@/src/domain/seller-order'
+import type {SellerOrder, StockOverall} from '@/src/domain/seller-order'
 
 export interface CustomerOrderDraft {
     readonly userId: UserId
@@ -71,4 +71,6 @@ export interface SellerOrderStorage {
     listBySeller(sellerId: SellerId): Promise<SellerOrder[]>
 
     updateStatus(id: SellerOrderId, status: SellerOrder['status'], cancelReason?: string): Promise<void>
+
+    updateStockCheck(id: SellerOrderId, stockCheck: StockOverall): Promise<void>
 }

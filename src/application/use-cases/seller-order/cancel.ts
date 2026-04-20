@@ -9,7 +9,9 @@ import type {
     CustomerOrderStorage,
     SellerOrderStorage,
 } from '@/src/application/ports/customer-order-storage'
+import type {IngredientReservationStorage} from '@/src/application/ports/ingredient-reservation-storage'
 import {SellerOrderOwnershipError} from './advance-status'
+import {releaseSellerOrderStock} from './stock/release-stock'
 
 export interface CancelSellerOrderInput {
     readonly sellerOrderId: SellerOrderId
@@ -21,6 +23,7 @@ export interface CancelSellerOrderInput {
 export interface CancelSellerOrderDeps {
     sellerOrderStorage: SellerOrderStorage
     customerOrderStorage: CustomerOrderStorage
+    reservationStorage?: IngredientReservationStorage
 }
 
 export async function cancelSellerOrder(
@@ -36,6 +39,13 @@ export async function cancelSellerOrder(
 
     assertCancellable(order.status, input.actor)
     await deps.sellerOrderStorage.updateStatus(input.sellerOrderId, 'cancelled', input.reason)
+
+    if (deps.reservationStorage) {
+        await releaseSellerOrderStock(
+            {sellerOrderId: input.sellerOrderId},
+            {reservationStorage: deps.reservationStorage},
+        )
+    }
 
     const siblings = await deps.sellerOrderStorage.listByCustomerOrder(order.customerOrderId)
     const derived = computeDerivedStatus(siblings.map((s) => s.status))

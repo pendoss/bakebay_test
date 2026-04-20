@@ -237,5 +237,12 @@ export function sellerOrderStorageDrizzle(): SellerOrderStorage {
                 .set(patch)
                 .where(eq(sellerOrders.seller_order_id, id as unknown as number))
         },
+
+        async updateStockCheck(id: SellerOrderId, stockCheck: StockOverall) {
+            await db
+                .update(sellerOrders)
+                .set({stock_check: stockCheck, updated_at: new Date()})
+                .where(eq(sellerOrders.seller_order_id, id as unknown as number))
+        },
     }
 }

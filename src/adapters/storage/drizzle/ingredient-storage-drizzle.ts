@@ -1,8 +1,13 @@
 import {and, eq, sql} from 'drizzle-orm'
 import {db, productIngredients} from '@/src/adapters/storage/drizzle'
-import type {IngredientStorage, IngredientUpdate} from '@/src/application/ports/ingredient-storage'
+import type {
+    IngredientStorage,
+    IngredientUpdate,
+    RawStockEntry,
+} from '@/src/application/ports/ingredient-storage'
 import type {Ingredient, StockStatus} from '@/src/domain/ingredient'
-import type {IngredientId, ProductId, SellerId} from '@/src/domain/shared/id'
+import type {RequiredIngredient} from '@/src/domain/seller-order'
+import type {IngredientId, ProductId, SellerId, SellerOrderId} from '@/src/domain/shared/id'
 import {asIngredientId, asProductId} from '@/src/domain/shared/id'
 
 interface IngredientRow {
@@ -88,6 +93,61 @@ export function ingredientStorageDrizzle(): IngredientStorage {
             if (patch.unit !== undefined) values.unit = patch.unit
             if (patch.alert !== undefined) values.alert = patch.alert
             await db.update(productIngredients).set(values).where(eq(productIngredients.name, name))
+        },
+
+        async getStockByKeys(
+            sellerId: SellerId,
+            keys: ReadonlyArray<string>,
+        ): Promise<Record<string, RawStockEntry>> {
+            if (keys.length === 0) return {}
+            const res = await db.execute(sql`
+                SELECT pi.name,
+                       MAX(COALESCE(pi.stock, 0)) AS stock,
+                       MAX(COALESCE(pi.alert, 0)) AS alert
+                FROM product_ingredients pi
+                JOIN products p ON pi.product_id = p.product_id
+                WHERE p.seller_id = ${sellerId as unknown as number}
+                  AND pi.name = ANY(${keys as string[]})
+                GROUP BY pi.name
+            `)
+            const out: Record<string, RawStockEntry> = {}
+            for (const row of res.rows as Array<{name: string; stock: number; alert: number}>) {
+                out[row.name] = {stock: Number(row.stock), alertThreshold: Number(row.alert)}
+            }
+            return out
+        },
+
+        async getRequiredForSellerOrder(sellerOrderId: SellerOrderId): Promise<RequiredIngredient[]> {
+            const res = await db.execute(sql`
+                SELECT pi.name, pi.unit, SUM(pi.amount * soi.quantity) AS total
+                FROM seller_order_items soi
+                JOIN product_ingredients pi ON pi.product_id = soi.product_id
+                WHERE soi.seller_order_id = ${sellerOrderId as unknown as number}
+                  AND pi.is_optional = false
+                GROUP BY pi.name, pi.unit
+            `)
+            return (res.rows as Array<{name: string; unit: string; total: number}>).map((r) => ({
+                key: r.name,
+                name: r.name,
+                unit: r.unit,
+                amount: Number(r.total),
+            }))
+        },
+
+        async decrementStockByKey(sellerId: SellerId, key: string, amount: number): Promise<void> {
+            await db.execute(sql`
+                UPDATE product_ingredients pi
+                SET stock = GREATEST(0, COALESCE(pi.stock, 0) - ${amount}),
+                    status = CASE
+                        WHEN GREATEST(0, COALESCE(pi.stock, 0) - ${amount}) <= 0 THEN 'out'
+                        WHEN GREATEST(0, COALESCE(pi.stock, 0) - ${amount}) <= COALESCE(pi.alert, 0) THEN 'low'
+                        ELSE 'ok'
+                    END
+                FROM products p
+                WHERE pi.product_id = p.product_id
+                  AND p.seller_id = ${sellerId as unknown as number}
+                  AND pi.name = ${key}
+            `)
         },
     }
 }

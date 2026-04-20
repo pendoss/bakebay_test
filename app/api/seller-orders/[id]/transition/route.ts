@@ -1,6 +1,8 @@
 import {NextResponse} from 'next/server'
 import {
     customerOrderStorageDrizzle,
+    ingredientReservationStorageDrizzle,
+    ingredientStorageDrizzle,
     sellerOrderStorageDrizzle,
     sellerStorageDrizzle,
 } from '@/src/adapters/storage/drizzle'
@@ -38,6 +40,10 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
             {
                 sellerOrderStorage: sellerOrderStorageDrizzle(),
                 customerOrderStorage: customerOrderStorageDrizzle(),
+                stock: {
+                    ingredientStorage: ingredientStorageDrizzle(),
+                    reservationStorage: ingredientReservationStorageDrizzle(),
+                },
             },
         )
         return NextResponse.json({ok: true})

@@ -4,13 +4,21 @@ import type {
     SellerOrderDraft,
     SellerOrderStorage,
 } from '@/src/application/ports/customer-order-storage'
+import type {
+    IngredientReservationStorage,
+    ReservationDraft,
+    ReservationRecord,
+    ReservationState,
+} from '@/src/application/ports/ingredient-reservation-storage'
+import type {IngredientStorage, RawStockEntry} from '@/src/application/ports/ingredient-storage'
 import type {ProductLookup, ProductLookupRecord} from '@/src/application/ports/product-lookup'
 import type {SellerCommissionLookup} from '@/src/application/ports/seller-commission-lookup'
 import type {
     CustomerOrder,
     CustomerOrderDerivedStatus,
 } from '@/src/domain/customer-order'
-import type {SellerOrder, SellerOrderStatus} from '@/src/domain/seller-order'
+import type {Ingredient} from '@/src/domain/ingredient'
+import type {RequiredIngredient, SellerOrder, SellerOrderStatus, StockOverall} from '@/src/domain/seller-order'
 import {calcItemsSubtotal, calcPricing} from '@/src/domain/seller-order'
 import {
     asCustomerOrderId,
@@ -137,9 +145,104 @@ export function makeInMemoryStorages() {
             if (!existing) return
             subs.set(id, {...existing, status, cancelReason: cancelReason ?? existing.cancelReason})
         },
+        async updateStockCheck(id: SellerOrderId, stockCheck: StockOverall) {
+            const existing = subs.get(id)
+            if (!existing) return
+            subs.set(id, {...existing, stockCheck})
+        },
     }
 
     return {customerOrderStorage, sellerOrderStorage, customers, subs}
+}
+
+export interface InMemoryStockOptions {
+    stockByKey: Record<string, RawStockEntry>
+    requiredBySellerOrder: Map<SellerOrderId, ReadonlyArray<RequiredIngredient>>
+}
+
+export function makeInMemoryStockStorages(opts: InMemoryStockOptions) {
+    const stock = new Map<string, RawStockEntry>(Object.entries(opts.stockByKey))
+    let reservationSeq = 0
+    const reservations: ReservationRecord[] = []
+
+    const ingredientStorage: IngredientStorage = {
+        async listBySeller() {
+            return [] as Ingredient[]
+        },
+        async listByProduct() {
+            return [] as Ingredient[]
+        },
+        async findByNameAndProduct() {
+            return null
+        },
+        async updateById() {
+            /* noop */
+        },
+        async updateByName() {
+            /* noop */
+        },
+        async getStockByKeys(_sellerId: SellerId, keys: ReadonlyArray<string>) {
+            const out: Record<string, RawStockEntry> = {}
+            for (const k of keys) {
+                const entry = stock.get(k)
+                if (entry) out[k] = entry
+            }
+            return out
+        },
+        async getRequiredForSellerOrder(id: SellerOrderId) {
+            return [...(opts.requiredBySellerOrder.get(id) ?? [])]
+        },
+        async decrementStockByKey(_sellerId: SellerId, key: string, amount: number) {
+            const cur = stock.get(key)
+            if (!cur) return
+            stock.set(key, {stock: Math.max(0, cur.stock - amount), alertThreshold: cur.alertThreshold})
+        },
+    }
+
+    const reservationStorage: IngredientReservationStorage = {
+        async createMany(sellerOrderId: SellerOrderId, drafts: ReadonlyArray<ReservationDraft>) {
+            for (const d of drafts) {
+                reservationSeq += 1
+                reservations.push({
+                    reservationId: reservationSeq,
+                    sellerOrderId,
+                    ingredientKey: d.ingredientKey,
+                    name: d.name,
+                    unit: d.unit,
+                    amount: d.amount,
+                    state: 'reserved',
+                })
+            }
+        },
+        async listBySellerOrder(sellerOrderId: SellerOrderId) {
+            return reservations.filter((r) => r.sellerOrderId === sellerOrderId)
+        },
+        async updateState(sellerOrderId: SellerOrderId, next: ReservationState) {
+            for (let i = 0; i < reservations.length; i += 1) {
+                const r = reservations[i]
+                if (r.sellerOrderId === sellerOrderId && r.state === 'reserved') {
+                    reservations[i] = {...r, state: next}
+                }
+            }
+        },
+        async sumReservedByKeys(
+            _sellerId: SellerId,
+            keys: ReadonlyArray<string>,
+            excludeSellerOrderId?: SellerOrderId,
+        ) {
+            const out: Record<string, number> = {}
+            for (const k of keys) out[k] = 0
+            for (const r of reservations) {
+                if (r.state !== 'reserved') continue
+                if (excludeSellerOrderId !== undefined && r.sellerOrderId === excludeSellerOrderId) continue
+                if (!keys.includes(r.ingredientKey)) continue
+                out[r.ingredientKey] = (out[r.ingredientKey] ?? 0) + r.amount
+            }
+            return out
+        },
+    }
+
+    return {ingredientStorage, reservationStorage, stock, reservations}
 }
 
 export function makeProductLookup(records: ProductLookupRecord[]): ProductLookup {

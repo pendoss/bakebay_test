@@ -1,11 +1,17 @@
 import type {Ingredient, StockStatus} from '@/src/domain/ingredient'
-import type {IngredientId, ProductId, SellerId} from '@/src/domain/shared/id'
+import type {RequiredIngredient} from '@/src/domain/seller-order'
+import type {IngredientId, ProductId, SellerId, SellerOrderId} from '@/src/domain/shared/id'
 
 export interface IngredientUpdate {
     stock: number
     unit?: string
     alert?: number
     status: StockStatus
+}
+
+export interface RawStockEntry {
+    readonly stock: number
+    readonly alertThreshold: number
 }
 
 export interface IngredientStorage {
@@ -18,4 +24,13 @@ export interface IngredientStorage {
     updateById(id: IngredientId, patch: IngredientUpdate): Promise<void>
 
     updateByName(name: string, patch: IngredientUpdate): Promise<void>
+
+    getStockByKeys(
+        sellerId: SellerId,
+        keys: ReadonlyArray<string>,
+    ): Promise<Record<string, RawStockEntry>>
+
+    getRequiredForSellerOrder(sellerOrderId: SellerOrderId): Promise<RequiredIngredient[]>
+
+    decrementStockByKey(sellerId: SellerId, key: string, amount: number): Promise<void>
 }

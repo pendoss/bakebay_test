@@ -8,7 +8,13 @@ import type {
     CustomerOrderStorage,
     SellerOrderStorage,
 } from '@/src/application/ports/customer-order-storage'
+import type {IngredientStorage} from '@/src/application/ports/ingredient-storage'
+import type {IngredientReservationStorage} from '@/src/application/ports/ingredient-reservation-storage'
 import {computeDerivedStatus} from '@/src/domain/customer-order'
+import {checkSellerOrderStock} from './stock/check-stock'
+import {reserveSellerOrderStock} from './stock/reserve-stock'
+import {consumeSellerOrderStock} from './stock/consume-stock'
+import {releaseSellerOrderStock} from './stock/release-stock'
 
 export class SellerOrderOwnershipError extends Error {
     constructor(id: SellerOrderId, sellerId: SellerId) {
@@ -23,9 +29,15 @@ export interface AdvanceSellerOrderStatusInput {
     readonly next: SellerOrderStatus
 }
 
+export interface StockDeps {
+    ingredientStorage: IngredientStorage
+    reservationStorage: IngredientReservationStorage
+}
+
 export interface AdvanceSellerOrderStatusDeps {
     sellerOrderStorage: SellerOrderStorage
     customerOrderStorage: CustomerOrderStorage
+    stock?: StockDeps
 }
 
 export async function advanceSellerOrderStatus(
@@ -37,8 +49,44 @@ export async function advanceSellerOrderStatus(
     if (order.sellerId !== input.actingSellerId) {
         throw new SellerOrderOwnershipError(input.sellerOrderId, input.actingSellerId)
     }
-    assertTransition(order.status, input.next)
-    await deps.sellerOrderStorage.updateStatus(input.sellerOrderId, input.next)
+
+    const stock = deps.stock
+    let target = input.next
+
+    if (stock && target === 'preparing' && order.status === 'paid') {
+        const report = await checkSellerOrderStock(
+            {sellerOrderId: input.sellerOrderId},
+            {sellerOrderStorage: deps.sellerOrderStorage, ...stock},
+        )
+        if (report.overall === 'missing') target = 'preparing_blocked'
+    }
+
+    assertTransition(order.status, target)
+    await deps.sellerOrderStorage.updateStatus(input.sellerOrderId, target)
+
+    if (stock) {
+        if (target === 'confirmed') {
+            await reserveSellerOrderStock(
+                {sellerOrderId: input.sellerOrderId},
+                {sellerOrderStorage: deps.sellerOrderStorage, ...stock},
+            )
+            await checkSellerOrderStock(
+                {sellerOrderId: input.sellerOrderId},
+                {sellerOrderStorage: deps.sellerOrderStorage, ...stock},
+            )
+        } else if (target === 'ready_to_ship') {
+            await consumeSellerOrderStock(
+                {sellerOrderId: input.sellerOrderId},
+                {sellerOrderStorage: deps.sellerOrderStorage, ...stock},
+            )
+        } else if (target === 'cancelled') {
+            await releaseSellerOrderStock(
+                {sellerOrderId: input.sellerOrderId},
+                {reservationStorage: stock.reservationStorage},
+            )
+        }
+    }
+
     await recomputeDerivedStatus(order.customerOrderId, deps)
 }
 
