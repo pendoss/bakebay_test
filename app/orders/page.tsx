@@ -12,19 +12,14 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/c
 import {OrderCard} from '@/components/order-card'
 import {Filter} from 'lucide-react'
 
-// Определение типа для заказов
 export type OrderStatus =
-    'ordering'
+    | 'ordering'
     | 'processing'
     | 'payed'
     | 'processed'
     | 'in_progress'
     | 'delivering'
-    | 'delivered'
-    | 'placed'
-    | 'confirmed'
-    | 'preparing'
-    | 'cancelled';
+    | 'delivered';
 
 
 // order_id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -102,26 +97,33 @@ const OrdersPage = observer(function OrdersPage() {
                     items: order.items || [],
                     images: order.images || [],
                     statusHistory: [
-                        {status: 'placed', date: order.date, completed: true},
+                        {status: 'ordering', date: order.date, completed: true},
                         {
-                            status: 'confirmed',
+                            status: 'processing',
                             date: order.status === 'ordering' ? null : order.date,
-                            completed: order.status !== 'ordering'
+                            completed: order.status !== 'ordering',
                         },
                         {
-                            status: 'preparing',
+                            status: 'payed',
                             date: ['ordering', 'processing'].includes(order.status) ? null : order.date,
-                            completed: !['ordering', 'processing'].includes(order.status)
+                            completed: !['ordering', 'processing'].includes(order.status),
+                        },
+                        {
+                            status: 'in_progress',
+                            date: ['ordering', 'processing', 'payed', 'processed'].includes(order.status)
+                                ? null
+                                : order.date,
+                            completed: !['ordering', 'processing', 'payed', 'processed'].includes(order.status),
                         },
                         {
                             status: 'delivering',
                             date: ['delivering', 'delivered'].includes(order.status) ? order.date : null,
-                            completed: ['delivering', 'delivered'].includes(order.status)
+                            completed: ['delivering', 'delivered'].includes(order.status),
                         },
                         {
                             status: 'delivered',
                             date: order.status === 'delivered' ? order.date : null,
-                            completed: order.status === 'delivered'
+                            completed: order.status === 'delivered',
                         },
                     ]
                 }))
