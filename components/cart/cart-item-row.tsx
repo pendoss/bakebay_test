@@ -1,8 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {Loader2, MessageSquarePlus, Minus, Plus, Trash2, X} from 'lucide-react'
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react'
+import {Info, Loader2, MessageSquarePlus, Minus, Plus, Trash2, X} from 'lucide-react'
+import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover'
 import {Textarea} from '@/components/ui/textarea'
 import {type CartItem, type CartItemOptionSelection} from '@/src/domain/cart'
 import {useCartActions} from '@/src/adapters/ui/react/stores'
@@ -265,32 +266,77 @@ function OptionSection({group, selectedValueId, onSelect}: OptionSectionProps) {
 }
 
 function Segmented({group, selectedValueId, onSelect}: OptionSectionProps) {
+    const containerRef = useRef<HTMLDivElement | null>(null)
+    const [indicator, setIndicator] = useState<{x: number; w: number; ready: boolean}>({
+        x: 0,
+        w: 0,
+        ready: false,
+    })
+
+    useLayoutEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+        if (selectedValueId === undefined) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- reset indicator
+            setIndicator((prev) => ({...prev, ready: false}))
+            return
+        }
+        const measure = () => {
+            const btn = container.querySelector<HTMLButtonElement>(
+                `[data-seg-value="${selectedValueId}"]`,
+            )
+            if (!btn) return
+            const cr = container.getBoundingClientRect()
+            const br = btn.getBoundingClientRect()
+            setIndicator({x: br.left - cr.left - 4, w: br.width, ready: true})
+        }
+        measure()
+
+        const resizeObserver = new ResizeObserver(measure)
+        resizeObserver.observe(container)
+        for (const btn of Array.from(container.querySelectorAll('button'))) {
+            resizeObserver.observe(btn)
+        }
+        return () => resizeObserver.disconnect()
+    }, [selectedValueId, group.values])
+
     return (
         <div
             role='radiogroup'
-            className='inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/30 p-1'
+            ref={containerRef}
+            className='relative inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/30 p-1'
         >
+            <span
+                aria-hidden='true'
+                className='pointer-events-none absolute top-1 bottom-1 left-1 rounded-lg bg-primary shadow-[0_2px_6px_rgba(224,102,128,0.35)]'
+                style={{
+                    transform: `translateX(${indicator.x}px)`,
+                    width: indicator.w,
+                    opacity: indicator.ready ? 1 : 0,
+                    transition:
+                        'transform 320ms cubic-bezier(.5,1.4,.4,1), width 320ms cubic-bezier(.5,1.4,.4,1), opacity 200ms ease',
+                }}
+            />
             {group.values.map((v) => {
                 const active = selectedValueId === v.id
                 return (
                     <button
                         key={v.id}
+                        data-seg-value={v.id}
                         type='button'
                         role='radio'
                         aria-checked={active}
                         onClick={() => onSelect(v)}
                         className={[
-                            'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition',
-                            active
-                                ? 'bg-primary text-primary-foreground shadow-[0_2px_6px_rgba(224,102,128,0.35)]'
-                                : 'text-foreground/80 hover:text-foreground hover:bg-white/70',
+                            'relative z-10 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-colors duration-200',
+                            active ? 'text-primary-foreground' : 'text-foreground/80 hover:text-foreground',
                         ].join(' ')}
                     >
                         <span>{v.label}</span>
                         {v.priceDelta !== 0 && (
                             <span
                                 className={[
-                                    'text-[11px] tabular-nums font-medium',
+                                    'text-[11px] tabular-nums font-medium transition-colors',
                                     active ? 'text-primary-foreground/80' : 'text-muted-foreground',
                                 ].join(' ')}
                             >
@@ -315,35 +361,60 @@ interface BreakdownProps {
 function Breakdown({basePrice, selections, quantity, total}: BreakdownProps) {
     const nonZero = selections.filter((s) => s.priceDelta !== 0)
     return (
-        <div className='flex flex-col items-end gap-1 min-w-0 max-md:items-start'>
-            <div className='flex flex-wrap justify-end gap-x-3 gap-y-1 tabular-nums max-md:justify-start'>
-                <BreakdownRow label='Базовая' value={`${basePrice.toLocaleString('ru-RU')} ₽`}/>
-                {nonZero.map((s) => (
-                    <BreakdownRow
-                        key={`${s.groupId}-${s.valueId}`}
-                        label={s.groupName}
-                        value={`${s.priceDelta > 0 ? '+' : ''}${s.priceDelta.toLocaleString('ru-RU')} ₽`}
-                    />
-                ))}
-                {quantity > 1 && <BreakdownRow label={`× ${quantity}`} value=''/>}
-            </div>
-            <div className='mt-1 flex items-baseline gap-2'>
-                <span className='text-[10px] uppercase tracking-[0.08em] text-muted-foreground'>Итого</span>
-                <span className='text-xl font-semibold tracking-tight text-foreground tabular-nums'>
-                    {fmt(total)}
-                    <span className='ml-1 text-sm font-normal text-muted-foreground'>руб.</span>
-                </span>
-            </div>
+        <div className='flex items-baseline gap-2 justify-end min-w-0 max-md:justify-start'>
+            <span className='text-[10px] uppercase tracking-[0.08em] text-muted-foreground'>Итого</span>
+            <span className='text-xl font-semibold tracking-tight text-foreground tabular-nums'>
+                {fmt(total)}
+                <span className='ml-1 text-sm font-normal text-muted-foreground'>руб.</span>
+            </span>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <button
+                        type='button'
+                        aria-label='Разбивка стоимости'
+                        className='inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 hover:text-foreground hover:bg-muted transition'
+                    >
+                        <Info className='h-3.5 w-3.5'/>
+                    </button>
+                </PopoverTrigger>
+                <PopoverContent
+                    align='end'
+                    side='bottom'
+                    className='w-64 p-3 text-[13px]'
+                >
+                    <ul className='space-y-1.5 tabular-nums'>
+                        <BreakdownRow label='Базовая' value={`${basePrice.toLocaleString('ru-RU')} ₽`}/>
+                        {nonZero.map((s) => (
+                            <BreakdownRow
+                                key={`${s.groupId}-${s.valueId}`}
+                                label={s.groupName}
+                                value={`${s.priceDelta > 0 ? '+' : ''}${s.priceDelta.toLocaleString('ru-RU')} ₽`}
+                            />
+                        ))}
+                        {quantity > 1 && (
+                            <BreakdownRow label={`× ${quantity}`} value=''/>
+                        )}
+                        <li className='h-px bg-border my-1.5'/>
+                        <li className='flex items-baseline justify-between gap-3 font-semibold'>
+                            <span>Итого</span>
+                            <span>
+                                {fmt(total)}
+                                <span className='ml-1 text-muted-foreground font-normal'>руб.</span>
+                            </span>
+                        </li>
+                    </ul>
+                </PopoverContent>
+            </Popover>
         </div>
     )
 }
 
 function BreakdownRow({label, value}: {label: string; value: string}) {
     return (
-        <span className='inline-flex items-baseline gap-1.5 text-[11px] text-muted-foreground'>
-            <span>{label}</span>
-            {value && <span className='text-foreground/80'>{value}</span>}
-        </span>
+        <li className='flex items-baseline justify-between gap-3 text-muted-foreground'>
+            <span className='truncate'>{label}</span>
+            {value && <span className='text-foreground/80 whitespace-nowrap'>{value}</span>}
+        </li>
     )
 }
 
