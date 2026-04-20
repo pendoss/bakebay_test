@@ -18,6 +18,7 @@ import {
     type ClientSelectionDTO,
     type LibraryIngredientDTO,
 } from '@/src/adapters/ui/react/hooks/use-seller-order-item-context'
+import {StockReportPanel} from '@/components/stock-report-panel'
 
 interface CustomizationChatProps {
     threadId: number
@@ -327,13 +328,18 @@ export function CustomizationChat({threadId, viewerRole, sellerOrderId, onAfterC
                         </div>
 
                         {viewerRole === 'seller' && ctx?.viewerIsOwningSeller && (
-                            <OfferComposer
-                                unitPrice={ctx.item.unitPrice}
-                                clientSelections={ctx.optionSelections}
-                                library={ctx.library}
-                                busy={busy}
-                                onSubmit={handleOffer}
-                            />
+                            <>
+                                {sellerOrderId !== undefined && (
+                                    <StockReportPanel sellerOrderId={sellerOrderId}/>
+                                )}
+                                <OfferComposer
+                                    unitPrice={ctx.item.unitPrice}
+                                    clientSelections={ctx.optionSelections}
+                                    library={ctx.library}
+                                    busy={busy}
+                                    onSubmit={handleOffer}
+                                />
+                            </>
                         )}
                     </>
                 )}

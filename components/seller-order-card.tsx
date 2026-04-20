@@ -9,6 +9,7 @@ import {Separator} from '@/components/ui/separator'
 import {Button} from '@/components/ui/button'
 import {CustomizationChat} from '@/components/customization-chat'
 import {PaymentDialog} from '@/components/payment-dialog'
+import {StockReportPanel} from '@/components/stock-report-panel'
 import type {SellerOrderDTO} from '@/src/adapters/ui/react/hooks/use-customer-orders'
 
 export function chatInboxHref(viewerRole: 'customer' | 'seller', threadId: number): string {
@@ -58,6 +59,9 @@ export function SellerOrderCard({sub, viewerRole = 'customer', onChanged}: Selle
     const [payOpen, setPayOpen] = useState(false)
     const firstThreadId = sub.items.find((it) => it.customizationThreadId !== null)?.customizationThreadId ?? null
     const canPay = viewerRole === 'customer' && sub.status === 'confirmed'
+    const showStockForSeller =
+        viewerRole === 'seller' &&
+        (sub.status === 'paid' || sub.status === 'preparing' || sub.status === 'preparing_blocked')
 
     return (
         <Card className='overflow-hidden border-lavender-dessert/30'>
@@ -133,6 +137,12 @@ export function SellerOrderCard({sub, viewerRole = 'customer', onChanged}: Selle
                 </ul>
                 {sub.status === 'cancelled' && sub.cancelReason && (
                     <p className='text-sm text-muted-foreground'>Причина отмены: {sub.cancelReason}</p>
+                )}
+                {showStockForSeller && (
+                    <StockReportPanel
+                        sellerOrderId={sub.id}
+                        title={sub.status === 'preparing_blocked' ? 'Нужна докупка' : 'Резерв по складу'}
+                    />
                 )}
             </CardContent>
             {canPay && (

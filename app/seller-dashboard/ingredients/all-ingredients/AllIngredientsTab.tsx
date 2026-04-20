@@ -115,9 +115,10 @@ export const AllIngredientsTab = observer(function AllIngredientsTab() {
                     <div className='text-center py-8'>Загрузка ингредиентов...</div>
                 ) : (
                     <div className='rounded-md border overflow-x-auto'>
-                        <div className='grid grid-cols-12 gap-2 p-4 font-medium border-b min-w-[800px]'>
+                        <div className='grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-4 font-medium border-b min-w-[880px]'>
                             <div className='col-span-2'>Название</div>
                             <div className='col-span-1'>В наличии</div>
+                            <div className='col-span-1'>Зарез.</div>
                             <div className='col-span-1'>Ед.</div>
                             <div className='col-span-2'>Объем закупки</div>
                             <div className='col-span-2'>Цена закупки</div>
@@ -127,7 +128,7 @@ export const AllIngredientsTab = observer(function AllIngredientsTab() {
                             <div className='col-span-1'></div>
                         </div>
 
-                        <div className='divide-y min-w-[800px]'>
+                        <div className='divide-y min-w-[880px]'>
                             {filtered.length > 0 ? (
                                 filtered.map(ingredient => {
                                     const isEditing = editingId === ingredient.ingredient_id
@@ -142,7 +143,7 @@ export const AllIngredientsTab = observer(function AllIngredientsTab() {
                                     return (
                                         <div
                                             key={ingredient.ingredient_id}
-                                            className='grid grid-cols-12 gap-2 p-3 items-center'
+                                            className='grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-3 items-center'
                                         >
                                             <div className='col-span-2 font-medium'>{ingredient.name}</div>
 
@@ -160,6 +161,10 @@ export const AllIngredientsTab = observer(function AllIngredientsTab() {
                                                 ) : (
                                                     ingredient.stock
                                                 )}
+                                            </div>
+
+                                            <div className='col-span-1 text-sm text-muted-foreground'>
+                                                {ingredient.reserved > 0 ? ingredient.reserved : '—'}
                                             </div>
 
                                             <div className='col-span-1'>{ingredient.unit}</div>
@@ -262,7 +267,7 @@ export const AllIngredientsTab = observer(function AllIngredientsTab() {
                                     )
                                 })
                             ) : (
-                                <div className='text-center py-8 col-span-12'>Ингредиенты не найдены</div>
+                                <div className='text-center py-8'>Ингредиенты не найдены</div>
                             )}
                         </div>
                     </div>
