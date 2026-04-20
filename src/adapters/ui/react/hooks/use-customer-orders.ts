@@ -127,3 +127,14 @@ export async function requestRefund(sellerOrderId: number, reason: string): Prom
         throw new Error(err.error ?? `Refund request failed (${res.status})`)
     }
 }
+
+export async function approveRefund(sellerOrderId: number): Promise<void> {
+    const res = await fetch(`/api/seller-orders/${sellerOrderId}/refund-approve`, {
+        method: 'POST',
+        credentials: 'include',
+    })
+    if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(err.error ?? `Refund approve failed (${res.status})`)
+    }
+}

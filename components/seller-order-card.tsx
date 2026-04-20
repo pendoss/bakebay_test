@@ -11,7 +11,7 @@ import {CustomizationChat} from '@/components/customization-chat'
 import {PaymentDialog} from '@/components/payment-dialog'
 import {StockReportPanel} from '@/components/stock-report-panel'
 import type {SellerOrderDTO} from '@/src/adapters/ui/react/hooks/use-customer-orders'
-import {requestRefund} from '@/src/adapters/ui/react/hooks/use-customer-orders'
+import {approveRefund, requestRefund} from '@/src/adapters/ui/react/hooks/use-customer-orders'
 import {Textarea} from '@/components/ui/textarea'
 
 export function chatInboxHref(viewerRole: 'customer' | 'seller', threadId: number): string {
@@ -165,10 +165,22 @@ export function SellerOrderCard({sub, viewerRole = 'customer', onChanged}: Selle
                     />
                 )}
                 {sub.refundState === 'requested' && (
-                    <div className='rounded border border-caramel-light/60 bg-caramel-light/20 p-3 text-sm space-y-1'>
+                    <div className='rounded border border-caramel-light/60 bg-caramel-light/20 p-3 text-sm space-y-2'>
                         <div className='font-medium'>Запрошен возврат</div>
                         {sub.refundReason && (
                             <div className='text-xs text-muted-foreground'>Причина: {sub.refundReason}</div>
+                        )}
+                        {viewerRole === 'seller' && (
+                            <Button
+                                size='sm'
+                                variant='destructive'
+                                onClick={async () => {
+                                    await approveRefund(sub.id)
+                                    onChanged?.()
+                                }}
+                            >
+                                Одобрить возврат
+                            </Button>
                         )}
                     </div>
                 )}
