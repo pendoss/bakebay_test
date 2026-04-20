@@ -1,8 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import {useEffect, useMemo, useState} from 'react'
-import {MessageSquarePlus, Minus, Pencil, Plus, Trash2, X} from 'lucide-react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {Loader2, MessageSquarePlus, Minus, Pencil, Plus, Trash2, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Card} from '@/components/ui/card'
 import {Textarea} from '@/components/ui/textarea'
@@ -22,47 +22,88 @@ interface Props {
     item: CartItem
 }
 
+const COMMIT_DELAY_MS = 350
+
 export function CartItemRow({item}: Props) {
     const lineId = cartLineId(item)
     const {updateQuantity, removeItem, addItem} = useCartActions()
     const productId = item.productId as unknown as number
     const {groups, loading, error} = useProductOptions(productId)
 
-    const currentDelta = useMemo(
-        () => (item.optionSelections ?? []).reduce((s, o) => s + o.priceDelta, 0),
-        [item.optionSelections],
+    // Локальные «draft» выборы — сразу обновляются при клике, чтобы UI
+    // не мерцал в ожидании коммита в стор.
+    const [draftSelections, setDraftSelections] = useState<CartItemOptionSelection[]>(
+        () => item.optionSelections ?? [],
     )
-    const basePrice = item.price - currentDelta
+    const [pending, setPending] = useState(false)
+    const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-    const replaceLine = (selections: CartItemOptionSelection[], nextNote: string) => {
-        const newUnitPrice = basePrice + selections.reduce((s, o) => s + o.priceDelta, 0)
-        removeItem(lineId)
-        addItem(
-            {
-                productId: item.productId,
-                name: item.name,
-                price: newUnitPrice,
-                image: item.image,
-                seller: item.seller,
-                optionSelections: selections.length > 0 ? selections : undefined,
-                customerNote: nextNote.trim() || undefined,
-            },
-            item.quantity,
-        )
-    }
+    useEffect(() => {
+        // Когда строка пересоздаётся после коммита, подтягиваем новое item.
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local draft with store
+        setDraftSelections(item.optionSelections ?? [])
+    }, [item.optionSelections])
+
+    useEffect(() => {
+        return () => {
+            if (commitTimerRef.current) clearTimeout(commitTimerRef.current)
+        }
+    }, [])
+
+    const basePrice = useMemo(() => {
+        const currentDelta = (item.optionSelections ?? []).reduce((s, o) => s + o.priceDelta, 0)
+        return item.price - currentDelta
+    }, [item.optionSelections, item.price])
+
+    const draftDelta = useMemo(
+        () => draftSelections.reduce((s, o) => s + o.priceDelta, 0),
+        [draftSelections],
+    )
+    const draftUnitPrice = basePrice + draftDelta
+
+    const commit = useCallback(
+        (selections: CartItemOptionSelection[], nextNote: string) => {
+            const newUnitPrice = basePrice + selections.reduce((s, o) => s + o.priceDelta, 0)
+            removeItem(lineId)
+            addItem(
+                {
+                    productId: item.productId,
+                    name: item.name,
+                    price: newUnitPrice,
+                    image: item.image,
+                    seller: item.seller,
+                    optionSelections: selections.length > 0 ? selections : undefined,
+                    customerNote: nextNote.trim() || undefined,
+                },
+                item.quantity,
+            )
+        },
+        [addItem, basePrice, item.image, item.name, item.productId, item.quantity, item.seller, lineId, removeItem],
+    )
+
+    const scheduleCommit = useCallback(
+        (selections: CartItemOptionSelection[], nextNote: string) => {
+            if (commitTimerRef.current) clearTimeout(commitTimerRef.current)
+            setPending(true)
+            commitTimerRef.current = setTimeout(() => {
+                commit(selections, nextNote)
+                // pending сбросится при remount — не трогаем setPending, потому
+                // что компонент может размонтироваться к этому моменту.
+            }, COMMIT_DELAY_MS)
+        },
+        [commit],
+    )
 
     const toggleOption = (group: ProductOptionGroupDTO, value: ProductOptionValueDTO) => {
-        const current = item.optionSelections ?? []
-        const isActive = current.some((o) => o.groupId === group.id && o.valueId === value.id)
+        const isActive = draftSelections.some((o) => o.groupId === group.id && o.valueId === value.id)
 
         let next: CartItemOptionSelection[]
         if (isActive) {
-            // Required-группу нельзя оставить без значения; необязательную — можно снять.
             if (group.required) return
-            next = current.filter((o) => o.groupId !== group.id)
+            next = draftSelections.filter((o) => o.groupId !== group.id)
         } else {
             next = [
-                ...current.filter((o) => o.groupId !== group.id),
+                ...draftSelections.filter((o) => o.groupId !== group.id),
                 {
                     groupId: group.id,
                     groupName: group.name,
@@ -72,7 +113,15 @@ export function CartItemRow({item}: Props) {
                 },
             ]
         }
-        replaceLine(next, item.customerNote ?? '')
+        setDraftSelections(next)
+        scheduleCommit(next, item.customerNote ?? '')
+    }
+
+    const commitNoteNow = (nextNote: string) => {
+        if ((item.customerNote ?? '') === nextNote.trim()) return
+        if (commitTimerRef.current) clearTimeout(commitTimerRef.current)
+        setPending(true)
+        commit(draftSelections, nextNote)
     }
 
     return (
@@ -88,8 +137,11 @@ export function CartItemRow({item}: Props) {
                             <h3 className='font-semibold text-lg truncate'>{item.name}</h3>
                             <p className='text-sm text-muted-foreground'>Продавец: {item.seller}</p>
                         </div>
-                        <div className='text-lg font-semibold whitespace-nowrap'>
-                            {(item.price * item.quantity).toFixed(2)} руб.
+                        <div className='text-lg font-semibold whitespace-nowrap flex items-center gap-2'>
+                            {pending && (
+                                <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' aria-label='Обновляем'/>
+                            )}
+                            {(draftUnitPrice * item.quantity).toFixed(2)} руб.
                         </div>
                     </div>
 
@@ -99,7 +151,7 @@ export function CartItemRow({item}: Props) {
                                 <OptionChipRow
                                     key={g.id}
                                     group={g}
-                                    selectedValueId={item.optionSelections?.find((o) => o.groupId === g.id)?.valueId}
+                                    selectedValueId={draftSelections.find((o) => o.groupId === g.id)?.valueId}
                                     onSelect={(v) => toggleOption(g, v)}
                                 />
                             ))}
@@ -107,7 +159,10 @@ export function CartItemRow({item}: Props) {
                     )}
 
                     {loading && groups.length === 0 && (
-                        <p className='text-xs text-muted-foreground'>Загружаем параметры…</p>
+                        <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                            <Loader2 className='h-3.5 w-3.5 animate-spin'/>
+                            Загружаем параметры…
+                        </div>
                     )}
                     {error && (
                         <p className='text-xs text-destructive'>Не удалось загрузить параметры.</p>
@@ -115,10 +170,7 @@ export function CartItemRow({item}: Props) {
 
                     <NoteField
                         initialNote={item.customerNote ?? ''}
-                        onCommit={(next) => {
-                            if ((item.customerNote ?? '') === next.trim()) return
-                            replaceLine(item.optionSelections ?? [], next)
-                        }}
+                        onCommit={(next) => commitNoteNow(next)}
                     />
 
                     <div className='flex flex-wrap justify-between items-center gap-2 pt-1'>
