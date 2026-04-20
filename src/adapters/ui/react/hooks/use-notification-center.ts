@@ -1,6 +1,8 @@
 'use client'
 
 import {useCallback, useEffect, useRef, useState} from 'react'
+import {useNotifications} from '@/contexts/notification-context'
+import type {NotificationType} from '@/lib/notifications'
 
 export type NotificationKindDTO =
     | 'chat_message'
@@ -43,11 +45,39 @@ interface FetchedListResponse {
 
 const MAX_KEEP = 100
 
+// Дедупим показ тостов между несколькими параллельными подписчиками
+// (например, bell + страница /notifications) — SSE по одному пользователю
+// шлёт одно и то же, но каждый instance hook получит событие независимо.
+const toastSeenIds = new Set<number>()
+
+function toastTypeFor(kind: NotificationKindDTO, severity: NotificationSeverityDTO): NotificationType {
+    if (kind === 'ingredient_out') return 'ingredient_out'
+    if (kind === 'ingredient_low') return 'ingredient_low'
+    if (kind === 'chat_message' || kind === 'chat_offer') return 'order_status'
+    if (kind === 'customer_accept' || kind === 'chat_finalized') return 'new_order'
+    if (kind === 'refund_requested') return 'order_status'
+    if (kind === 'refund_approved') return 'order_status'
+    if (kind === 'seller_order_paid_reminder') return 'order_status'
+    if (severity === 'error') return 'ingredient_out'
+    if (severity === 'warning') return 'ingredient_low'
+    if (severity === 'success') return 'new_order'
+    return 'order_status'
+}
+
+function stripMd(input: string): string {
+    return input
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/`([^`]+)`/g, '$1')
+        .trim()
+}
+
 export function useNotificationCenter() {
     const [notifications, setNotifications] = useState<NotificationDTO[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [connected, setConnected] = useState(false)
     const sourceRef = useRef<EventSource | null>(null)
+    const {notify} = useNotifications()
+    const seededSince = useRef<number | null>(null)
 
     const merge = useCallback((incoming: NotificationDTO) => {
         setNotifications((prev) => {
@@ -65,6 +95,14 @@ export function useNotificationCenter() {
             const data = (await res.json()) as FetchedListResponse
             setNotifications(data.notifications)
             setUnreadCount(data.unreadCount)
+            // Всё, что было при первой загрузке, — baseline: не поднимаем
+            // тосты ретроактивно. Только действительно новые события SSE
+            // будут показаны как тост.
+            if (seededSince.current === null) {
+                const maxId = data.notifications.reduce((m, n) => (n.id > m ? n.id : m), 0)
+                seededSince.current = maxId
+                for (const n of data.notifications) toastSeenIds.add(n.id)
+            }
         } catch {
             /* offline / mocked-fetch — keep current state */
         }
@@ -80,6 +118,18 @@ export function useNotificationCenter() {
         source.addEventListener('notification', (event) => {
             const data = JSON.parse((event as MessageEvent).data) as NotificationDTO
             merge(data)
+            // Тост показываем один раз на уведомление, даже если параллельно
+            // работают несколько инстансов хука. Baseline (loaded snapshot)
+            // тостами не поднимаем.
+            const seededBefore = seededSince.current ?? 0
+            if (data.id > seededBefore && !toastSeenIds.has(data.id)) {
+                toastSeenIds.add(data.id)
+                notify(toastTypeFor(data.kind, data.severity), {
+                    title: stripMd(data.titleMd),
+                    description: stripMd(data.bodyMd),
+                    deeplink: data.actions[0]?.href,
+                })
+            }
             void fetch(`/api/notifications/${data.id}/ack`, {method: 'POST', credentials: 'include'}).catch(() => {})
         })
         source.onerror = () => setConnected(false)
@@ -87,7 +137,7 @@ export function useNotificationCenter() {
             source.close()
             sourceRef.current = null
         }
-    }, [merge, reload])
+    }, [merge, notify, reload])
 
     const markRead = useCallback(async (id: number) => {
         await fetch(`/api/notifications/${id}/read`, {method: 'POST', credentials: 'include'})

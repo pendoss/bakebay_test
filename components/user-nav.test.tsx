@@ -2,9 +2,14 @@ import '@testing-library/jest-dom'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {UserNav} from './user-nav'
 import {RootStoreProvider} from '@/src/adapters/ui/react/stores'
+import {NotificationProvider} from '@/contexts/notification-context'
 
 function renderWithUser(ui: React.ReactElement) {
-    return render(<RootStoreProvider>{ui}</RootStoreProvider>)
+    return render(
+        <RootStoreProvider>
+            <NotificationProvider>{ui}</NotificationProvider>
+        </RootStoreProvider>,
+    )
 }
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
