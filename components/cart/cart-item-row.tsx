@@ -220,22 +220,22 @@ export function CartItemRow({item}: Props) {
                         </button>
                     </div>
 
-                    {/* breakdown */}
-                    <Breakdown
-                        basePrice={basePrice}
-                        selections={draftSelections}
-                        quantity={item.quantity}
-                        total={draftTotal}
-                    />
-
-                    <button
-                        type='button'
-                        onClick={() => removeItem(item.clientId)}
-                        className='inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary transition hover:bg-primary/10 shrink-0'
-                    >
-                        <Trash2 className='h-4 w-4'/>
-                        Удалить
-                    </button>
+                    <div className='flex items-center gap-4 ml-auto'>
+                        <Breakdown
+                            basePrice={basePrice}
+                            selections={draftSelections}
+                            quantity={item.quantity}
+                            total={draftTotal}
+                        />
+                        <button
+                            type='button'
+                            onClick={() => removeItem(item.clientId)}
+                            className='inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary transition hover:bg-primary/10 shrink-0'
+                        >
+                            <Trash2 className='h-4 w-4'/>
+                            Удалить
+                        </button>
+                    </div>
                 </footer>
             </div>
         </article>
