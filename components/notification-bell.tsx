@@ -26,13 +26,21 @@ function formatTime(iso: string): string {
 }
 
 export function NotificationBell() {
-    const {notifications, unreadCount, markRead, markAllRead} = useNotificationCenter()
+    const {notifications, unreadCount, connected, markRead, markAllRead} = useNotificationCenter()
+
+    const dotTone = connected ? 'bg-green-500' : 'bg-muted-foreground'
+    const dotTitle = connected ? 'Подключено' : 'Нет соединения'
 
     return (
         <Popover>
             <PopoverTrigger asChild>
                 <Button variant='ghost' size='icon' className='relative' aria-label='Уведомления'>
                     <Bell className='h-5 w-5'/>
+                    <span
+                        title={dotTitle}
+                        aria-label={dotTitle}
+                        className={`absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full ${dotTone}`}
+                    />
                     {unreadCount > 0 && (
                         <Badge
                             variant='destructive'
@@ -45,7 +53,15 @@ export function NotificationBell() {
             </PopoverTrigger>
             <PopoverContent align='end' className='w-96 p-0'>
                 <div className='flex items-center justify-between border-b p-3'>
-                    <span className='font-semibold'>Уведомления</span>
+                    <div className='flex items-center gap-2'>
+                        <span className='font-semibold'>Уведомления</span>
+                        <span
+                            title={dotTitle}
+                            aria-label={dotTitle}
+                            className={`h-2 w-2 rounded-full ${dotTone}`}
+                        />
+                        <span className='text-xs text-muted-foreground'>{connected ? 'онлайн' : 'офлайн'}</span>
+                    </div>
                     {unreadCount > 0 && (
                         <Button variant='ghost' size='sm' className='h-8 gap-1' onClick={() => markAllRead()}>
                             <CheckCheck className='h-4 w-4'/>

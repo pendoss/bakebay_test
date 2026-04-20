@@ -1,16 +1,17 @@
 import 'server-only'
-import {eq} from 'drizzle-orm'
+import {and, eq, sql} from 'drizzle-orm'
 import {
     customerOrders,
     db,
     notificationCenterDrizzle,
+    notifications,
     sellerOrderItems,
     sellerOrders,
     sellers,
 } from '@/src/adapters/storage/drizzle'
 import {sharedEventEmitterBus} from '@/src/adapters/notifications/event-emitter-bus'
 import {notifyRecipient} from '@/src/application/use-cases/notification'
-import type {NotificationDraft} from '@/src/domain/notification'
+import type {NotificationDraft, NotificationKind} from '@/src/domain/notification'
 import {asUserId, type SellerOrderId, type UserId} from '@/src/domain/shared/id'
 
 export interface ThreadParticipants {
@@ -72,4 +73,28 @@ export async function dispatchNotification(draft: NotificationDraft): Promise<vo
         notificationCenter: notificationCenterDrizzle(),
         notificationBus: sharedEventEmitterBus(),
     })
+}
+
+export interface DedupQuery {
+    readonly recipientUserId: UserId
+    readonly kind: NotificationKind
+    readonly metaKey: string
+    readonly metaValue: string
+    readonly windowHours: number
+}
+
+export async function hasRecentNotification(query: DedupQuery): Promise<boolean> {
+    const rows = await db
+        .select({id: notifications.notification_id})
+        .from(notifications)
+        .where(
+            and(
+                eq(notifications.recipient_user_id, query.recipientUserId as unknown as number),
+                eq(notifications.kind, query.kind),
+                sql`${notifications.created_at} >= now() - (${query.windowHours} || ' hours')::interval`,
+                sql`${notifications.meta} ->> ${query.metaKey} = ${query.metaValue}`,
+            ),
+        )
+        .limit(1)
+    return rows.length > 0
 }

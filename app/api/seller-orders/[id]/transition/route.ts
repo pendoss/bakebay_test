@@ -17,7 +17,7 @@ import {
     type SellerOrderStatus,
 } from '@/src/domain/seller-order'
 import {getAuthPayload} from '@/app/api/get-auth'
-import {dispatchNotification} from '@/app/api/notifications/_dispatch'
+import {dispatchNotification, hasRecentNotification} from '@/app/api/notifications/_dispatch'
 import {listIngredientsBySeller} from '@/src/application/use-cases/ingredient'
 
 export async function POST(request: Request, {params}: { params: Promise<{ id: string }> }) {
@@ -52,11 +52,21 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
             const ingredients = await listIngredientsBySeller(seller.id, {
                 ingredientStorage: ingredientStorageDrizzle(),
             })
+            const sellerUserId = asUserId(auth.userId)
+            const dedupHours = Number(process.env.NOTIFY_INGREDIENT_DEDUP_HOURS ?? 24)
             const out = ingredients.filter((ing) => ing.status === 'out')
             const low = ingredients.filter((ing) => ing.status === 'low')
             for (const ing of out) {
+                const seen = await hasRecentNotification({
+                    recipientUserId: sellerUserId,
+                    kind: 'ingredient_out',
+                    metaKey: 'ingredientName',
+                    metaValue: ing.name,
+                    windowHours: dedupHours,
+                })
+                if (seen) continue
                 await dispatchNotification({
-                    recipientUserId: asUserId(auth.userId),
+                    recipientUserId: sellerUserId,
                     kind: 'ingredient_out',
                     severity: 'error',
                     titleMd: `**Закончился ингредиент:** ${ing.name}`,
@@ -68,8 +78,16 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
                 })
             }
             for (const ing of low) {
+                const seen = await hasRecentNotification({
+                    recipientUserId: sellerUserId,
+                    kind: 'ingredient_low',
+                    metaKey: 'ingredientName',
+                    metaValue: ing.name,
+                    windowHours: dedupHours,
+                })
+                if (seen) continue
                 await dispatchNotification({
-                    recipientUserId: asUserId(auth.userId),
+                    recipientUserId: sellerUserId,
                     kind: 'ingredient_low',
                     severity: 'warning',
                     titleMd: `**Мало ингредиента:** ${ing.name}`,
