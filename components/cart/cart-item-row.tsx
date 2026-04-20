@@ -2,9 +2,7 @@
 
 import Image from 'next/image'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {Loader2, MessageSquarePlus, Minus, Pencil, Plus, Trash2, X} from 'lucide-react'
-import {Button} from '@/components/ui/button'
-import {Card} from '@/components/ui/card'
+import {Loader2, MessageSquarePlus, Minus, Plus, Trash2, X} from 'lucide-react'
 import {Textarea} from '@/components/ui/textarea'
 import {type CartItem, type CartItemOptionSelection} from '@/src/domain/cart'
 import {useCartActions} from '@/src/adapters/ui/react/stores'
@@ -20,13 +18,14 @@ interface Props {
 
 const COMMIT_DELAY_MS = 350
 
+const fmt = (n: number) =>
+    n.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+
 export function CartItemRow({item}: Props) {
     const {updateQuantity, removeItem, updateItem} = useCartActions()
     const productId = item.productId as unknown as number
     const {groups, loading, error} = useProductOptions(productId)
 
-    // Локальные «draft» выборы — сразу обновляются при клике, чтобы UI
-    // не мерцал в ожидании коммита в стор.
     const [draftSelections, setDraftSelections] = useState<CartItemOptionSelection[]>(
         () => item.optionSelections ?? [],
     )
@@ -44,9 +43,6 @@ export function CartItemRow({item}: Props) {
 
     useEffect(() => {
         if (itemOptionsKey === draftKey) return
-        // Внешнее изменение (например, reset корзины или checkout) —
-        // синхронизируем draft. Собственные коммиты совпадают по key,
-        // поэтому цикла не возникает.
         // eslint-disable-next-line react-hooks/set-state-in-effect -- external sync
         setDraftSelections(item.optionSelections ?? [])
     }, [itemOptionsKey, draftKey, item.optionSelections])
@@ -67,6 +63,7 @@ export function CartItemRow({item}: Props) {
         [draftSelections],
     )
     const draftUnitPrice = basePrice + draftDelta
+    const draftTotal = draftUnitPrice * item.quantity
 
     const commit = useCallback(
         (selections: CartItemOptionSelection[], nextNote: string) => {
@@ -92,7 +89,6 @@ export function CartItemRow({item}: Props) {
 
     const toggleOption = (group: ProductOptionGroupDTO, value: ProductOptionValueDTO) => {
         const isActive = draftSelections.some((o) => o.groupId === group.id && o.valueId === value.id)
-
         let next: CartItemOptionSelection[]
         if (isActive) {
             if (group.required) return
@@ -121,135 +117,233 @@ export function CartItemRow({item}: Props) {
     }
 
     return (
-        <Card className='overflow-hidden'>
-            <div className='flex flex-col sm:flex-row'>
-                <div className='w-full sm:w-32 h-32 relative shrink-0'>
-                    <Image src={item.image || '/placeholder.svg'} alt={item.name} fill className='object-cover'/>
-                </div>
-
-                <div className='flex-1 p-4 min-w-0 space-y-3'>
-                    <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4'>
-                        <div className='min-w-0'>
-                            <h3 className='font-semibold text-lg truncate'>{item.name}</h3>
-                            <p className='text-sm text-muted-foreground'>Продавец: {item.seller}</p>
+        <article className='grid grid-cols-1 md:grid-cols-[260px_1fr] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_30px_-18px_rgba(33,40,54,0.18),0_1px_0_rgba(15,22,36,0.02)]'>
+            {/* hero */}
+            <div className='relative min-h-[180px] md:min-h-full bg-gradient-to-b from-lavender-dessert/30 to-lavender-dessert/10'>
+                <div className='absolute inset-3 overflow-hidden rounded-xl bg-muted/40'>
+                    {item.image ? (
+                        <Image
+                            src={item.image}
+                            alt={item.name}
+                            fill
+                            className='object-cover'
+                            sizes='(max-width: 768px) 100vw, 260px'
+                        />
+                    ) : (
+                        <div className='h-full w-full flex items-center justify-center text-muted-foreground text-xs'>
+                            Нет фото
                         </div>
-                        <div className='text-lg font-semibold whitespace-nowrap flex items-center gap-2'>
+                    )}
+                </div>
+            </div>
+
+            {/* body */}
+            <div className='p-6 flex flex-col gap-4 min-w-0'>
+                <header className='flex items-start justify-between gap-4'>
+                    <div className='min-w-0'>
+                        <h3 className='text-lg font-semibold leading-tight tracking-tight truncate'>
+                            {item.name}
+                        </h3>
+                        <p className='mt-1 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground'>
+                            <span className='h-1.5 w-1.5 rounded-full bg-primary'/>
+                            Продавец:{' '}
+                            <span className='text-foreground font-medium whitespace-nowrap'>{item.seller}</span>
+                        </p>
+                    </div>
+                    <div className='text-right shrink-0'>
+                        <div className='text-xl font-semibold tracking-tight tabular-nums leading-none flex items-center justify-end gap-2'>
                             {pending && (
                                 <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' aria-label='Обновляем'/>
                             )}
-                            {(draftUnitPrice * item.quantity).toFixed(2)} руб.
+                            {fmt(draftUnitPrice)}
+                            <span className='text-sm text-muted-foreground font-normal'>₽</span>
+                        </div>
+                        <div className='mt-1 text-[10px] uppercase tracking-[0.08em] text-muted-foreground'>
+                            за штуку
                         </div>
                     </div>
+                </header>
 
-                    {groups.length > 0 && (
-                        <div className='space-y-2'>
-                            {groups.map((g) => (
-                                <OptionChipRow
-                                    key={g.id}
-                                    group={g}
-                                    selectedValueId={draftSelections.find((o) => o.groupId === g.id)?.valueId}
-                                    onSelect={(v) => toggleOption(g, v)}
-                                />
-                            ))}
+                {groups.length > 0 && (
+                    <div className='flex flex-col gap-3'>
+                        {groups.map((g) => (
+                            <OptionSection
+                                key={g.id}
+                                group={g}
+                                selectedValueId={draftSelections.find((o) => o.groupId === g.id)?.valueId}
+                                onSelect={(v) => toggleOption(g, v)}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {loading && groups.length === 0 && (
+                    <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                        <Loader2 className='h-3.5 w-3.5 animate-spin'/>
+                        Загружаем параметры…
+                    </div>
+                )}
+                {error && <p className='text-xs text-destructive'>Не удалось загрузить параметры.</p>}
+
+                <NoteField
+                    initialNote={item.customerNote ?? ''}
+                    onCommit={(next) => commitNoteNow(next)}
+                />
+
+                <footer className='mt-1 border-t border-border/60 pt-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 max-md:grid-cols-1 max-md:items-stretch'>
+                    {/* qty pill */}
+                    <div
+                        role='group'
+                        aria-label='Количество'
+                        className='inline-flex items-center rounded-full border border-border bg-muted/30 p-1 self-start'
+                    >
+                        <button
+                            type='button'
+                            onClick={() => updateQuantity(item.clientId, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                            aria-label='Уменьшить'
+                            className='h-8 w-8 flex items-center justify-center rounded-full bg-white text-foreground shadow-sm transition active:scale-90 hover:bg-primary/10 hover:text-primary disabled:opacity-40 disabled:hover:bg-white'
+                        >
+                            <Minus className='h-3.5 w-3.5'/>
+                        </button>
+                        <div className='min-w-[40px] text-center font-semibold tabular-nums text-[15px]'>
+                            {item.quantity}
                         </div>
-                    )}
+                        <button
+                            type='button'
+                            onClick={() => updateQuantity(item.clientId, item.quantity + 1)}
+                            aria-label='Увеличить'
+                            className='h-8 w-8 flex items-center justify-center rounded-full bg-white text-foreground shadow-sm transition active:scale-90 hover:bg-primary/10 hover:text-primary'
+                        >
+                            <Plus className='h-3.5 w-3.5'/>
+                        </button>
+                    </div>
 
-                    {loading && groups.length === 0 && (
-                        <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                            <Loader2 className='h-3.5 w-3.5 animate-spin'/>
-                            Загружаем параметры…
-                        </div>
-                    )}
-                    {error && (
-                        <p className='text-xs text-destructive'>Не удалось загрузить параметры.</p>
-                    )}
-
-                    <NoteField
-                        initialNote={item.customerNote ?? ''}
-                        onCommit={(next) => commitNoteNow(next)}
+                    {/* breakdown */}
+                    <Breakdown
+                        basePrice={basePrice}
+                        selections={draftSelections}
+                        quantity={item.quantity}
+                        total={draftTotal}
                     />
 
-                    <div className='flex flex-wrap justify-between items-center gap-2 pt-1'>
-                        <div className='flex items-center'>
-                            <Button
-                                variant='outline'
-                                size='icon'
-                                className='h-8 w-8 rounded-full'
-                                onClick={() => updateQuantity(item.clientId, item.quantity - 1)}
-                                disabled={item.quantity <= 1}
-                            >
-                                <Minus className='h-3 w-3'/>
-                                <span className='sr-only'>Уменьшить количество</span>
-                            </Button>
-                            <span className='w-12 text-center'>{item.quantity}</span>
-                            <Button
-                                variant='outline'
-                                size='icon'
-                                className='h-8 w-8 rounded-full'
-                                onClick={() => updateQuantity(item.clientId, item.quantity + 1)}
-                            >
-                                <Plus className='h-3 w-3'/>
-                                <span className='sr-only'>Увеличить количество</span>
-                            </Button>
-                        </div>
-                        <Button
-                            variant='ghost'
-                            size='sm'
-                            className='text-destructive'
-                            onClick={() => removeItem(item.clientId)}
-                        >
-                            <Trash2 className='h-4 w-4 mr-1'/>
-                            Удалить
-                        </Button>
-                    </div>
-                </div>
+                    <button
+                        type='button'
+                        onClick={() => removeItem(item.clientId)}
+                        className='inline-flex items-center gap-2 self-center rounded-lg px-3 py-2 text-[13px] font-semibold text-primary transition hover:bg-primary/10 justify-self-end max-md:justify-self-start'
+                    >
+                        <Trash2 className='h-4 w-4'/>
+                        Удалить
+                    </button>
+                </footer>
             </div>
-        </Card>
+        </article>
     )
 }
 
-interface OptionChipRowProps {
+interface OptionSectionProps {
     group: ProductOptionGroupDTO
     selectedValueId: number | undefined
     onSelect: (value: ProductOptionValueDTO) => void
 }
 
-function OptionChipRow({group, selectedValueId, onSelect}: OptionChipRowProps) {
+function OptionSection({group, selectedValueId, onSelect}: OptionSectionProps) {
     return (
-        <div>
-            <div className='flex items-baseline gap-2 mb-1'>
-                <span className='text-xs font-medium text-secondary'>{group.name}</span>
+        <div className='flex flex-col gap-1.5'>
+            <div className='flex items-center gap-2 text-[13px] font-semibold text-foreground'>
+                <span>{group.name}</span>
                 {group.required && (
-                    <span className='text-[10px] uppercase tracking-wider text-primary'>обязательно</span>
+                    <span className='inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.04em] font-bold text-primary'>
+                        <span className='h-1 w-1 rounded-full bg-primary ring-2 ring-primary/15'/>
+                        обязательно
+                    </span>
                 )}
             </div>
-            <div className='flex flex-wrap gap-1.5'>
-                {group.values.map((v) => {
-                    const active = selectedValueId === v.id
-                    return (
-                        <button
-                            key={v.id}
-                            type='button'
-                            onClick={() => onSelect(v)}
-                            className={[
-                                'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition',
-                                active
-                                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                    : 'bg-white border-lavender-dessert/60 text-secondary hover:border-primary/40 hover:bg-lavender-dessert/20',
-                            ].join(' ')}
-                        >
-                            <span>{v.label}</span>
-                            {v.priceDelta !== 0 && (
-                                <span className={active ? 'text-primary-foreground/80' : 'text-muted-foreground'}>
-                                    {v.priceDelta > 0 ? '+' : ''}
-                                    {v.priceDelta.toFixed(0)}₽
-                                </span>
-                            )}
-                        </button>
-                    )
-                })}
+            <Segmented group={group} selectedValueId={selectedValueId} onSelect={onSelect}/>
+        </div>
+    )
+}
+
+function Segmented({group, selectedValueId, onSelect}: OptionSectionProps) {
+    return (
+        <div
+            role='radiogroup'
+            className='inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/30 p-1'
+        >
+            {group.values.map((v) => {
+                const active = selectedValueId === v.id
+                return (
+                    <button
+                        key={v.id}
+                        type='button'
+                        role='radio'
+                        aria-checked={active}
+                        onClick={() => onSelect(v)}
+                        className={[
+                            'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap transition',
+                            active
+                                ? 'bg-primary text-primary-foreground shadow-[0_2px_6px_rgba(224,102,128,0.35)]'
+                                : 'text-foreground/80 hover:text-foreground hover:bg-white/70',
+                        ].join(' ')}
+                    >
+                        <span>{v.label}</span>
+                        {v.priceDelta !== 0 && (
+                            <span
+                                className={[
+                                    'text-[11px] tabular-nums font-medium',
+                                    active ? 'text-primary-foreground/80' : 'text-muted-foreground',
+                                ].join(' ')}
+                            >
+                                {v.priceDelta > 0 ? '+' : ''}
+                                {v.priceDelta.toLocaleString('ru-RU')} ₽
+                            </span>
+                        )}
+                    </button>
+                )
+            })}
+        </div>
+    )
+}
+
+interface BreakdownProps {
+    basePrice: number
+    selections: CartItemOptionSelection[]
+    quantity: number
+    total: number
+}
+
+function Breakdown({basePrice, selections, quantity, total}: BreakdownProps) {
+    const nonZero = selections.filter((s) => s.priceDelta !== 0)
+    return (
+        <div className='flex flex-col items-end gap-1 min-w-0 max-md:items-start'>
+            <div className='flex flex-wrap justify-end gap-x-3 gap-y-1 tabular-nums max-md:justify-start'>
+                <BreakdownRow label='Базовая' value={`${basePrice.toLocaleString('ru-RU')} ₽`}/>
+                {nonZero.map((s) => (
+                    <BreakdownRow
+                        key={`${s.groupId}-${s.valueId}`}
+                        label={s.groupName}
+                        value={`${s.priceDelta > 0 ? '+' : ''}${s.priceDelta.toLocaleString('ru-RU')} ₽`}
+                    />
+                ))}
+                {quantity > 1 && <BreakdownRow label={`× ${quantity}`} value=''/>}
+            </div>
+            <div className='mt-1 flex items-baseline gap-2'>
+                <span className='text-[10px] uppercase tracking-[0.08em] text-muted-foreground'>Итого</span>
+                <span className='text-xl font-semibold tracking-tight text-foreground tabular-nums'>
+                    {fmt(total)}
+                    <span className='ml-1 text-sm font-normal text-muted-foreground'>руб.</span>
+                </span>
             </div>
         </div>
+    )
+}
+
+function BreakdownRow({label, value}: {label: string; value: string}) {
+    return (
+        <span className='inline-flex items-baseline gap-1.5 text-[11px] text-muted-foreground'>
+            <span>{label}</span>
+            {value && <span className='text-foreground/80'>{value}</span>}
+        </span>
     )
 }
 
@@ -258,11 +352,11 @@ interface NoteFieldProps {
     onCommit: (next: string) => void
 }
 
+const NOTE_MAX = 220
+
 function NoteField({initialNote, onCommit}: NoteFieldProps) {
     const hasNote = initialNote.trim().length > 0
     const [editing, setEditing] = useState(false)
-    // Локальный буфер, пока поле открыто; коммит в стор — по blur
-    // или по кнопке «Сохранить», чтобы lineId не пересчитывался посимвольно.
     const [value, setValue] = useState(initialNote)
 
     useEffect(() => {
@@ -276,25 +370,27 @@ function NoteField({initialNote, onCommit}: NoteFieldProps) {
             setEditing(false)
         }
         return (
-            <div>
-                <div className='flex items-center justify-between mb-1'>
-                    <label className='text-xs font-medium text-secondary'>Комментарий продавцу</label>
+            <div className='rounded-xl bg-primary/10 p-3.5 flex flex-col gap-2'>
+                <div className='flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.02em] text-primary'>
+                    <MessageSquarePlus className='h-3.5 w-3.5'/>
+                    Пожелание продавцу
                     <button
                         type='button'
                         onClick={() => {
                             setValue(initialNote)
                             setEditing(false)
                         }}
-                        className='inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
+                        className='ml-auto inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/15 text-primary hover:bg-primary/25 transition'
+                        aria-label='Закрыть'
                     >
-                        <X className='h-3 w-3'/>
-                        Отмена
+                        <X className='h-3.5 w-3.5'/>
                     </button>
                 </div>
                 <Textarea
-                    value={value}
                     autoFocus
-                    onChange={(e) => setValue(e.target.value)}
+                    value={value}
+                    maxLength={NOTE_MAX}
+                    onChange={(e) => setValue(e.target.value.slice(0, NOTE_MAX))}
                     onBlur={commit}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -307,13 +403,13 @@ function NoteField({initialNote, onCommit}: NoteFieldProps) {
                             setEditing(false)
                         }
                     }}
-                    placeholder='Пожелания к оформлению, аллергии, дата получения…'
+                    placeholder='Например: надпись «С днём рождения, Аня», без орехов'
                     rows={2}
-                    className='min-h-[52px] text-sm'
+                    className='min-h-[54px] resize-y rounded-md border-primary/30 bg-white text-sm focus-visible:ring-primary focus-visible:border-primary'
                 />
-                <p className='mt-1 text-[11px] text-muted-foreground'>
-                    Сохранится автоматически, когда уйдёшь из поля
-                </p>
+                <div className='text-right text-[11px] tabular-nums text-primary/80'>
+                    {value.length}/{NOTE_MAX}
+                </div>
             </div>
         )
     }
@@ -323,29 +419,30 @@ function NoteField({initialNote, onCommit}: NoteFieldProps) {
             <button
                 type='button'
                 onClick={() => setEditing(true)}
-                className='inline-flex items-center gap-1.5 text-xs text-primary hover:underline'
+                className='inline-flex items-center gap-2 self-start text-[13px] font-semibold text-primary transition hover:text-primary/80'
             >
-                <MessageSquarePlus className='h-3.5 w-3.5'/>
+                <MessageSquarePlus className='h-4 w-4'/>
                 Добавить пожелание продавцу
             </button>
         )
     }
 
     return (
-        <div className='rounded-md border border-lavender-dessert/40 bg-lavender-dessert/10 px-3 py-2'>
+        <div className='rounded-xl bg-primary/10 px-4 py-3'>
             <div className='flex items-start justify-between gap-2'>
                 <div className='min-w-0'>
-                    <p className='text-[11px] uppercase tracking-wider text-muted-foreground'>Комментарий продавцу</p>
-                    <p className='mt-0.5 text-sm text-foreground italic whitespace-pre-wrap break-words'>
+                    <p className='text-[11px] font-bold uppercase tracking-[0.02em] text-primary'>
+                        Пожелание продавцу
+                    </p>
+                    <p className='mt-1 text-sm text-foreground italic whitespace-pre-wrap break-words'>
                         «{initialNote}»
                     </p>
                 </div>
                 <button
                     type='button'
                     onClick={() => setEditing(true)}
-                    className='shrink-0 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
+                    className='shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-primary hover:bg-primary/15 transition'
                 >
-                    <Pencil className='h-3 w-3'/>
                     Изменить
                 </button>
             </div>
