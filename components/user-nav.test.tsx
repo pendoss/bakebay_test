@@ -161,12 +161,12 @@ describe('Неавторизованный пользователь', () => {
         expect(screen.getByText('Войти')).toBeInTheDocument()
     })
 
-    it('НЕ показывает пункты меню Профиль, Заказы, Избранное', async () => {
+    it('НЕ показывает пункты меню Профиль, Мои заказы, Избранное', async () => {
         renderWithUser(<UserNav/>)
         await act(async () => {
         })
         expect(screen.queryByText('Профиль')).not.toBeInTheDocument()
-        expect(screen.queryByText('Заказы')).not.toBeInTheDocument()
+        expect(screen.queryByText('Мои заказы')).not.toBeInTheDocument()
         expect(screen.queryByText('Избранное')).not.toBeInTheDocument()
     })
 
@@ -209,11 +209,12 @@ describe('Авторизованный пользователь (customer)', () 
         })
     })
 
-    it('показывает пункты меню Профиль, Заказы, Избранное', async () => {
+    it('показывает пункты меню Профиль, Мои заказы, Избранное', async () => {
         renderWithUser(<UserNav/>)
         await waitFor(() => screen.getByText('Иван Иванов'))
         expect(screen.getByText('Профиль')).toBeInTheDocument()
-        expect(screen.getByText('Заказы')).toBeInTheDocument()
+        expect(screen.getByText('Мои заказы')).toBeInTheDocument()
+        expect(screen.getByText('Согласования')).toBeInTheDocument()
         expect(screen.getByText('Избранное')).toBeInTheDocument()
     })
 
@@ -268,11 +269,18 @@ describe('Авторизованный пользователь (customer)', () 
         expect(pushMock).toHaveBeenCalledWith('/profile')
     })
 
-    it('переход по "Заказы" вызывает router.push("/orders")', async () => {
+    it('переход по "Мои заказы" вызывает router.push("/orders-v2")', async () => {
         renderWithUser(<UserNav/>)
         await waitFor(() => screen.getByText('Иван Иванов'))
-        fireEvent.click(screen.getByText('Заказы'))
-        expect(pushMock).toHaveBeenCalledWith('/orders')
+        fireEvent.click(screen.getByText('Мои заказы'))
+        expect(pushMock).toHaveBeenCalledWith('/orders-v2')
+    })
+
+    it('переход по "Согласования" вызывает router.push("/chats")', async () => {
+        renderWithUser(<UserNav/>)
+        await waitFor(() => screen.getByText('Иван Иванов'))
+        fireEvent.click(screen.getByText('Согласования'))
+        expect(pushMock).toHaveBeenCalledWith('/chats')
     })
 })
 

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {Card, CardContent, CardFooter} from '@/components/ui/card'
 import {Badge} from '@/components/ui/badge'
 import {Button} from '@/components/ui/button'
-import {ShoppingCart, Star} from 'lucide-react'
+import {Sparkles, ShoppingCart, Star} from 'lucide-react'
 import {observer} from 'mobx-react-lite'
 import {useToast} from '@/hooks/use-toast'
 import {useCartActions} from '@/src/adapters/ui/react/stores'
@@ -36,6 +36,7 @@ interface ProductCardInput {
     storageConditions?: string | null
     ingredients?: { name: string; amount: number; unit: string }[]
     size?: string | null
+    isCustomizable?: boolean
 }
 
 interface ProductCardProps {
@@ -71,6 +72,12 @@ export const ProductCard = observer(function ProductCard({product}: ProductCardP
             <Card className='overflow-hidden transition-all duration-200 hover:shadow-md group relative'>
                 <div className='aspect-square relative items-end'>
                     <Image src={product.image || '/placeholder.svg'} alt={product.name} fill className='object-cover'/>
+                    {product.isCustomizable && (
+                        <Badge className='absolute top-2 left-2 bg-lavender-dessert text-secondary gap-1 shadow'>
+                            <Sparkles className='h-3 w-3'/>
+                            По индивидуальному заказу
+                        </Badge>
+                    )}
                     <div className='absolute bottom-1 left-1 p-2 flex flex-wrap gap-1 transition-opacity'>
                         {product.dietary.slice(0, 2).map((diet, index) => (
                             <Badge key={index} variant='secondary' className='text-xs text-white'>
@@ -105,7 +112,7 @@ export const ProductCard = observer(function ProductCard({product}: ProductCardP
                         onClick={handleAddToCart}
                     >
                         <ShoppingCart className='h-4 w-4 mr-2'/>
-                        Добавить
+                        {product.isCustomizable ? 'Обсудить' : 'Добавить'}
                     </Button>
                 </CardFooter>
             </Card>

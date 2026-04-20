@@ -37,12 +37,12 @@ export const ShoppingCart = observer(function ShoppingCart() {
 
     const performCheckout = async () => {
         try {
-            const {orderId} = await checkout()
+            const {customerOrderId} = await checkout()
             toast({
                 title: 'Заказ успешно оформлен',
-                description: `Ваш заказ #${orderId} был успешно создан.`,
+                description: `Ваш заказ #${customerOrderId} был успешно создан.`,
             })
-            router.push('/orders')
+            router.push('/orders-v2')
         } catch (err) {
             if (err instanceof EmptyCartError) {
                 toast({

@@ -2,7 +2,7 @@
 
 import {useCallback, useContext, useRef} from 'react'
 import {checkout, type CheckoutResult, EmptyCartError} from '@/src/application/use-cases/cart'
-import {orderGatewayHttp} from '@/src/adapters/storage/http/order-gateway-http'
+import {customerOrderGatewayHttp} from '@/src/adapters/storage/http/customer-order-gateway-http'
 import {cartStorageLocal} from '@/src/adapters/storage/browser/cart-storage-local'
 import {checkoutPreferencesLocal} from '@/src/adapters/storage/browser/checkout-preferences-local'
 import {RootStoreContext} from '@/src/adapters/ui/react/stores/root-store-context'
@@ -13,7 +13,7 @@ export function useCheckout() {
     const {cartStore} = rootStore
 
     const depsRef = useRef({
-        orderGateway: orderGatewayHttp(),
+        customerOrderGateway: customerOrderGatewayHttp(),
         cartStorage: cartStorageLocal(),
         preferences: checkoutPreferencesLocal(),
     })

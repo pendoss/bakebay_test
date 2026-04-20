@@ -1,6 +1,5 @@
 'use client'
 
-import {Separator} from '@/components/ui/separator'
 import {SellerDashboardNav} from '@/components/seller-dashboard/seller-nav'
 import {useEffect} from 'react'
 import {useRouter} from 'next/navigation'
@@ -20,9 +19,7 @@ const SellerDashboardLayout = observer(function SellerDashboardLayout({children}
     const sellerId = useSellerId()
     const isLoading = useIsUserLoading()
 
-    // Поллинг новых заказов — уведомляет продавца раз в 30 с
     useSellerNotifications(sellerId)
-    // Поллинг новых отзывов — уведомляет продавца раз в 60 с
     useSellerReviewNotifications(sellerId)
 
     useEffect(() => {
@@ -52,19 +49,13 @@ const SellerDashboardLayout = observer(function SellerDashboardLayout({children}
     }
 
     return (
-        <div className='container py-8 px-4 md:px-6'>
-            <div className='flex flex-col space-y-6'>
-                <div>
-                    <h1 className='text-3xl font-bold tracking-tight'>Панель продавца</h1>
-                    <p className='text-muted-foreground'>Управляйте своими товарами, заказами и взаимодействием с
-                        клиентами</p>
-                </div>
-                <Separator/>
-                <div className='flex flex-col md:flex-row gap-8'>
-                    <aside className='md:w-1/5'>
+        <div className='min-h-screen pb-[88px] md:pb-0'>
+            <div className='mx-auto max-w-[1440px] px-3 md:px-5 py-4 md:py-5'>
+                <div className='flex flex-col md:flex-row gap-4 md:gap-5'>
+                    <aside className='shrink-0'>
                         <SellerDashboardNav/>
                     </aside>
-                    <div className='flex-1'>{children}</div>
+                    <main className='flex-1 min-w-0'>{children}</main>
                 </div>
             </div>
         </div>

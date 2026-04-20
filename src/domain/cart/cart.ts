@@ -1,5 +1,13 @@
 import type {ProductId} from '@/src/domain/shared/id'
 
+export interface CartItemOptionSelection {
+    groupId: number
+    groupName: string
+    valueId: number
+    label: string
+    priceDelta: number
+}
+
 export interface CartItem {
     productId: ProductId
     name: string
@@ -7,6 +15,8 @@ export interface CartItem {
     image: string
     seller: string
     quantity: number
+    optionSelections?: CartItemOptionSelection[]
+    customerNote?: string
 }
 
 export interface Cart {
@@ -16,10 +26,21 @@ export interface Cart {
 
 export const EMPTY_CART: Cart = {items: [], promoCode: null}
 
+function sameSelection(a: CartItem, b: Omit<CartItem, 'quantity'>): boolean {
+    if (a.productId !== b.productId) return false
+    const aKeys = (a.optionSelections ?? []).map((o) => o.valueId).sort().join(',')
+    const bKeys = (b.optionSelections ?? []).map((o) => o.valueId).sort().join(',')
+    if (aKeys !== bKeys) return false
+    return (a.customerNote ?? '') === (b.customerNote ?? '')
+}
+
 export function addItem(cart: Cart, item: Omit<CartItem, 'quantity'>, quantity = 1): Cart {
-    const existing = cart.items.find((i) => i.productId === item.productId)
+    const existing = cart.items.find((i) => sameSelection(i, item))
     if (existing) {
-        return updateQuantity(cart, item.productId, existing.quantity + quantity)
+        return {
+            ...cart,
+            items: cart.items.map((i) => (i === existing ? {...i, quantity: i.quantity + quantity} : i)),
+        }
     }
     return {...cart, items: [...cart.items, {...item, quantity}]}
 }

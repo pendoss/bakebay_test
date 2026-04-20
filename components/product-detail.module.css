@@ -2,6 +2,170 @@
 	--radius: 0.5rem;
 }
 
+.customBanner {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin: 20px 0 8px;
+	padding: 16px 18px;
+	border-radius: 14px;
+	background: linear-gradient(135deg, rgba(214, 198, 255, 0.35), rgba(255, 235, 210, 0.45));
+	border: 1px solid rgba(150, 120, 210, 0.25);
+	color: #3a2f4f;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.customBanner p {
+	margin: 0;
+}
+
+.customTitle {
+	display: flex;
+	align-items: center;
+}
+
+.customPill {
+	display: inline-block;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: #7c5fc3;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.optionPicker {
+	margin: 12px 0 4px;
+	padding: 18px;
+	border-radius: 16px;
+	background: linear-gradient(180deg, rgba(250, 246, 255, 0.9), rgba(255, 251, 244, 0.9));
+	border: 1px solid rgba(120, 100, 180, 0.18);
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.optionHeader {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.optionHeaderPill {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: #2e2142;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.optionHeaderHint {
+	font-size: 12px;
+	color: #6b6578;
+	line-height: 1.35;
+}
+
+.optionGroups {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.optionGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.optionGroupTitle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #332a4a;
+}
+
+.optionRequired {
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #c43e6c;
+	background: rgba(196, 62, 108, 0.1);
+	padding: 2px 8px;
+	border-radius: 999px;
+}
+
+.optionValues {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.optionValue {
+	border: 1px solid rgba(120, 100, 180, 0.25);
+	background: #fff;
+	padding: 6px 12px;
+	border-radius: 999px;
+	font-size: 13px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	transition: all 0.15s ease;
+}
+
+.optionValue:hover {
+	border-color: #7c5fc3;
+}
+
+.optionValueActive {
+	background: #2e2142;
+	color: #fff;
+	border-color: #2e2142;
+}
+
+.optionValueDelta {
+	font-variant-numeric: tabular-nums;
+	font-size: 11px;
+	opacity: 0.7;
+}
+
+.optionNoteLabel {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #332a4a;
+}
+
+.optionNoteInput {
+	width: 100%;
+	padding: 10px 12px;
+	border-radius: 10px;
+	border: 1px solid rgba(120, 100, 180, 0.25);
+	background: #fff;
+	resize: vertical;
+	min-height: 72px;
+	font: inherit;
+	color: #2a2535;
+}
+
+.optionNoteInput:focus {
+	outline: none;
+	border-color: #7c5fc3;
+}
+
 .crumbs {
 	display: flex;
 	align-items: center;

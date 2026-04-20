@@ -2,7 +2,6 @@ import 'dotenv/config';
 import {drizzle} from 'drizzle-orm/node-postgres';
 import {Pool} from 'pg';
 
-// Import all schemas
 import {roleEnum, users} from './schema/users';
 import {products} from './schema/products';
 import {orders, orderStatusEnum} from './schema/orders';
@@ -13,47 +12,105 @@ import {dietaryConstrains} from './schema/dietary_constrains';
 import {productImages} from './schema/product_images';
 import {productIngredients, stockStatusEnum} from './schema/product_ingredients';
 import {reviews} from './schema/reviews';
+import {customerOrders, customerOrderDerivedStatusEnum} from './schema/customer_orders';
+import {sellerOrders, sellerOrderStatusEnum, sellerOrderStockCheckEnum} from './schema/seller_orders';
+import {sellerOrderItems} from './schema/seller_order_items';
+import {
+    customizationThreads,
+    customizationOffers,
+    customizationMessages,
+    customizationFinalSpecs,
+    customizationThreadStatusEnum,
+    customizationMessageAuthorEnum,
+} from './schema/customization_threads';
+import {
+    productOptionGroups,
+    productOptionValues,
+    sellerOrderItemOptionSelections,
+    productOptionGroupKindEnum,
+} from './schema/product_options';
+import {sellerIngredientLibrary} from './schema/seller_ingredient_library';
+import {
+    sellerOrderIngredientReservations,
+    reservationStateEnum,
+} from './schema/seller_order_ingredient_reservations';
 
-// Create a PostgreSQL connection pool
 if (!process.env.DATABASE_URL) {
-	throw new Error('DATABASE_URL is not set');
+    throw new Error('DATABASE_URL is not set');
 }
 const pool = new Pool({
-	connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.DATABASE_URL,
 });
 
-// Create a Drizzle ORM instance
 const db = drizzle(pool, {
-	schema: {
-		users,
-		roleEnum,
-		products,
-		orders,
-		orderStatusEnum,
-		orderItems,
-		categories,
-		sellers,
-		dietaryConstrains,
-		productImages,
-		productIngredients,
-		stockStatusEnum,
-		reviews,
-	},
+    schema: {
+        users,
+        roleEnum,
+        products,
+        orders,
+        orderStatusEnum,
+        orderItems,
+        categories,
+        sellers,
+        dietaryConstrains,
+        productImages,
+        productIngredients,
+        stockStatusEnum,
+        reviews,
+        customerOrders,
+        customerOrderDerivedStatusEnum,
+        sellerOrders,
+        sellerOrderStatusEnum,
+        sellerOrderStockCheckEnum,
+        sellerOrderItems,
+        customizationThreads,
+        customizationOffers,
+        customizationMessages,
+        customizationFinalSpecs,
+        customizationThreadStatusEnum,
+        customizationMessageAuthorEnum,
+        productOptionGroups,
+        productOptionValues,
+        sellerOrderItemOptionSelections,
+        productOptionGroupKindEnum,
+        sellerIngredientLibrary,
+        sellerOrderIngredientReservations,
+        reservationStateEnum,
+    },
 });
-// Export the db instance and all schemas
+
 export {
-	db,
-	users,
-	roleEnum,
-	products,
-	orders,
-	orderStatusEnum,
-	orderItems,
-	categories,
-	sellers,
-	dietaryConstrains,
-	productImages,
-	productIngredients,
-	stockStatusEnum,
-	reviews,
+    db,
+    users,
+    roleEnum,
+    products,
+    orders,
+    orderStatusEnum,
+    orderItems,
+    categories,
+    sellers,
+    dietaryConstrains,
+    productImages,
+    productIngredients,
+    stockStatusEnum,
+    reviews,
+    customerOrders,
+    customerOrderDerivedStatusEnum,
+    sellerOrders,
+    sellerOrderStatusEnum,
+    sellerOrderStockCheckEnum,
+    sellerOrderItems,
+    customizationThreads,
+    customizationOffers,
+    customizationMessages,
+    customizationFinalSpecs,
+    customizationThreadStatusEnum,
+    customizationMessageAuthorEnum,
+    productOptionGroups,
+    productOptionValues,
+    sellerOrderItemOptionSelections,
+    productOptionGroupKindEnum,
+    sellerIngredientLibrary,
+    sellerOrderIngredientReservations,
+    reservationStateEnum,
 };

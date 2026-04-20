@@ -81,10 +81,22 @@ export const UserNav = observer(function UserNav() {
                         Профиль
                     </DropdownMenuItem>
                     <DropdownMenuItem
+                        onClick={() => router.push('/orders-v2')}
+                        className='focus:bg-secondary focus:text-white'
+                    >
+                        Мои заказы
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onClick={() => router.push('/chats')}
+                        className='focus:bg-secondary focus:text-white'
+                    >
+                        Согласования
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
                         onClick={() => router.push('/orders')}
                         className='focus:bg-secondary focus:text-white'
                     >
-                        Заказы
+                        Старые заказы
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onClick={() => router.push('/wishlist')}

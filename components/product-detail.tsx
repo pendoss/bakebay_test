@@ -9,6 +9,10 @@ import {useCartActions} from '@/src/adapters/ui/react/stores'
 import {asProductId} from '@/src/domain/shared/id'
 import type {Product} from '@/src/domain/product'
 import type {ProductReview, ProductSellerInfo} from '@/src/adapters/ui/react/hooks/use-product-detail'
+import {
+    useProductOptions,
+    type ProductOptionGroupDTO,
+} from '@/src/adapters/ui/react/hooks/use-product-options'
 import styles from './product-detail.module.css'
 
 const dietaryTranslations: Record<string, string> = {
@@ -49,6 +53,25 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
     const [activeImg, setActiveImg] = useState(0)
     const [stickyVisible, setStickyVisible] = useState(false)
     const addBtnRef = useRef<HTMLButtonElement | null>(null)
+    const {groups: optionGroups} = useProductOptions(product.isCustomizable ? product.id : null)
+    const [selections, setSelections] = useState<Record<number, number>>({})
+    const [customerNote, setCustomerNote] = useState('')
+
+    const selectionDelta = useMemo(() => {
+        let delta = 0
+        for (const g of optionGroups) {
+            const vid = selections[g.id]
+            if (vid === undefined) continue
+            const v = g.values.find((vv) => vv.id === vid)
+            if (v) delta += v.priceDelta
+        }
+        return delta
+    }, [optionGroups, selections])
+
+    const missingRequired = useMemo(
+        () => optionGroups.filter((g) => g.required && selections[g.id] === undefined),
+        [optionGroups, selections],
+    )
 
     useEffect(() => {
         const el = addBtnRef.current
@@ -89,13 +112,38 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
     const sellerYear = seller?.created_at ? new Date(seller.created_at).getFullYear() : null
 
     const handleAdd = () => {
+        if (missingRequired.length > 0) {
+            toast({
+                title: 'Выберите параметры',
+                description: `Нужно указать: ${missingRequired.map((g) => g.name).join(', ')}`,
+                variant: 'destructive',
+            })
+            return
+        }
+        const optionSelections = optionGroups
+            .map((g) => {
+                const vid = selections[g.id]
+                if (vid === undefined) return null
+                const v = g.values.find((vv) => vv.id === vid)
+                if (!v) return null
+                return {
+                    groupId: g.id,
+                    groupName: g.name,
+                    valueId: v.id,
+                    label: v.label,
+                    priceDelta: v.priceDelta,
+                }
+            })
+            .filter((x): x is NonNullable<typeof x> => x !== null)
         for (let i = 0; i < qty; i++) {
             addItem({
                 productId: asProductId(product.id),
                 name: product.name,
-                price: product.price,
+                price: product.price + selectionDelta,
                 image: product.mainImage ?? '/placeholder.svg',
                 seller: sellerName,
+                optionSelections: optionSelections.length > 0 ? optionSelections : undefined,
+                customerNote: customerNote.trim() || undefined,
             })
         }
         toast({title: 'Добавлено в корзину', description: `${product.name} × ${qty}`})
@@ -158,6 +206,19 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
                         <h1 className={styles.title}>{product.name}</h1>
                         <p className={styles.lede}>{product.longDesc || product.shortDesc}</p>
 
+                        {product.isCustomizable && (
+                            <div className={styles.customBanner}>
+                                <div className={styles.customTitle}>
+                                    <span className={styles.customPill}>По индивидуальному заказу</span>
+                                </div>
+                                <p>
+                                    Этот десерт продавец делает под заказ. После оформления откроется чат согласования:
+                                    вы сможете уточнить начинку, цвет, надпись и размер, а продавец пришлёт оффер с
+                                    финальной ценой.
+                                </p>
+                            </div>
+                        )}
+
                         {product.dietary.length > 0 && (
                             <div className={styles.dietRow}>
                                 {product.dietary.map((d, i) => (
@@ -186,10 +247,24 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
                             </Link>
                         )}
 
+                        {product.isCustomizable && optionGroups.length > 0 && (
+                            <OptionPicker
+                                groups={optionGroups}
+                                selections={selections}
+                                onSelect={(groupId, valueId) =>
+                                    setSelections((prev) => ({...prev, [groupId]: valueId}))
+                                }
+                                customerNote={customerNote}
+                                onNoteChange={setCustomerNote}
+                            />
+                        )}
+
                         <div className={styles.buyCard}>
                             <div className={styles.priceRow}>
-                                <div className={styles.price}>{(product.price * qty).toFixed(2)}<span
-                                    className={styles.u}> руб.</span></div>
+                                <div className={styles.price}>
+                                    {((product.price + selectionDelta) * qty).toFixed(2)}
+                                    <span className={styles.u}> руб.</span>
+                                </div>
                                 {product.weight && (
                                     <div className={styles.per}>Вес<b>{product.weight} г</b></div>
                                 )}
@@ -209,7 +284,7 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
                                         <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
                                             <path d='M3 5h2l2.7 11.4a2 2 0 0 0 2 1.6h7.5a2 2 0 0 0 2-1.6L21 8H6'/>
                                         </svg>
-                                        Добавить в корзину
+                                        {product.isCustomizable ? 'Обсудить и оформить' : 'Добавить в корзину'}
                                     </button>
                                 </div>
                             </div>
@@ -360,6 +435,70 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
         </div>
     )
 })
+
+interface OptionPickerProps {
+    groups: ProductOptionGroupDTO[]
+    selections: Record<number, number>
+    onSelect: (groupId: number, valueId: number) => void
+    customerNote: string
+    onNoteChange: (value: string) => void
+}
+
+function OptionPicker({groups, selections, onSelect, customerNote, onNoteChange}: OptionPickerProps) {
+    return (
+        <div className={styles.optionPicker}>
+            <div className={styles.optionHeader}>
+                <span className={styles.optionHeaderPill}>Параметры</span>
+                <span className={styles.optionHeaderHint}>
+                    Нужные значения попадут в чат согласования. Не обязательные — можно пропустить.
+                </span>
+            </div>
+            <div className={styles.optionGroups}>
+                {groups.map((g) => (
+                    <div key={g.id} className={styles.optionGroup}>
+                        <div className={styles.optionGroupTitle}>
+                            <span>{g.name}</span>
+                            {g.required && <span className={styles.optionRequired}>обязательно</span>}
+                        </div>
+                        <div className={styles.optionValues}>
+                            {g.values.map((v) => {
+                                const active = selections[g.id] === v.id
+                                return (
+                                    <button
+                                        key={v.id}
+                                        type='button'
+                                        onClick={() => onSelect(g.id, v.id)}
+                                        className={[styles.optionValue, active ? styles.optionValueActive : '']
+                                            .filter(Boolean)
+                                            .join(' ')}
+                                    >
+                                        <span>{v.label}</span>
+                                        {v.priceDelta !== 0 && (
+                                            <span className={styles.optionValueDelta}>
+                                                {v.priceDelta > 0 ? '+' : ''}
+                                                {v.priceDelta}
+                                            </span>
+                                        )}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <label className={styles.optionNoteLabel}>
+                <span>Комментарий продавцу</span>
+                <textarea
+                    value={customerNote}
+                    onChange={(e) => onNoteChange(e.target.value)}
+                    placeholder='Опишите пожелания: аллергии, фотография образца, дата получения…'
+                    rows={3}
+                    className={styles.optionNoteInput}
+                />
+            </label>
+        </div>
+    )
+}
 
 export function ProductNotFound() {
     return (

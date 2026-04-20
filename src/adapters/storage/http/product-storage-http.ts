@@ -27,6 +27,7 @@ interface RawListProduct {
     dietary_constraints: Array<{ id: number; name: string }>
     images: RawImage[]
     image: string | null
+    is_customizable?: boolean
 }
 
 interface RawSingleProduct {
@@ -51,6 +52,7 @@ interface RawSingleProduct {
     images: RawImage[]
     image: string | null
     dietary_constraints?: Array<{ id: number; name: string }>
+    is_customizable?: boolean
 }
 
 function mapStatus(raw: string | null): Product['status'] {
@@ -97,6 +99,7 @@ function fromList(raw: RawListProduct): Product {
         seller: raw.seller ? {id: asSellerId(raw.seller.id), name: raw.seller.name, rating: raw.seller.rating} : null,
         categoryInfo: raw.category_info,
         rating: raw.seller?.rating ?? 4.5,
+        isCustomizable: raw.is_customizable ?? false,
     }
 }
 
@@ -127,6 +130,7 @@ function fromSingle(raw: RawSingleProduct): Product {
         seller: null,
         categoryInfo: null,
         rating: 0,
+        isCustomizable: raw.is_customizable ?? false,
     }
 }
 
