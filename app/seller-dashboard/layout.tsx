@@ -8,6 +8,7 @@ import {observer} from 'mobx-react-lite'
 import {useCurrentUser, useIsUserLoading, useSellerId} from '@/src/adapters/ui/react/stores'
 import {useSellerNotifications} from '@/hooks/use-seller-notifications'
 import {useSellerReviewNotifications} from '@/hooks/use-seller-review-notifications'
+import {NotificationBell} from '@/components/notification-bell'
 
 interface Props {
     children?: React.ReactNode
@@ -55,7 +56,12 @@ const SellerDashboardLayout = observer(function SellerDashboardLayout({children}
                     <aside className='shrink-0'>
                         <SellerDashboardNav/>
                     </aside>
-                    <main className='flex-1 min-w-0'>{children}</main>
+                    <main className='flex-1 min-w-0'>
+                        <div className='flex items-center justify-end mb-3'>
+                            <NotificationBell/>
+                        </div>
+                        {children}
+                    </main>
                 </div>
             </div>
         </div>

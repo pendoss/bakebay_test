@@ -14,6 +14,7 @@ import {
 } from '@/src/domain/customization'
 import {getAuthPayload} from '@/app/api/get-auth'
 import {resolveSellerOrderByThread} from '@/app/api/customization/_lookup'
+import {dispatchNotification, loadThreadParticipants} from '@/app/api/notifications/_dispatch'
 
 export async function POST(request: Request, {params}: { params: Promise<{ id: string }> }) {
     const auth = await getAuthPayload()
@@ -37,6 +38,20 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
             await syncSellerOrderFromThreadEvent(sellerOrderId, 'customer-accept', {
                 sellerOrderStorage: sellerOrderStorageDrizzle(),
                 customerOrderStorage: customerOrderStorageDrizzle(),
+            })
+        }
+        const participants = await loadThreadParticipants(Number(id))
+        if (participants) {
+            await dispatchNotification({
+                recipientUserId: participants.sellerUserId,
+                kind: 'customer_accept',
+                severity: 'success',
+                titleMd: '**Клиент подтвердил оффер**',
+                bodyMd: 'Финализируйте сделку, чтобы клиент смог оплатить позицию.',
+                actions: [
+                    {label: 'Открыть согласование', href: `/seller-dashboard/chats?thread=${id}`, style: 'primary'},
+                ],
+                meta: {threadId: Number(id), sellerOrderId: participants.sellerOrderId as unknown as number},
             })
         }
         return NextResponse.json({ok: true})

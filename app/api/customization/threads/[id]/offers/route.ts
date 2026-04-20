@@ -13,6 +13,7 @@ import {syncSellerOrderFromThreadEvent} from '@/src/application/use-cases/seller
 import {CustomizationThreadClosedError} from '@/src/domain/customization'
 import {getAuthPayload} from '@/app/api/get-auth'
 import {resolveSellerOrderByThread} from '@/app/api/customization/_lookup'
+import {dispatchNotification, loadThreadParticipants} from '@/app/api/notifications/_dispatch'
 
 export async function POST(request: Request, {params}: { params: Promise<{ id: string }> }) {
     const auth = await getAuthPayload()
@@ -63,6 +64,22 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
             await syncSellerOrderFromThreadEvent(sellerOrderId, 'seller-offer', {
                 sellerOrderStorage: sellerOrderStorageDrizzle(),
                 customerOrderStorage: customerOrderStorageDrizzle(),
+            })
+        }
+        const participants = await loadThreadParticipants(Number(id))
+        if (participants) {
+            await dispatchNotification({
+                recipientUserId: participants.customerUserId,
+                kind: 'chat_offer',
+                severity: 'info',
+                titleMd: '**Продавец прислал оффер**',
+                bodyMd: priceDelta !== 0
+                    ? `Доплата: **${priceDelta.toFixed(2)} ₽**`
+                    : 'Откройте чат, чтобы посмотреть условия.',
+                actions: [
+                    {label: 'Посмотреть оффер', href: `/chats?thread=${id}`, style: 'primary'},
+                ],
+                meta: {threadId: Number(id), sellerOrderId: participants.sellerOrderId as unknown as number},
             })
         }
         return NextResponse.json({ok: true})

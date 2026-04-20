@@ -15,6 +15,7 @@ import {
     SellerOrderNotFoundError,
 } from '@/src/domain/seller-order'
 import {getAuthPayload} from '@/app/api/get-auth'
+import {dispatchNotification, loadSellerOrderParticipants} from '@/app/api/notifications/_dispatch'
 
 export async function POST(request: Request, {params}: { params: Promise<{ id: string }> }) {
     const auth = await getAuthPayload()
@@ -43,6 +44,21 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
                 customerOrderStorage: customerOrderStorageDrizzle(),
             },
         )
+        const participants = await loadSellerOrderParticipants(Number(id))
+        if (participants) {
+            const recipient = actor === 'seller' ? participants.customerUserId : participants.sellerUserId
+            await dispatchNotification({
+                recipientUserId: recipient,
+                kind: 'refund_requested',
+                severity: 'warning',
+                titleMd: '**Запрошен возврат**',
+                bodyMd: `Причина: ${reason}`,
+                actions: [
+                    {label: 'Открыть подзаказ', href: actor === 'seller' ? '/orders-v2' : '/seller-dashboard/orders-v2', style: 'primary'},
+                ],
+                meta: {sellerOrderId: Number(id)},
+            })
+        }
         return NextResponse.json({ok: true})
     } catch (err) {
         if (err instanceof RefundOwnershipError || err instanceof SellerOrderOwnershipError) {

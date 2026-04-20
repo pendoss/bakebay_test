@@ -11,6 +11,7 @@ const config: Config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',
     moduleNameMapper: {
+        '^react-markdown$': '<rootDir>/test-utils/react-markdown-mock.tsx',
         '^@/(.*)$': '<rootDir>/$1',
     },
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '/tests/e2e/'],

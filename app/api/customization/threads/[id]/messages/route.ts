@@ -11,6 +11,7 @@ import {syncSellerOrderFromThreadEvent} from '@/src/application/use-cases/seller
 import {CustomizationThreadClosedError, type MessageAuthor} from '@/src/domain/customization'
 import {getAuthPayload} from '@/app/api/get-auth'
 import {resolveSellerOrderByThread} from '@/app/api/customization/_lookup'
+import {dispatchNotification, loadThreadParticipants} from '@/app/api/notifications/_dispatch'
 
 export async function POST(request: Request, {params}: { params: Promise<{ id: string }> }) {
     const auth = await getAuthPayload()
@@ -47,6 +48,22 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
                     customerOrderStorage: customerOrderStorageDrizzle(),
                 },
             )
+        }
+        const participants = await loadThreadParticipants(Number(id))
+        if (participants) {
+            const recipientUserId = author === 'seller' ? participants.customerUserId : participants.sellerUserId
+            const inboxBase = author === 'seller' ? '/chats' : '/seller-dashboard/chats'
+            await dispatchNotification({
+                recipientUserId,
+                kind: 'chat_message',
+                severity: 'info',
+                titleMd: author === 'seller' ? '**Сообщение от продавца**' : '**Сообщение от клиента**',
+                bodyMd: bodyText.length > 280 ? `${bodyText.slice(0, 277)}…` : bodyText,
+                actions: [
+                    {label: 'Открыть согласование', href: `${inboxBase}?thread=${id}`, style: 'primary'},
+                ],
+                meta: {threadId: Number(id), sellerOrderId: participants.sellerOrderId as unknown as number},
+            })
         }
         return NextResponse.json({ok: true})
     } catch (err) {

@@ -12,6 +12,7 @@ import {
 import {asSellerOrderId, asUserId} from '@/src/domain/shared/id'
 import {SellerOrderNotFoundError} from '@/src/domain/seller-order'
 import {getAuthPayload} from '@/app/api/get-auth'
+import {dispatchNotification, loadSellerOrderParticipants} from '@/app/api/notifications/_dispatch'
 
 export async function POST(_request: Request, {params}: { params: Promise<{ id: string }> }) {
     const auth = await getAuthPayload()
@@ -38,6 +39,20 @@ export async function POST(_request: Request, {params}: { params: Promise<{ id: 
                 reservationStorage: ingredientReservationStorageDrizzle(),
             },
         )
+        const participants = await loadSellerOrderParticipants(Number(id))
+        if (participants) {
+            await dispatchNotification({
+                recipientUserId: participants.customerUserId,
+                kind: 'refund_approved',
+                severity: 'success',
+                titleMd: '**Возврат одобрен**',
+                bodyMd: 'Подзаказ отменён. Деньги вернутся на исходный способ оплаты.',
+                actions: [
+                    {label: 'Открыть заказы', href: '/orders-v2', style: 'primary'},
+                ],
+                meta: {sellerOrderId: Number(id)},
+            })
+        }
         return NextResponse.json({ok: true})
     } catch (err) {
         if (err instanceof SellerOrderOwnershipError) return NextResponse.json({error: err.message}, {status: 403})

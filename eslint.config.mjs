@@ -48,6 +48,7 @@ export default [
     // application → знает только domain и свои порты
     {
         files: ['src/application/**/*.ts', 'src/application/**/*.tsx'],
+        ignores: ['src/application/**/__tests__/**'],
         rules: {
             'no-restricted-imports': ['error', {
                 patterns: [

@@ -16,6 +16,7 @@ import {useRouter} from 'next/navigation'
 import {useState} from 'react'
 import {useCurrentUser, useUserActions} from '@/src/adapters/ui/react/stores'
 import {AuthDialog} from '@/components/auth-dialog'
+import {NotificationBell} from '@/components/notification-bell'
 
 export const UserNav = observer(function UserNav() {
     const [isOpen, setIsOpen] = useState(false)
@@ -53,14 +54,16 @@ export const UserNav = observer(function UserNav() {
     const initials = user.first_name[0].toUpperCase() + user.last_name[0].toUpperCase()
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
-                    <Avatar className='h-8 w-8'>
-                        <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-                </Button>
-            </DropdownMenuTrigger>
+        <div className='flex items-center gap-1'>
+            <NotificationBell/>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
+                        <Avatar className='h-8 w-8'>
+                            <AvatarFallback>{initials}</AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
             <DropdownMenuContent className='w-56' align='end' forceMount>
                 <DropdownMenuLabel className='font-normal'>
                     <div className='flex flex-col space-y-1'>
@@ -128,5 +131,6 @@ export const UserNav = observer(function UserNav() {
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
+        </div>
     )
 })

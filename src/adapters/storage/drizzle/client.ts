@@ -36,6 +36,11 @@ import {
 } from './schema/product_options';
 import {sellerIngredientLibrary} from './schema/seller_ingredient_library';
 import {
+    notifications,
+    notificationKindEnum,
+    notificationSeverityEnum,
+} from './schema/notifications';
+import {
     sellerOrderIngredientReservations,
     reservationStateEnum,
 } from './schema/seller_order_ingredient_reservations';
@@ -82,6 +87,9 @@ const db = drizzle(pool, {
         sellerIngredientLibrary,
         sellerOrderIngredientReservations,
         reservationStateEnum,
+        notifications,
+        notificationKindEnum,
+        notificationSeverityEnum,
     },
 });
 
@@ -120,4 +128,7 @@ export {
     sellerIngredientLibrary,
     sellerOrderIngredientReservations,
     reservationStateEnum,
+    notifications,
+    notificationKindEnum,
+    notificationSeverityEnum,
 };

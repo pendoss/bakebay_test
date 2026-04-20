@@ -17,6 +17,8 @@ import {
     type SellerOrderStatus,
 } from '@/src/domain/seller-order'
 import {getAuthPayload} from '@/app/api/get-auth'
+import {dispatchNotification} from '@/app/api/notifications/_dispatch'
+import {listIngredientsBySeller} from '@/src/application/use-cases/ingredient'
 
 export async function POST(request: Request, {params}: { params: Promise<{ id: string }> }) {
     const auth = await getAuthPayload()
@@ -46,6 +48,39 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
                 },
             },
         )
+        if (next === 'ready_to_ship') {
+            const ingredients = await listIngredientsBySeller(seller.id, {
+                ingredientStorage: ingredientStorageDrizzle(),
+            })
+            const out = ingredients.filter((ing) => ing.status === 'out')
+            const low = ingredients.filter((ing) => ing.status === 'low')
+            for (const ing of out) {
+                await dispatchNotification({
+                    recipientUserId: asUserId(auth.userId),
+                    kind: 'ingredient_out',
+                    severity: 'error',
+                    titleMd: `**Закончился ингредиент:** ${ing.name}`,
+                    bodyMd: `Запас обнулён после списания. Нужна докупка, иначе заказы перейдут в \`preparing_blocked\`.`,
+                    actions: [
+                        {label: 'Перейти к складу', href: '/seller-dashboard/ingredients', style: 'primary'},
+                    ],
+                    meta: {ingredientName: ing.name},
+                })
+            }
+            for (const ing of low) {
+                await dispatchNotification({
+                    recipientUserId: asUserId(auth.userId),
+                    kind: 'ingredient_low',
+                    severity: 'warning',
+                    titleMd: `**Мало ингредиента:** ${ing.name}`,
+                    bodyMd: `Осталось ${ing.stock} ${ing.unit}, порог ${ing.alert} ${ing.unit}.`,
+                    actions: [
+                        {label: 'Открыть склад', href: '/seller-dashboard/ingredients', style: 'primary'},
+                    ],
+                    meta: {ingredientName: ing.name},
+                })
+            }
+        }
         return NextResponse.json({ok: true})
     } catch (err) {
         if (err instanceof SellerOrderOwnershipError) {

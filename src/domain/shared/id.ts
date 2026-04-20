@@ -14,6 +14,7 @@ export type CustomizationOfferId = Brand<number, 'CustomizationOfferId'>
 export type CustomizationMessageId = Brand<number, 'CustomizationMessageId'>
 export type ProductOptionGroupId = Brand<number, 'ProductOptionGroupId'>
 export type ProductOptionValueId = Brand<number, 'ProductOptionValueId'>
+export type NotificationId = Brand<number, 'NotificationId'>
 
 export function asProductId(value: number): ProductId {
     return value as ProductId
@@ -69,4 +70,8 @@ export function asProductOptionGroupId(value: number): ProductOptionGroupId {
 
 export function asProductOptionValueId(value: number): ProductOptionValueId {
     return value as ProductOptionValueId
+}
+
+export function asNotificationId(value: number): NotificationId {
+    return value as NotificationId
 }
