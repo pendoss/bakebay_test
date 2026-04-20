@@ -13,7 +13,6 @@ import {
     removeItem as removeItemDomain,
     updateQuantity as updateQuantityDomain,
 } from '@/src/domain/cart'
-import type {ProductId} from '@/src/domain/shared/id'
 import type {CartStorage} from '@/src/application/ports/cart-storage'
 import {RootStoreContext} from './root-store-context'
 
@@ -45,13 +44,13 @@ export class CartStore {
         this.storage.save(this.cart)
     }
 
-    removeItem(id: ProductId): void {
-        this.cart = removeItemDomain(this.cart, id)
+    removeItem(lineId: string): void {
+        this.cart = removeItemDomain(this.cart, lineId)
         this.storage.save(this.cart)
     }
 
-    updateQuantity(id: ProductId, quantity: number): void {
-        this.cart = updateQuantityDomain(this.cart, id, quantity)
+    updateQuantity(lineId: string, quantity: number): void {
+        this.cart = updateQuantityDomain(this.cart, lineId, quantity)
         this.storage.save(this.cart)
     }
 
@@ -97,8 +96,8 @@ export function useCartActions() {
     const store = useCartStore()
     return {
         addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => store.addItem(item, quantity),
-        removeItem: (id: ProductId) => store.removeItem(id),
-        updateQuantity: (id: ProductId, quantity: number) => store.updateQuantity(id, quantity),
+        removeItem: (lineId: string) => store.removeItem(lineId),
+        updateQuantity: (lineId: string, quantity: number) => store.updateQuantity(lineId, quantity),
         clear: () => store.clear(),
         applyPromo: (code: string) => store.applyPromo(code),
         setCart: (cart: Cart) => store.setCart(cart),

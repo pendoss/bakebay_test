@@ -9,6 +9,7 @@ export {
     clearPromo,
     itemsCount,
     isEmpty,
+    cartLineId,
 } from './cart'
 export type {CartTotals} from './totals'
 export {calcSubtotal, calcTotals} from './totals'

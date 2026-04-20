@@ -26,12 +26,17 @@ export interface Cart {
 
 export const EMPTY_CART: Cart = {items: [], promoCode: null}
 
+export function cartLineId(item: Omit<CartItem, 'quantity'>): string {
+    const optionKey = (item.optionSelections ?? [])
+        .map((o) => o.valueId)
+        .sort((a, b) => a - b)
+        .join(',')
+    const noteKey = (item.customerNote ?? '').trim()
+    return `${item.productId as unknown as number}|${optionKey}|${noteKey}`
+}
+
 function sameSelection(a: CartItem, b: Omit<CartItem, 'quantity'>): boolean {
-    if (a.productId !== b.productId) return false
-    const aKeys = (a.optionSelections ?? []).map((o) => o.valueId).sort().join(',')
-    const bKeys = (b.optionSelections ?? []).map((o) => o.valueId).sort().join(',')
-    if (aKeys !== bKeys) return false
-    return (a.customerNote ?? '') === (b.customerNote ?? '')
+    return cartLineId(a) === cartLineId(b)
 }
 
 export function addItem(cart: Cart, item: Omit<CartItem, 'quantity'>, quantity = 1): Cart {
@@ -45,15 +50,15 @@ export function addItem(cart: Cart, item: Omit<CartItem, 'quantity'>, quantity =
     return {...cart, items: [...cart.items, {...item, quantity}]}
 }
 
-export function removeItem(cart: Cart, productId: ProductId): Cart {
-    return {...cart, items: cart.items.filter((i) => i.productId !== productId)}
+export function removeItem(cart: Cart, lineId: string): Cart {
+    return {...cart, items: cart.items.filter((i) => cartLineId(i) !== lineId)}
 }
 
-export function updateQuantity(cart: Cart, productId: ProductId, quantity: number): Cart {
+export function updateQuantity(cart: Cart, lineId: string, quantity: number): Cart {
     if (quantity < 1) return cart
     return {
         ...cart,
-        items: cart.items.map((i) => (i.productId === productId ? {...i, quantity} : i)),
+        items: cart.items.map((i) => (cartLineId(i) === lineId ? {...i, quantity} : i)),
     }
 }
 
