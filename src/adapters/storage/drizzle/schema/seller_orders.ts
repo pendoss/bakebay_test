@@ -26,6 +26,13 @@ export const sellerOrderStockCheckEnum = pgEnum('seller_order_stock_check', [
     'unknown',
 ])
 
+export const sellerOrderRefundStateEnum = pgEnum('refund_state', [
+    'none',
+    'requested',
+    'approved',
+    'rejected',
+])
+
 export const sellerOrders = pgTable('seller_orders', {
     seller_order_id: integer().primaryKey().generatedAlwaysAsIdentity(),
     customer_order_id: integer().references(() => customerOrders.customer_order_id).notNull(),
@@ -38,6 +45,8 @@ export const sellerOrders = pgTable('seller_orders', {
     commission_amount: integer().notNull().default(0),
     total: integer().notNull().default(0),
     stock_check: sellerOrderStockCheckEnum().notNull().default('unknown'),
+    refund_state: sellerOrderRefundStateEnum().notNull().default('none'),
+    refund_reason: text(),
     cancel_reason: text(),
     paid_at: timestamp(),
     created_at: timestamp().notNull().defaultNow(),

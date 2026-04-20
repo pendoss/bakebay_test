@@ -38,6 +38,8 @@ const order = (over: Partial<SellerOrder> = {}): SellerOrder => ({
     items: [item()],
     pricing: calcPricing({subtotal: 1000, customizationDelta: 0, shipping: 0, commissionRate: 0.1}),
     stockCheck: 'unknown',
+    refundState: 'none',
+    refundReason: null,
     cancelReason: null,
     ...over,
 })

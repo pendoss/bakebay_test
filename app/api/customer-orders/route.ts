@@ -93,6 +93,8 @@ export async function GET() {
                     commission_amount: sellerOrders.commission_amount,
                     total: sellerOrders.total,
                     stock_check: sellerOrders.stock_check,
+                    refund_state: sellerOrders.refund_state,
+                    refund_reason: sellerOrders.refund_reason,
                     cancel_reason: sellerOrders.cancel_reason,
                     sellerName: sellers.seller_name,
                 })
@@ -120,6 +122,8 @@ export async function GET() {
                         sellerName: s.sellerName ?? null,
                         status: s.status,
                         stockCheck: s.stock_check,
+                        refundState: s.refund_state ?? 'none',
+                        refundReason: s.refund_reason ?? null,
                         pricing: {
                             subtotal: s.subtotal,
                             customizationDelta: s.customization_delta,

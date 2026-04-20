@@ -41,6 +41,8 @@ export interface SellerOrderPricing {
     readonly total: number
 }
 
+export type RefundState = 'none' | 'requested' | 'approved' | 'rejected'
+
 export interface SellerOrder {
     readonly id: SellerOrderId
     readonly customerOrderId: CustomerOrderId
@@ -49,10 +51,40 @@ export interface SellerOrder {
     readonly items: ReadonlyArray<SellerOrderItem>
     readonly pricing: SellerOrderPricing
     readonly stockCheck: StockOverall
+    readonly refundState: RefundState
+    readonly refundReason: string | null
     readonly cancelReason: string | null
 }
 
 export type StockOverall = 'ok' | 'low' | 'missing' | 'unknown'
+
+const REFUND_ELIGIBLE_STATUSES: ReadonlySet<SellerOrderStatus> = new Set<SellerOrderStatus>([
+    'paid',
+    'preparing_blocked',
+    'preparing',
+    'ready_to_ship',
+])
+
+export class RefundNotAllowedError extends Error {
+    constructor(public readonly status: SellerOrderStatus, public readonly refundState: RefundState) {
+        super(`Refund cannot be requested: status=${status}, refundState=${refundState}`)
+        this.name = 'RefundNotAllowedError'
+    }
+}
+
+export function canRequestRefund(order: SellerOrder): boolean {
+    if (order.refundState !== 'none' && order.refundState !== 'rejected') return false
+    return REFUND_ELIGIBLE_STATUSES.has(order.status)
+}
+
+export function assertRefundRequestable(order: SellerOrder): void {
+    if (!canRequestRefund(order)) throw new RefundNotAllowedError(order.status, order.refundState)
+}
+
+export function withRefundRequested(order: SellerOrder, reason: string): SellerOrder {
+    assertRefundRequestable(order)
+    return {...order, refundState: 'requested', refundReason: reason}
+}
 
 const ALLOWED_TRANSITIONS: Record<SellerOrderStatus, ReadonlyArray<SellerOrderStatus>> = {
     draft: ['pending_seller_review', 'cancelled'],

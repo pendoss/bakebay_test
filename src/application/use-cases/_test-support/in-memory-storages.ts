@@ -18,7 +18,13 @@ import type {
     CustomerOrderDerivedStatus,
 } from '@/src/domain/customer-order'
 import type {Ingredient} from '@/src/domain/ingredient'
-import type {RequiredIngredient, SellerOrder, SellerOrderStatus, StockOverall} from '@/src/domain/seller-order'
+import type {
+    RefundState,
+    RequiredIngredient,
+    SellerOrder,
+    SellerOrderStatus,
+    StockOverall,
+} from '@/src/domain/seller-order'
 import {calcItemsSubtotal, calcPricing} from '@/src/domain/seller-order'
 import {
     asCustomerOrderId,
@@ -108,6 +114,8 @@ export function makeInMemoryStorages() {
                     items,
                     pricing,
                     stockCheck: 'unknown',
+                    refundState: 'none',
+                    refundReason: null,
                     cancelReason: null,
                 })
                 createdSubs.push(id)
@@ -149,6 +157,11 @@ export function makeInMemoryStorages() {
             const existing = subs.get(id)
             if (!existing) return
             subs.set(id, {...existing, stockCheck})
+        },
+        async updateRefund(id: SellerOrderId, state: RefundState, reason: string | null) {
+            const existing = subs.get(id)
+            if (!existing) return
+            subs.set(id, {...existing, refundState: state, refundReason: reason})
         },
     }
 

@@ -74,6 +74,8 @@ export async function GET() {
             customerOrderId: s.customer_order_id,
             status: s.status,
             stockCheck: s.stock_check,
+            refundState: s.refund_state ?? 'none',
+            refundReason: s.refund_reason ?? null,
             cancelReason: s.cancel_reason,
             createdAt: s.created_at,
             pricing: {

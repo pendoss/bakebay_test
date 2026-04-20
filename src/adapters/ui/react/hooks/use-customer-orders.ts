@@ -26,6 +26,8 @@ export interface SellerOrderDTO {
     readonly sellerName?: string | null
     readonly status: string
     readonly stockCheck: string
+    readonly refundState: string
+    readonly refundReason: string | null
     readonly pricing: SellerOrderPricingDTO
     readonly cancelReason: string | null
     readonly items: ReadonlyArray<SellerOrderItemDTO>
@@ -110,5 +112,18 @@ export async function paySellerOrder(sellerOrderId: number, payload: MockPayment
     if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string }
         throw new Error(err.error ?? `Payment failed (${res.status})`)
+    }
+}
+
+export async function requestRefund(sellerOrderId: number, reason: string): Promise<void> {
+    const res = await fetch(`/api/seller-orders/${sellerOrderId}/refund-request`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include',
+        body: JSON.stringify({reason}),
+    })
+    if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(err.error ?? `Refund request failed (${res.status})`)
     }
 }

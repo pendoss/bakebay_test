@@ -23,7 +23,7 @@ import {
     asUserId,
 } from '@/src/domain/shared/id'
 import type {CustomerOrderId, SellerId, SellerOrderId, UserId} from '@/src/domain/shared/id'
-import type {SellerOrder, SellerOrderStatus, StockOverall} from '@/src/domain/seller-order'
+import type {RefundState, SellerOrder, SellerOrderStatus, StockOverall} from '@/src/domain/seller-order'
 import {calcPricing} from '@/src/domain/seller-order'
 
 function toCustomerOrder(row: typeof customerOrders.$inferSelect, subIds: ReadonlyArray<number>): CustomerOrder {
@@ -206,6 +206,8 @@ export function sellerOrderStorageDrizzle(): SellerOrderStorage {
                     total: head.total,
                 },
                 stockCheck: head.stock_check as StockOverall,
+                refundState: (head.refund_state as RefundState | undefined) ?? 'none',
+                refundReason: head.refund_reason ?? null,
                 cancelReason: head.cancel_reason,
             }
         },
@@ -242,6 +244,13 @@ export function sellerOrderStorageDrizzle(): SellerOrderStorage {
             await db
                 .update(sellerOrders)
                 .set({stock_check: stockCheck, updated_at: new Date()})
+                .where(eq(sellerOrders.seller_order_id, id as unknown as number))
+        },
+
+        async updateRefund(id: SellerOrderId, state: RefundState, reason: string | null) {
+            await db
+                .update(sellerOrders)
+                .set({refund_state: state, refund_reason: reason, updated_at: new Date()})
                 .where(eq(sellerOrders.seller_order_id, id as unknown as number))
         },
     }

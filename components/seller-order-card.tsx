@@ -2,7 +2,7 @@
 
 import {useState} from 'react'
 import Link from 'next/link'
-import {CreditCard, ExternalLink, MessageSquare} from 'lucide-react'
+import {CreditCard, ExternalLink, MessageSquare, Undo2} from 'lucide-react'
 import {Card, CardContent, CardFooter, CardHeader} from '@/components/ui/card'
 import {Badge} from '@/components/ui/badge'
 import {Separator} from '@/components/ui/separator'
@@ -11,6 +11,8 @@ import {CustomizationChat} from '@/components/customization-chat'
 import {PaymentDialog} from '@/components/payment-dialog'
 import {StockReportPanel} from '@/components/stock-report-panel'
 import type {SellerOrderDTO} from '@/src/adapters/ui/react/hooks/use-customer-orders'
+import {requestRefund} from '@/src/adapters/ui/react/hooks/use-customer-orders'
+import {Textarea} from '@/components/ui/textarea'
 
 export function chatInboxHref(viewerRole: 'customer' | 'seller', threadId: number): string {
     const base = viewerRole === 'seller' ? '/seller-dashboard/chats' : '/chats'
@@ -62,6 +64,24 @@ export function SellerOrderCard({sub, viewerRole = 'customer', onChanged}: Selle
     const showStockForSeller =
         viewerRole === 'seller' &&
         (sub.status === 'paid' || sub.status === 'preparing' || sub.status === 'preparing_blocked')
+    const refundEligibleStatuses = ['paid', 'preparing_blocked', 'preparing', 'ready_to_ship']
+    const canRequestRefund =
+        refundEligibleStatuses.includes(sub.status) && sub.refundState !== 'requested' && sub.refundState !== 'approved'
+    const [refundOpen, setRefundOpen] = useState(false)
+    const [refundReason, setRefundReason] = useState('')
+    const [refundBusy, setRefundBusy] = useState(false)
+    async function submitRefund() {
+        if (!refundReason.trim()) return
+        setRefundBusy(true)
+        try {
+            await requestRefund(sub.id, refundReason.trim())
+            setRefundOpen(false)
+            setRefundReason('')
+            onChanged?.()
+        } finally {
+            setRefundBusy(false)
+        }
+    }
 
     return (
         <Card className='overflow-hidden border-lavender-dessert/30'>
@@ -143,6 +163,52 @@ export function SellerOrderCard({sub, viewerRole = 'customer', onChanged}: Selle
                         sellerOrderId={sub.id}
                         title={sub.status === 'preparing_blocked' ? 'Нужна докупка' : 'Резерв по складу'}
                     />
+                )}
+                {sub.refundState === 'requested' && (
+                    <div className='rounded border border-caramel-light/60 bg-caramel-light/20 p-3 text-sm space-y-1'>
+                        <div className='font-medium'>Запрошен возврат</div>
+                        {sub.refundReason && (
+                            <div className='text-xs text-muted-foreground'>Причина: {sub.refundReason}</div>
+                        )}
+                    </div>
+                )}
+                {sub.refundState === 'approved' && (
+                    <div className='rounded border p-3 text-sm text-muted-foreground'>Возврат оформлен.</div>
+                )}
+                {canRequestRefund && (
+                    <div className='pt-1'>
+                        {refundOpen ? (
+                            <div className='rounded border border-destructive/30 p-3 space-y-2'>
+                                <p className='text-sm'>
+                                    После подтверждения продавец получит запрос на возврат. Статус подзаказа обновится,
+                                    когда возврат одобрят.
+                                </p>
+                                <Textarea
+                                    value={refundReason}
+                                    onChange={(e) => setRefundReason(e.target.value)}
+                                    placeholder='Опишите причину возврата'
+                                />
+                                <div className='flex gap-2'>
+                                    <Button
+                                        size='sm'
+                                        variant='destructive'
+                                        onClick={submitRefund}
+                                        disabled={refundBusy || !refundReason.trim()}
+                                    >
+                                        Запросить возврат
+                                    </Button>
+                                    <Button size='sm' variant='outline' onClick={() => setRefundOpen(false)}>
+                                        Отмена
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <Button size='sm' variant='outline' onClick={() => setRefundOpen(true)} className='gap-1'>
+                                <Undo2 className='h-4 w-4'/>
+                                Запросить возврат
+                            </Button>
+                        )}
+                    </div>
                 )}
             </CardContent>
             {canPay && (

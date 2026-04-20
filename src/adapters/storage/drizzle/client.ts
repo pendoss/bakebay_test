@@ -13,7 +13,12 @@ import {productImages} from './schema/product_images';
 import {productIngredients, stockStatusEnum} from './schema/product_ingredients';
 import {reviews} from './schema/reviews';
 import {customerOrders, customerOrderDerivedStatusEnum} from './schema/customer_orders';
-import {sellerOrders, sellerOrderStatusEnum, sellerOrderStockCheckEnum} from './schema/seller_orders';
+import {
+    sellerOrders,
+    sellerOrderStatusEnum,
+    sellerOrderStockCheckEnum,
+    sellerOrderRefundStateEnum,
+} from './schema/seller_orders';
 import {sellerOrderItems} from './schema/seller_order_items';
 import {
     customizationThreads,
@@ -62,6 +67,7 @@ const db = drizzle(pool, {
         sellerOrders,
         sellerOrderStatusEnum,
         sellerOrderStockCheckEnum,
+        sellerOrderRefundStateEnum,
         sellerOrderItems,
         customizationThreads,
         customizationOffers,
@@ -99,6 +105,7 @@ export {
     sellerOrders,
     sellerOrderStatusEnum,
     sellerOrderStockCheckEnum,
+    sellerOrderRefundStateEnum,
     sellerOrderItems,
     customizationThreads,
     customizationOffers,
