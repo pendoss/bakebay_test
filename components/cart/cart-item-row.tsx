@@ -6,11 +6,7 @@ import {Loader2, MessageSquarePlus, Minus, Pencil, Plus, Trash2, X} from 'lucide
 import {Button} from '@/components/ui/button'
 import {Card} from '@/components/ui/card'
 import {Textarea} from '@/components/ui/textarea'
-import {
-    cartLineId,
-    type CartItem,
-    type CartItemOptionSelection,
-} from '@/src/domain/cart'
+import {type CartItem, type CartItemOptionSelection} from '@/src/domain/cart'
 import {useCartActions} from '@/src/adapters/ui/react/stores'
 import {
     useProductOptions,
@@ -25,8 +21,7 @@ interface Props {
 const COMMIT_DELAY_MS = 350
 
 export function CartItemRow({item}: Props) {
-    const lineId = cartLineId(item)
-    const {updateQuantity, removeItem, addItem} = useCartActions()
+    const {updateQuantity, removeItem, updateItem} = useCartActions()
     const productId = item.productId as unknown as number
     const {groups, loading, error} = useProductOptions(productId)
 
@@ -38,11 +33,23 @@ export function CartItemRow({item}: Props) {
     const [pending, setPending] = useState(false)
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+    const itemOptionsKey = (item.optionSelections ?? [])
+        .map((o) => `${o.groupId}:${o.valueId}`)
+        .sort()
+        .join('|')
+    const draftKey = draftSelections
+        .map((o) => `${o.groupId}:${o.valueId}`)
+        .sort()
+        .join('|')
+
     useEffect(() => {
-        // Когда строка пересоздаётся после коммита, подтягиваем новое item.
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local draft with store
+        if (itemOptionsKey === draftKey) return
+        // Внешнее изменение (например, reset корзины или checkout) —
+        // синхронизируем draft. Собственные коммиты совпадают по key,
+        // поэтому цикла не возникает.
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- external sync
         setDraftSelections(item.optionSelections ?? [])
-    }, [item.optionSelections])
+    }, [itemOptionsKey, draftKey, item.optionSelections])
 
     useEffect(() => {
         return () => {
@@ -64,32 +71,21 @@ export function CartItemRow({item}: Props) {
     const commit = useCallback(
         (selections: CartItemOptionSelection[], nextNote: string) => {
             const newUnitPrice = basePrice + selections.reduce((s, o) => s + o.priceDelta, 0)
-            removeItem(lineId)
-            addItem(
-                {
-                    productId: item.productId,
-                    name: item.name,
-                    price: newUnitPrice,
-                    image: item.image,
-                    seller: item.seller,
-                    optionSelections: selections.length > 0 ? selections : undefined,
-                    customerNote: nextNote.trim() || undefined,
-                },
-                item.quantity,
-            )
+            updateItem(item.clientId, {
+                price: newUnitPrice,
+                optionSelections: selections.length > 0 ? selections : undefined,
+                customerNote: nextNote.trim() || undefined,
+            })
+            setPending(false)
         },
-        [addItem, basePrice, item.image, item.name, item.productId, item.quantity, item.seller, lineId, removeItem],
+        [basePrice, item.clientId, updateItem],
     )
 
     const scheduleCommit = useCallback(
         (selections: CartItemOptionSelection[], nextNote: string) => {
             if (commitTimerRef.current) clearTimeout(commitTimerRef.current)
             setPending(true)
-            commitTimerRef.current = setTimeout(() => {
-                commit(selections, nextNote)
-                // pending сбросится при remount — не трогаем setPending, потому
-                // что компонент может размонтироваться к этому моменту.
-            }, COMMIT_DELAY_MS)
+            commitTimerRef.current = setTimeout(() => commit(selections, nextNote), COMMIT_DELAY_MS)
         },
         [commit],
     )
@@ -179,7 +175,7 @@ export function CartItemRow({item}: Props) {
                                 variant='outline'
                                 size='icon'
                                 className='h-8 w-8 rounded-full'
-                                onClick={() => updateQuantity(lineId, item.quantity - 1)}
+                                onClick={() => updateQuantity(item.clientId, item.quantity - 1)}
                                 disabled={item.quantity <= 1}
                             >
                                 <Minus className='h-3 w-3'/>
@@ -190,7 +186,7 @@ export function CartItemRow({item}: Props) {
                                 variant='outline'
                                 size='icon'
                                 className='h-8 w-8 rounded-full'
-                                onClick={() => updateQuantity(lineId, item.quantity + 1)}
+                                onClick={() => updateQuantity(item.clientId, item.quantity + 1)}
                             >
                                 <Plus className='h-3 w-3'/>
                                 <span className='sr-only'>Увеличить количество</span>
@@ -200,7 +196,7 @@ export function CartItemRow({item}: Props) {
                             variant='ghost'
                             size='sm'
                             className='text-destructive'
-                            onClick={() => removeItem(lineId)}
+                            onClick={() => removeItem(item.clientId)}
                         >
                             <Trash2 className='h-4 w-4 mr-1'/>
                             Удалить

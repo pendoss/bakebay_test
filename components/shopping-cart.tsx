@@ -17,7 +17,6 @@ import {
     useCurrentUser
 } from '@/src/adapters/ui/react/stores'
 import {EmptyCartError, useCheckout} from '@/src/adapters/ui/react/hooks/use-checkout'
-import {cartLineId} from '@/src/domain/cart'
 import {useToast} from '@/hooks/use-toast'
 import {useAuthDialog} from '@/src/adapters/ui/react/providers/auth-dialog-provider'
 
@@ -85,7 +84,7 @@ export const ShoppingCart = observer(function ShoppingCart() {
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
             <div className='lg:col-span-2 space-y-4'>
                 {items.map((item) => (
-                    <CartItemRow key={cartLineId(item)} item={item}/>
+                    <CartItemRow key={item.clientId} item={item}/>
                 ))}
 
                 <div className='flex justify-between items-center'>

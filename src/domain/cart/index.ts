@@ -1,9 +1,10 @@
-export type {Cart, CartItem, CartItemOptionSelection} from './cart'
+export type {AddItemInput, Cart, CartItem, CartItemOptionSelection, UpdateItemPatch} from './cart'
 export {
     EMPTY_CART,
     addItem,
     removeItem,
     updateQuantity,
+    updateItem,
     clear,
     applyPromo,
     clearPromo,

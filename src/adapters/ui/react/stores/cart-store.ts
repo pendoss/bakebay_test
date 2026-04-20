@@ -2,7 +2,7 @@
 
 import {makeAutoObservable} from 'mobx'
 import {useContext} from 'react'
-import type {Cart, CartItem, CartTotals} from '@/src/domain/cart'
+import type {AddItemInput, Cart, CartItem, CartTotals, UpdateItemPatch} from '@/src/domain/cart'
 import {
     addItem as addItemDomain,
     applyPromo as applyPromoDomain,
@@ -11,6 +11,7 @@ import {
     EMPTY_CART,
     itemsCount as itemsCountDomain,
     removeItem as removeItemDomain,
+    updateItem as updateItemDomain,
     updateQuantity as updateQuantityDomain,
 } from '@/src/domain/cart'
 import type {CartStorage} from '@/src/application/ports/cart-storage'
@@ -39,18 +40,23 @@ export class CartStore {
         this.cart = this.storage.load()
     }
 
-    addItem(item: Omit<CartItem, 'quantity'>, quantity = 1): void {
+    addItem(item: AddItemInput, quantity = 1): void {
         this.cart = addItemDomain(this.cart, item, quantity)
         this.storage.save(this.cart)
     }
 
-    removeItem(lineId: string): void {
-        this.cart = removeItemDomain(this.cart, lineId)
+    removeItem(clientId: string): void {
+        this.cart = removeItemDomain(this.cart, clientId)
         this.storage.save(this.cart)
     }
 
-    updateQuantity(lineId: string, quantity: number): void {
-        this.cart = updateQuantityDomain(this.cart, lineId, quantity)
+    updateQuantity(clientId: string, quantity: number): void {
+        this.cart = updateQuantityDomain(this.cart, clientId, quantity)
+        this.storage.save(this.cart)
+    }
+
+    updateItem(clientId: string, patch: UpdateItemPatch): void {
+        this.cart = updateItemDomain(this.cart, clientId, patch)
         this.storage.save(this.cart)
     }
 
@@ -95,9 +101,10 @@ export function useCartRaw(): Cart {
 export function useCartActions() {
     const store = useCartStore()
     return {
-        addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => store.addItem(item, quantity),
-        removeItem: (lineId: string) => store.removeItem(lineId),
-        updateQuantity: (lineId: string, quantity: number) => store.updateQuantity(lineId, quantity),
+        addItem: (item: AddItemInput, quantity?: number) => store.addItem(item, quantity),
+        removeItem: (clientId: string) => store.removeItem(clientId),
+        updateQuantity: (clientId: string, quantity: number) => store.updateQuantity(clientId, quantity),
+        updateItem: (clientId: string, patch: UpdateItemPatch) => store.updateItem(clientId, patch),
         clear: () => store.clear(),
         applyPromo: (code: string) => store.applyPromo(code),
         setCart: (cart: Cart) => store.setCart(cart),
