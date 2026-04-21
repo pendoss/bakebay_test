@@ -8,9 +8,9 @@ import {Textarea} from '@/components/ui/textarea'
 import {type CartItem, type CartItemOptionSelection} from '@/src/domain/cart'
 import {useCartActions} from '@/src/adapters/ui/react/stores'
 import {
-    useProductOptions,
     type ProductOptionGroupDTO,
     type ProductOptionValueDTO,
+    useProductOptions,
 } from '@/src/adapters/ui/react/hooks/use-product-options'
 
 interface Props {
@@ -30,22 +30,13 @@ export function CartItemRow({item}: Props) {
     const [draftSelections, setDraftSelections] = useState<CartItemOptionSelection[]>(
         () => item.optionSelections ?? [],
     )
-    const [qtyDraft, setQtyDraft] = useState<string>(() => String(item.quantity))
-    const [qtyFocused, setQtyFocused] = useState(false)
-
-    useEffect(() => {
-        if (qtyFocused) return
-        setQtyDraft(String(item.quantity))
-    }, [item.quantity, qtyFocused])
+    const [qtyEdit, setQtyEdit] = useState<string | null>(null)
+    const qtyDraft = qtyEdit ?? String(item.quantity)
 
     const commitQty = (raw: string) => {
         const n = parseInt(raw, 10)
-        if (!Number.isFinite(n) || n < 1) {
-            setQtyDraft(String(item.quantity))
-            return
-        }
+        if (!Number.isFinite(n) || n < 1) return
         if (n !== item.quantity) updateQuantity(item.clientId, n)
-        setQtyDraft(String(n))
     }
     const [pending, setPending] = useState(false)
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -135,9 +126,11 @@ export function CartItemRow({item}: Props) {
     }
 
     return (
-        <article className='grid grid-cols-1 md:grid-cols-[260px_1fr] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_30px_-18px_rgba(33,40,54,0.18),0_1px_0_rgba(15,22,36,0.02)]'>
+        <article
+            className='grid grid-cols-1 md:grid-cols-[260px_1fr] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_30px_-18px_rgba(33,40,54,0.18),0_1px_0_rgba(15,22,36,0.02)]'>
             {/* hero */}
-            <div className='relative min-h-[180px] md:min-h-full bg-gradient-to-b from-lavender-dessert/30 to-lavender-dessert/10'>
+            <div
+                className='relative min-h-[180px] md:min-h-full bg-gradient-to-b from-lavender-dessert/30 to-lavender-dessert/10'>
                 <div className='absolute inset-3 overflow-hidden rounded-xl bg-muted/40'>
                     {item.image ? (
                         <Image
@@ -169,7 +162,8 @@ export function CartItemRow({item}: Props) {
                         </p>
                     </div>
                     <div className='text-right shrink-0'>
-                        <div className='text-xl font-semibold tracking-tight tabular-nums leading-none flex items-center justify-end gap-2'>
+                        <div
+                            className='text-xl font-semibold tracking-tight tabular-nums leading-none flex items-center justify-end gap-2'>
                             {pending && (
                                 <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' aria-label='Обновляем'/>
                             )}
@@ -231,16 +225,16 @@ export function CartItemRow({item}: Props) {
                                 aria-label='Количество'
                                 value={qtyDraft}
                                 onFocus={(e) => {
-                                    setQtyFocused(true)
+                                    setQtyEdit(String(item.quantity))
                                     e.currentTarget.select()
                                 }}
                                 onChange={(e) => {
                                     const digits = e.target.value.replace(/\D/g, '').slice(0, 4)
-                                    setQtyDraft(digits)
+                                    setQtyEdit(digits)
                                 }}
                                 onBlur={() => {
-                                    setQtyFocused(false)
                                     commitQty(qtyDraft)
+                                    setQtyEdit(null)
                                 }}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
@@ -249,7 +243,7 @@ export function CartItemRow({item}: Props) {
                                     }
                                     if (e.key === 'Escape') {
                                         e.preventDefault()
-                                        setQtyDraft(String(item.quantity))
+                                        setQtyEdit(null)
                                         e.currentTarget.blur()
                                     }
                                 }}
@@ -299,7 +293,8 @@ function OptionSection({group, selectedValueId, onSelect}: OptionSectionProps) {
             <div className='flex items-center gap-2 text-[13px] font-semibold text-foreground'>
                 <span>{group.name}</span>
                 {group.required && (
-                    <span className='inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.04em] font-bold text-primary'>
+                    <span
+                        className='inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.04em] font-bold text-primary'>
                         <span className='h-1 w-1 rounded-full bg-primary ring-2 ring-primary/15'/>
                         обязательно
                     </span>
@@ -312,7 +307,7 @@ function OptionSection({group, selectedValueId, onSelect}: OptionSectionProps) {
 
 function Segmented({group, selectedValueId, onSelect}: OptionSectionProps) {
     const containerRef = useRef<HTMLDivElement | null>(null)
-    const [indicator, setIndicator] = useState<{x: number; w: number; ready: boolean}>({
+    const [indicator, setIndicator] = useState<{ x: number; w: number; ready: boolean }>({
         x: 0,
         w: 0,
         ready: false,
@@ -454,7 +449,7 @@ function Breakdown({basePrice, selections, quantity, total}: BreakdownProps) {
     )
 }
 
-function BreakdownRow({label, value}: {label: string; value: string}) {
+function BreakdownRow({label, value}: { label: string; value: string }) {
     return (
         <li className='flex items-baseline justify-between gap-3 text-muted-foreground'>
             <span className='truncate'>{label}</span>

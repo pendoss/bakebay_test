@@ -9,11 +9,10 @@ import {useCartActions} from '@/src/adapters/ui/react/stores'
 import {asProductId} from '@/src/domain/shared/id'
 import type {Product} from '@/src/domain/product'
 import type {ProductReview, ProductSellerInfo} from '@/src/adapters/ui/react/hooks/use-product-detail'
-import {
-    useProductOptions,
-    type ProductOptionGroupDTO,
-} from '@/src/adapters/ui/react/hooks/use-product-options'
+import {type ProductOptionGroupDTO, useProductOptions,} from '@/src/adapters/ui/react/hooks/use-product-options'
 import styles from './product-detail.module.css'
+
+const PLACEHOLDER_IMG = '/placeholder.svg'
 
 const dietaryTranslations: Record<string, string> = {
     'Gluten-Free': 'Без глютена',
@@ -88,13 +87,13 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
     const images = product.images.length > 0
         ? product.images
         : [{
-            url: product.mainImage ?? '/placeholder.svg',
+            url: product.mainImage ?? PLACEHOLDER_IMG,
             name: product.name,
             isMain: true,
             displayOrder: 0,
             s3Key: null
         }]
-    const mainImg = images[activeImg]?.url ?? '/placeholder.svg'
+    const mainImg = images[activeImg]?.url ?? PLACEHOLDER_IMG
 
     const sellerName = seller?.seller_name ?? product.seller?.name ?? 'Кондитер'
     const hasReviews = reviews.length > 0
@@ -141,7 +140,7 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
                 productId: asProductId(product.id),
                 name: product.name,
                 price: product.price + selectionDelta,
-                image: product.mainImage ?? '/placeholder.svg',
+                image: product.mainImage ?? PLACEHOLDER_IMG,
                 seller: sellerName,
                 optionSelections: optionSelections.length > 0 ? optionSelections : undefined,
                 customerNote: customerNote.trim() || undefined,
@@ -400,7 +399,7 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
                             {related.map((p) => (
                                 <Link key={p.id} href={`/product?id=${p.id}`} className={styles.rCard}>
                                     <div className={styles.rPic}>
-                                        <Image src={p.mainImage ?? '/placeholder.svg'} alt={p.name} width={240}
+                                        <Image src={p.mainImage ?? PLACEHOLDER_IMG} alt={p.name} width={240}
                                                height={240}/>
                                     </div>
                                     <div className={styles.rMeta}>
@@ -421,7 +420,7 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
             )}
 
             <div className={`${styles.stickyBuy} ${stickyVisible ? styles.show : ''}`}>
-                <Image src={product.mainImage ?? '/placeholder.svg'} alt='' width={40} height={40}/>
+                <Image src={product.mainImage ?? PLACEHOLDER_IMG} alt='' width={40} height={40}/>
                 <div className={styles.sInfo}>
                     <b>{product.name}</b>
                     <span>{(product.price * qty).toFixed(2)} руб.{qty > 1 ? ` · ${qty} шт` : ''}</span>

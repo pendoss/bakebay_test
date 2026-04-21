@@ -6,10 +6,8 @@ import {
     sellerOrderStorageDrizzle,
     sellerStorageDrizzle,
 } from '@/src/adapters/storage/drizzle'
-import {
-    advanceSellerOrderStatus,
-    SellerOrderOwnershipError,
-} from '@/src/application/use-cases/seller-order'
+import {advanceSellerOrderStatus, SellerOrderOwnershipError,} from '@/src/application/use-cases/seller-order'
+import type {SellerId, UserId} from '@/src/domain/shared/id'
 import {asSellerOrderId, asUserId} from '@/src/domain/shared/id'
 import {
     InvalidSellerOrderTransitionError,
@@ -19,6 +17,56 @@ import {
 import {getAuthPayload} from '@/app/api/get-auth'
 import {dispatchNotification, hasRecentNotification} from '@/app/api/notifications/_dispatch'
 import {listIngredientsBySeller} from '@/src/application/use-cases/ingredient'
+
+type IngredientAlertKind = 'ingredient_out' | 'ingredient_low'
+
+async function emitIngredientAlert(
+    sellerUserId: UserId,
+    kind: IngredientAlertKind,
+    ing: { name: string; stock: number; unit: string; alert: number },
+    windowHours: number,
+) {
+    const seen = await hasRecentNotification({
+        recipientUserId: sellerUserId,
+        kind,
+        metaKey: 'ingredientName',
+        metaValue: ing.name,
+        windowHours,
+    })
+    if (seen) return
+
+    const isOut = kind === 'ingredient_out'
+    await dispatchNotification({
+        recipientUserId: sellerUserId,
+        kind,
+        severity: isOut ? 'error' : 'warning',
+        titleMd: isOut ? `**Закончился ингредиент:** ${ing.name}` : `**Мало ингредиента:** ${ing.name}`,
+        bodyMd: isOut
+            ? `Запас обнулён после списания. Нужна докупка, иначе заказы перейдут в \`preparing_blocked\`.`
+            : `Осталось ${ing.stock} ${ing.unit}, порог ${ing.alert} ${ing.unit}.`,
+        actions: [
+            {
+                label: isOut ? 'Перейти к складу' : 'Открыть склад',
+                href: '/seller-dashboard/ingredients',
+                style: 'primary'
+            },
+        ],
+        meta: {ingredientName: ing.name},
+    })
+}
+
+async function emitStockAlertsOnReadyToShip(sellerId: SellerId, sellerUserId: UserId) {
+    const ingredients = await listIngredientsBySeller(sellerId, {
+        ingredientStorage: ingredientStorageDrizzle(),
+    })
+    const dedupHours = Number(process.env.NOTIFY_INGREDIENT_DEDUP_HOURS ?? 24)
+    for (const ing of ingredients.filter((i) => i.status === 'out')) {
+        await emitIngredientAlert(sellerUserId, 'ingredient_out', ing, dedupHours)
+    }
+    for (const ing of ingredients.filter((i) => i.status === 'low')) {
+        await emitIngredientAlert(sellerUserId, 'ingredient_low', ing, dedupHours)
+    }
+}
 
 export async function POST(request: Request, {params}: { params: Promise<{ id: string }> }) {
     const auth = await getAuthPayload()
@@ -49,55 +97,7 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
             },
         )
         if (next === 'ready_to_ship') {
-            const ingredients = await listIngredientsBySeller(seller.id, {
-                ingredientStorage: ingredientStorageDrizzle(),
-            })
-            const sellerUserId = asUserId(auth.userId)
-            const dedupHours = Number(process.env.NOTIFY_INGREDIENT_DEDUP_HOURS ?? 24)
-            const out = ingredients.filter((ing) => ing.status === 'out')
-            const low = ingredients.filter((ing) => ing.status === 'low')
-            for (const ing of out) {
-                const seen = await hasRecentNotification({
-                    recipientUserId: sellerUserId,
-                    kind: 'ingredient_out',
-                    metaKey: 'ingredientName',
-                    metaValue: ing.name,
-                    windowHours: dedupHours,
-                })
-                if (seen) continue
-                await dispatchNotification({
-                    recipientUserId: sellerUserId,
-                    kind: 'ingredient_out',
-                    severity: 'error',
-                    titleMd: `**Закончился ингредиент:** ${ing.name}`,
-                    bodyMd: `Запас обнулён после списания. Нужна докупка, иначе заказы перейдут в \`preparing_blocked\`.`,
-                    actions: [
-                        {label: 'Перейти к складу', href: '/seller-dashboard/ingredients', style: 'primary'},
-                    ],
-                    meta: {ingredientName: ing.name},
-                })
-            }
-            for (const ing of low) {
-                const seen = await hasRecentNotification({
-                    recipientUserId: sellerUserId,
-                    kind: 'ingredient_low',
-                    metaKey: 'ingredientName',
-                    metaValue: ing.name,
-                    windowHours: dedupHours,
-                })
-                if (seen) continue
-                await dispatchNotification({
-                    recipientUserId: sellerUserId,
-                    kind: 'ingredient_low',
-                    severity: 'warning',
-                    titleMd: `**Мало ингредиента:** ${ing.name}`,
-                    bodyMd: `Осталось ${ing.stock} ${ing.unit}, порог ${ing.alert} ${ing.unit}.`,
-                    actions: [
-                        {label: 'Открыть склад', href: '/seller-dashboard/ingredients', style: 'primary'},
-                    ],
-                    meta: {ingredientName: ing.name},
-                })
-            }
+            await emitStockAlertsOnReadyToShip(seller.id, asUserId(auth.userId))
         }
         return NextResponse.json({ok: true})
     } catch (err) {

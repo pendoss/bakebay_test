@@ -38,6 +38,8 @@ interface Product {
     sales: number;
 }
 
+const PLACEHOLDER_IMAGE = '/placeholder.svg?height=200&width=200'
+
 // Пример данных для резервного отображения
 const exampleProducts: Product[] = [
     {
@@ -46,7 +48,7 @@ const exampleProducts: Product[] = [
         price: 24.99,
         inventory: 15,
         category: 'Торты',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Активен',
         rating: 4.8,
         sales: 32,
@@ -57,7 +59,7 @@ const exampleProducts: Product[] = [
         price: 22.99,
         inventory: 8,
         category: 'Торты',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Активен',
         rating: 4.7,
         sales: 24,
@@ -68,7 +70,7 @@ const exampleProducts: Product[] = [
         price: 18.99,
         inventory: 20,
         category: 'Печенье',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Активен',
         rating: 4.9,
         sales: 21,
@@ -79,7 +81,7 @@ const exampleProducts: Product[] = [
         price: 16.99,
         inventory: 12,
         category: 'Выпечка',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Активен',
         rating: 4.6,
         sales: 18,
@@ -90,7 +92,7 @@ const exampleProducts: Product[] = [
         price: 8.99,
         inventory: 6,
         category: 'Итальянские десерты',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Мало на складе',
         rating: 4.7,
         sales: 15,
@@ -101,7 +103,7 @@ const exampleProducts: Product[] = [
         price: 15.99,
         inventory: 0,
         category: 'Капкейки',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Нет в наличии',
         rating: 4.8,
         sales: 0,

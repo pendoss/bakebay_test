@@ -27,7 +27,7 @@ function fetchOptions(productId: number): Promise<ProductOptionGroupDTO[]> {
     const promise = fetch(`/api/products/${productId}/options`, {credentials: 'include'})
         .then(async (res) => {
             if (!res.ok) throw new Error(`Failed to load options: ${res.status}`)
-            const data = (await res.json()) as {groups: ProductOptionGroupDTO[]}
+            const data = (await res.json()) as { groups: ProductOptionGroupDTO[] }
             cache.set(productId, data.groups)
             return data.groups
         })
@@ -55,12 +55,10 @@ export function useProductOptions(productId: number | null) {
         if (cached) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from cache
             setGroups(cached)
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- cache hit means no loading
             setLoading(false)
             return
         }
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- background fetch
         setLoading(true)
         fetchOptions(productId)
             .then((data) => {

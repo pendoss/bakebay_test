@@ -13,6 +13,29 @@ import {getAuthPayload} from '@/app/api/get-auth'
 import {resolveSellerOrderByThread} from '@/app/api/customization/_lookup'
 import {dispatchNotification, loadThreadParticipants} from '@/app/api/notifications/_dispatch'
 
+async function notifyThreadMessage(threadId: number, author: MessageAuthor, bodyText: string) {
+    const participants = await loadThreadParticipants(threadId)
+    if (!participants) return
+
+    const isSellerAuthor = author === 'seller'
+    const recipientUserId = isSellerAuthor ? participants.customerUserId : participants.sellerUserId
+    const inboxBase = isSellerAuthor ? '/chats' : '/seller-dashboard/chats'
+    const titleMd = isSellerAuthor ? '**Сообщение от продавца**' : '**Сообщение от клиента**'
+    const bodyMd = bodyText.length > 280 ? `${bodyText.slice(0, 277)}…` : bodyText
+
+    await dispatchNotification({
+        recipientUserId,
+        kind: 'chat_message',
+        severity: 'info',
+        titleMd,
+        bodyMd,
+        actions: [
+            {label: 'Открыть согласование', href: `${inboxBase}?thread=${threadId}`, style: 'primary'},
+        ],
+        meta: {threadId, sellerOrderId: participants.sellerOrderId as unknown as number},
+    })
+}
+
 export async function POST(request: Request, {params}: { params: Promise<{ id: string }> }) {
     const auth = await getAuthPayload()
     if (!auth) return NextResponse.json({error: 'Unauthorized'}, {status: 401})
@@ -49,22 +72,7 @@ export async function POST(request: Request, {params}: { params: Promise<{ id: s
                 },
             )
         }
-        const participants = await loadThreadParticipants(Number(id))
-        if (participants) {
-            const recipientUserId = author === 'seller' ? participants.customerUserId : participants.sellerUserId
-            const inboxBase = author === 'seller' ? '/chats' : '/seller-dashboard/chats'
-            await dispatchNotification({
-                recipientUserId,
-                kind: 'chat_message',
-                severity: 'info',
-                titleMd: author === 'seller' ? '**Сообщение от продавца**' : '**Сообщение от клиента**',
-                bodyMd: bodyText.length > 280 ? `${bodyText.slice(0, 277)}…` : bodyText,
-                actions: [
-                    {label: 'Открыть согласование', href: `${inboxBase}?thread=${id}`, style: 'primary'},
-                ],
-                meta: {threadId: Number(id), sellerOrderId: participants.sellerOrderId as unknown as number},
-            })
-        }
+        await notifyThreadMessage(Number(id), author, bodyText)
         return NextResponse.json({ok: true})
     } catch (err) {
         if (err instanceof ThreadNotFoundError) return NextResponse.json({error: err.message}, {status: 404})
