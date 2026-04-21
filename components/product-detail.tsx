@@ -52,6 +52,7 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
     const [qty, setQty] = useState(1)
     const [activeImg, setActiveImg] = useState(0)
     const [stickyVisible, setStickyVisible] = useState(false)
+    const [cartAnim, setCartAnim] = useState(false)
     const addBtnRef = useRef<HTMLButtonElement | null>(null)
     const {groups: optionGroups} = useProductOptions(product.isCustomizable ? product.id : null)
     const [selections, setSelections] = useState<Record<number, number>>({})
@@ -425,11 +426,25 @@ export const ProductDetail = observer(function ProductDetail({product, seller, r
                     <b>{product.name}</b>
                     <span>{(product.price * qty).toFixed(2)} руб.{qty > 1 ? ` · ${qty} шт` : ''}</span>
                 </div>
-                <button className={styles.btn} onClick={handleAdd}>
-                    <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'>
+                <button
+                    className={`${styles.btn} ${styles.stickyBuyBtn} ${cartAnim ? styles.cartAnim : ''}`}
+                    onClick={() => {
+                        if (missingRequired.length === 0) {
+                            setCartAnim(false)
+                            requestAnimationFrame(() => setCartAnim(true))
+                        }
+                        handleAdd()
+                    }}
+                    onAnimationEnd={(e) => {
+                        if (e.animationName.includes('cartIcon')) setCartAnim(false)
+                    }}
+                >
+                    <span className={styles.cartFill} aria-hidden/>
+                    <svg className={styles.cartIcon} viewBox='0 0 24 24' fill='none' stroke='currentColor'
+                         strokeWidth='2'>
                         <path d='M3 5h2l2.7 11.4a2 2 0 0 0 2 1.6h7.5a2 2 0 0 0 2-1.6L21 8H6'/>
                     </svg>
-                    В корзину
+                    <span className={styles.cartLabel}>В корзину</span>
                 </button>
             </div>
         </div>

@@ -5,6 +5,7 @@ import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardFooter, CardHeader, CardTitle} from '@/components/ui/card'
 import {Input} from '@/components/ui/input'
 import {Separator} from '@/components/ui/separator'
+import {Lock} from 'lucide-react'
 import {CartItemRow} from '@/components/cart/cart-item-row'
 import {observer} from 'mobx-react-lite'
 import {useRouter} from 'next/navigation'
@@ -158,17 +159,17 @@ export const ShoppingCart = observer(function ShoppingCart() {
                             {promoApplied &&
                                 <div className='text-sm text-green-600 mb-4'>Промокод успешно применен!</div>
                             }
-                            {user ? (
-                                <Button className='w-full' onClick={performCheckout}>
-                                    Перейти к оформлению
-                                </Button>
-                            ) : (
-                                <Button
-                                    className='w-full'
-                                    onClick={() => requireAuth(performCheckout)}
-                                >
-                                    Зарегестрируйтесь или войдите, чтобы оформить заказ
-                                </Button>
+                            <Button
+                                className='w-full'
+                                onClick={() => (user ? performCheckout() : requireAuth(performCheckout))}
+                            >
+                                Перейти к оформлению
+                            </Button>
+                            {!user && (
+                                <p className='mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground'>
+                                    <Lock className='h-3 w-3'/>
+                                    Нужно войти — после входа вы вернётесь сюда
+                                </p>
                             )}
 
                         </div>

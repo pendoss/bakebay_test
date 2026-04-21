@@ -30,6 +30,23 @@ export function CartItemRow({item}: Props) {
     const [draftSelections, setDraftSelections] = useState<CartItemOptionSelection[]>(
         () => item.optionSelections ?? [],
     )
+    const [qtyDraft, setQtyDraft] = useState<string>(() => String(item.quantity))
+    const [qtyFocused, setQtyFocused] = useState(false)
+
+    useEffect(() => {
+        if (qtyFocused) return
+        setQtyDraft(String(item.quantity))
+    }, [item.quantity, qtyFocused])
+
+    const commitQty = (raw: string) => {
+        const n = parseInt(raw, 10)
+        if (!Number.isFinite(n) || n < 1) {
+            setQtyDraft(String(item.quantity))
+            return
+        }
+        if (n !== item.quantity) updateQuantity(item.clientId, n)
+        setQtyDraft(String(n))
+    }
     const [pending, setPending] = useState(false)
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -208,9 +225,36 @@ export function CartItemRow({item}: Props) {
                             >
                                 <Minus className='h-3.5 w-3.5'/>
                             </button>
-                            <div className='min-w-[40px] text-center font-semibold tabular-nums text-[15px]'>
-                                {item.quantity}
-                            </div>
+                            <input
+                                type='text'
+                                inputMode='numeric'
+                                aria-label='Количество'
+                                value={qtyDraft}
+                                onFocus={(e) => {
+                                    setQtyFocused(true)
+                                    e.currentTarget.select()
+                                }}
+                                onChange={(e) => {
+                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 4)
+                                    setQtyDraft(digits)
+                                }}
+                                onBlur={() => {
+                                    setQtyFocused(false)
+                                    commitQty(qtyDraft)
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                        e.currentTarget.blur()
+                                    }
+                                    if (e.key === 'Escape') {
+                                        e.preventDefault()
+                                        setQtyDraft(String(item.quantity))
+                                        e.currentTarget.blur()
+                                    }
+                                }}
+                                className='w-10 bg-transparent text-center font-semibold tabular-nums text-[15px] outline-none focus:ring-2 focus:ring-primary/40 rounded-md'
+                            />
                             <button
                                 type='button'
                                 onClick={() => updateQuantity(item.clientId, item.quantity + 1)}
