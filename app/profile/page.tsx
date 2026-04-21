@@ -2,7 +2,8 @@
 
 import {useEffect, useRef, useState} from 'react'
 import {useRouter} from 'next/navigation'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useCurrentUser, useUserActions} from '@/src/adapters/ui/react/stores'
 import {cn} from '@/lib/utils'
 import {useForm} from 'react-hook-form'
 import {zodResolver} from '@hookform/resolvers/zod'
@@ -79,10 +80,11 @@ const STATUS_LABELS: Record<string, string> = {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export default function ProfilePage() {
+const ProfilePage = observer(function ProfilePage() {
     const router = useRouter()
     const {toast} = useToast()
-    const {user: contextUser, refreshUser} = useUser()
+    const contextUser = useCurrentUser()
+    const {refreshUser} = useUserActions()
 
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
     const [orders, setOrders] = useState<Order[]>([])
@@ -403,7 +405,7 @@ export default function ProfilePage() {
                                             <CardDescription>Ваши последние 5 заказов.</CardDescription>
                                         </div>
                                         <Button variant='outline' size='sm' onClick={() => router.push('/orders')}>
-                            Все заказы
+                                            Все заказы
                                         </Button>
                                     </div>
                                 </CardHeader>
@@ -434,7 +436,7 @@ export default function ProfilePage() {
                                                         variant='outline' size='sm' className='mt-3 w-full'
                                                         onClick={() => router.push('/orders')}
                                                     >
-                                        Подробнее
+                                                        Подробнее
                                                     </Button>
                                                 </div>
                                             ))}
@@ -450,7 +452,7 @@ export default function ProfilePage() {
                                 <CardHeader>
                                     <CardTitle>Адрес доставки</CardTitle>
                                     <CardDescription>
-                        Ваш основной адрес доставки. Редактируйте его во вкладке «Аккаунт».
+                                        Ваш основной адрес доставки. Редактируйте его во вкладке «Аккаунт».
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -470,16 +472,16 @@ export default function ProfilePage() {
                                                 variant='outline' size='sm' className='mt-3'
                                                 onClick={goToAddressSection}
                                             >
-                            Редактировать
+                                                Редактировать
                                             </Button>
                                         </div>
                                     ) : (
                                         <div className='text-center py-8'>
                                             <p className='text-sm text-muted-foreground mb-4'>
-                                Адрес не указан.
+                                                Адрес не указан.
                                             </p>
                                             <Button variant='outline' onClick={goToAddressSection}>
-                                Добавить адрес
+                                                Добавить адрес
                                             </Button>
                                         </div>
                                     )}
@@ -491,4 +493,5 @@ export default function ProfilePage() {
             </div>
         </div>
     )
-}
+})
+export default ProfilePage

@@ -6,12 +6,13 @@ import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {Checkbox} from '@/components/ui/checkbox'
 import {Separator} from '@/components/ui/separator'
 import {StatusBadge} from '@/components/StatusBadge'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {useActiveOrders} from '../useActiveOrders'
 import {CheckedIngredientsType} from '../types'
 
-export function ByOrderTab() {
-    const {sellerId} = useUser()
+export const ByOrderTab = observer(function ByOrderTab() {
+    const sellerId = useSellerId()
     const {activeOrders, isLoading} = useActiveOrders(sellerId)
     const [checked, setChecked] = useState<CheckedIngredientsType>({})
 
@@ -86,4 +87,4 @@ export function ByOrderTab() {
             ))}
         </div>
     )
-}
+})

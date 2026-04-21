@@ -1,11 +1,22 @@
 import '@testing-library/jest-dom'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {UserNav} from './user-nav'
-import {UserProvider} from '@/contexts/user-context'
+import {RootStoreProvider} from '@/src/adapters/ui/react/stores'
+import {NotificationProvider} from '@/contexts/notification-context'
 
 function renderWithUser(ui: React.ReactElement) {
-    return render(<UserProvider>{ui}</UserProvider>)
+    return render(
+        <RootStoreProvider>
+            <NotificationProvider>{ui}</NotificationProvider>
+        </RootStoreProvider>,
+    )
 }
+
+const CUSTOMER_EMAIL = 'ivan@test.com'
+const CUSTOMER_FULL_NAME = 'Иван Иванов'
+const API_USERS_ME = '/api/users/me'
+const LOGIN_DIALOG_TITLE = 'Вход в систему'
+const EMAIL_PLACEHOLDER = 'your.email@example.com'
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -51,7 +62,7 @@ const CUSTOMER_USER = {
     user_id: 1,
     first_name: 'Иван',
     last_name: 'Иванов',
-    email: 'ivan@test.com',
+    email: CUSTOMER_EMAIL,
     user_role: 'customer',
 }
 
@@ -66,7 +77,7 @@ const SELLER_USER = {
 /** Mock /api/users/me to return a logged-in user (simulates valid HttpOnly cookie). */
 function mockFetchUserInfo(user: typeof CUSTOMER_USER | typeof SELLER_USER) {
     global.fetch = jest.fn().mockImplementation((url: string) => {
-        if (url === '/api/users/me') {
+        if (url === API_USERS_ME) {
             return Promise.resolve({
                 ok: true,
                 json: () => Promise.resolve(user),
@@ -85,7 +96,7 @@ function mockFetchUserInfo(user: typeof CUSTOMER_USER | typeof SELLER_USER) {
 /** Mock unauthenticated state: /api/users/me returns 401. */
 function mockFetchUnauthenticated() {
     global.fetch = jest.fn().mockImplementation((url: string) => {
-        if (url === '/api/users/me') {
+        if (url === API_USERS_ME) {
             return Promise.resolve({ok: false, status: 401, json: () => Promise.resolve({error: 'Unauthorized'})})
         }
         return Promise.reject(new Error(`Unexpected fetch: ${url}`))
@@ -102,7 +113,7 @@ function mockFetchLoginSuccess(user: typeof CUSTOMER_USER) {
                 json: () => Promise.resolve({success: true}),
             })
         }
-        if (url === '/api/users/me') {
+        if (url === API_USERS_ME) {
             meCallCount++
             if (meCallCount === 1) {
                 // Initial mount — not logged in yet
@@ -127,7 +138,7 @@ function mockFetchRegisterSuccess(user: typeof CUSTOMER_USER) {
                 json: () => Promise.resolve({success: true}),
             })
         }
-        if (url === '/api/users/me') {
+        if (url === API_USERS_ME) {
             meCallCount++
             if (meCallCount === 1) {
                 return Promise.resolve({ok: false, status: 401, json: () => Promise.resolve({error: 'Unauthorized'})})
@@ -161,12 +172,12 @@ describe('Неавторизованный пользователь', () => {
         expect(screen.getByText('Войти')).toBeInTheDocument()
     })
 
-    it('НЕ показывает пункты меню Профиль, Заказы, Избранное', async () => {
+    it('НЕ показывает пункты меню Профиль, Мои заказы, Избранное', async () => {
         renderWithUser(<UserNav/>)
         await act(async () => {
         })
         expect(screen.queryByText('Профиль')).not.toBeInTheDocument()
-        expect(screen.queryByText('Заказы')).not.toBeInTheDocument()
+        expect(screen.queryByText('Мои заказы')).not.toBeInTheDocument()
         expect(screen.queryByText('Избранное')).not.toBeInTheDocument()
     })
 
@@ -182,7 +193,7 @@ describe('Неавторизованный пользователь', () => {
         await act(async () => {
         })
         const calls = (global.fetch as jest.Mock).mock.calls
-        const meCall = calls.find(([url]: [string]) => url === '/api/users/me')
+        const meCall = calls.find(([url]: [string]) => url === API_USERS_ME)
         expect(meCall).toBeDefined()
     })
 })
@@ -197,9 +208,9 @@ describe('Авторизованный пользователь (customer)', () 
     it('показывает имя и email пользователя', async () => {
         renderWithUser(<UserNav/>)
         await waitFor(() => {
-            expect(screen.getByText('Иван Иванов')).toBeInTheDocument()
+            expect(screen.getByText(CUSTOMER_FULL_NAME)).toBeInTheDocument()
         })
-        expect(screen.getByText('ivan@test.com')).toBeInTheDocument()
+        expect(screen.getByText(CUSTOMER_EMAIL)).toBeInTheDocument()
     })
 
     it('показывает инициалы в аватаре', async () => {
@@ -209,30 +220,31 @@ describe('Авторизованный пользователь (customer)', () 
         })
     })
 
-    it('показывает пункты меню Профиль, Заказы, Избранное', async () => {
+    it('показывает пункты меню Профиль, Мои заказы, Избранное', async () => {
         renderWithUser(<UserNav/>)
-        await waitFor(() => screen.getByText('Иван Иванов'))
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
         expect(screen.getByText('Профиль')).toBeInTheDocument()
-        expect(screen.getByText('Заказы')).toBeInTheDocument()
+        expect(screen.getByText('Мои заказы')).toBeInTheDocument()
+        expect(screen.getByText('Согласования')).toBeInTheDocument()
         expect(screen.getByText('Избранное')).toBeInTheDocument()
     })
 
     it('НЕ показывает "Панель продавца" для customer', async () => {
         renderWithUser(<UserNav/>)
-        await waitFor(() => screen.getByText('Иван Иванов'))
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
         expect(screen.queryByText('Панель продавца')).not.toBeInTheDocument()
     })
 
     it('показывает кнопку "Выйти"', async () => {
         renderWithUser(<UserNav/>)
-        await waitFor(() => screen.getByText('Иван Иванов'))
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
         expect(screen.getByText('Выйти')).toBeInTheDocument()
     })
 
     it('выход вызывает POST /api/auth/logout и убирает данные пользователя', async () => {
         // After logout, /api/users/me returns 401
         global.fetch = jest.fn().mockImplementation((url: string, opts?: RequestInit) => {
-            if (url === '/api/users/me') {
+            if (url === API_USERS_ME) {
                 return Promise.resolve({ok: true, json: () => Promise.resolve(CUSTOMER_USER)})
             }
             if (url === '/api/auth/logout' && opts?.method === 'POST') {
@@ -245,7 +257,7 @@ describe('Авторизованный пользователь (customer)', () 
         }) as jest.Mock
 
         renderWithUser(<UserNav/>)
-        await waitFor(() => screen.getByText('Иван Иванов'))
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
 
         await act(async () => {
             fireEvent.click(screen.getByText('Выйти'))
@@ -257,22 +269,29 @@ describe('Авторизованный пользователь (customer)', () 
         )
         expect(logoutCall).toBeDefined()
         await waitFor(() => {
-            expect(screen.queryByText('Иван Иванов')).not.toBeInTheDocument()
+            expect(screen.queryByText(CUSTOMER_FULL_NAME)).not.toBeInTheDocument()
         })
     })
 
     it('переход по "Профиль" вызывает router.push("/profile")', async () => {
         renderWithUser(<UserNav/>)
-        await waitFor(() => screen.getByText('Иван Иванов'))
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
         fireEvent.click(screen.getByText('Профиль'))
         expect(pushMock).toHaveBeenCalledWith('/profile')
     })
 
-    it('переход по "Заказы" вызывает router.push("/orders")', async () => {
+    it('переход по "Мои заказы" вызывает router.push("/orders-v2")', async () => {
         renderWithUser(<UserNav/>)
-        await waitFor(() => screen.getByText('Иван Иванов'))
-        fireEvent.click(screen.getByText('Заказы'))
-        expect(pushMock).toHaveBeenCalledWith('/orders')
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
+        fireEvent.click(screen.getByText('Мои заказы'))
+        expect(pushMock).toHaveBeenCalledWith('/orders-v2')
+    })
+
+    it('переход по "Согласования" вызывает router.push("/chats")', async () => {
+        renderWithUser(<UserNav/>)
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
+        fireEvent.click(screen.getByText('Согласования'))
+        expect(pushMock).toHaveBeenCalledWith('/chats')
     })
 })
 
@@ -323,10 +342,10 @@ describe('Форма входа', () => {
         }) // flush initial /api/users/me (returns user after login)
 
         fireEvent.click(screen.getByText('Войти'))
-        await waitFor(() => screen.getByText('Вход в систему'))
+        await waitFor(() => screen.getByText(LOGIN_DIALOG_TITLE))
 
-        fireEvent.change(screen.getByPlaceholderText('your.email@example.com'), {
-            target: {value: 'ivan@test.com'},
+        fireEvent.change(screen.getByPlaceholderText(EMAIL_PLACEHOLDER), {
+            target: {value: CUSTOMER_EMAIL},
         })
         fireEvent.change(screen.getByPlaceholderText('••••••••'), {
             target: {value: 'password123'},
@@ -337,7 +356,7 @@ describe('Форма входа', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByText('Иван Иванов')).toBeInTheDocument()
+            expect(screen.getByText(CUSTOMER_FULL_NAME)).toBeInTheDocument()
         })
     })
 
@@ -349,9 +368,9 @@ describe('Форма входа', () => {
         })
 
         fireEvent.click(screen.getByText('Войти'))
-        await waitFor(() => screen.getByText('Вход в систему'))
+        await waitFor(() => screen.getByText(LOGIN_DIALOG_TITLE))
 
-        fireEvent.change(screen.getByPlaceholderText('your.email@example.com'), {
+        fireEvent.change(screen.getByPlaceholderText(EMAIL_PLACEHOLDER), {
             target: {value: 'test@test.com'},
         })
         fireEvent.change(screen.getByPlaceholderText('••••••••'), {
@@ -380,10 +399,10 @@ describe('Форма входа', () => {
         })
 
         fireEvent.click(screen.getByText('Войти'))
-        await waitFor(() => screen.getByText('Вход в систему'))
+        await waitFor(() => screen.getByText(LOGIN_DIALOG_TITLE))
 
-        fireEvent.change(screen.getByPlaceholderText('your.email@example.com'), {
-            target: {value: 'ivan@test.com'},
+        fireEvent.change(screen.getByPlaceholderText(EMAIL_PLACEHOLDER), {
+            target: {value: CUSTOMER_EMAIL},
         })
         fireEvent.change(screen.getByPlaceholderText('••••••••'), {
             target: {value: 'pass'},
@@ -395,7 +414,7 @@ describe('Форма входа', () => {
 
         await waitFor(() => {
             const calls = (global.fetch as jest.Mock).mock.calls
-            const meCalls = calls.filter(([url]: [string]) => url === '/api/users/me')
+            const meCalls = calls.filter(([url]: [string]) => url === API_USERS_ME)
             expect(meCalls.length).toBeGreaterThanOrEqual(1)
             // Should use credentials: 'include' (cookie-based auth), not Authorization header
             const lastMeCall = meCalls[meCalls.length - 1]
@@ -412,10 +431,10 @@ describe('Форма входа', () => {
         })
 
         fireEvent.click(screen.getByText('Войти'))
-        await waitFor(() => screen.getByText('Вход в систему'))
+        await waitFor(() => screen.getByText(LOGIN_DIALOG_TITLE))
 
-        fireEvent.change(screen.getByPlaceholderText('your.email@example.com'), {
-            target: {value: 'ivan@test.com'},
+        fireEvent.change(screen.getByPlaceholderText(EMAIL_PLACEHOLDER), {
+            target: {value: CUSTOMER_EMAIL},
         })
         fireEvent.change(screen.getByPlaceholderText('••••••••'), {
             target: {value: 'password123'},
@@ -425,7 +444,7 @@ describe('Форма входа', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Войти'}))
         })
 
-        await waitFor(() => screen.getByText('Иван Иванов'))
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
         expect(localStorage.getItem('auth')).toBeNull()
     })
 })
@@ -437,7 +456,7 @@ async function switchToRegisterTab() {
     const registerTabTrigger = screen.getByRole('tab', {name: 'Зарегистрироваться'})
     fireEvent.mouseDown(registerTabTrigger)
     fireEvent.click(registerTabTrigger)
-    await waitFor(() => screen.getByPlaceholderText('Иван Иванов'))
+    await waitFor(() => screen.getByPlaceholderText(CUSTOMER_FULL_NAME))
 }
 
 describe('Форма регистрации', () => {
@@ -449,16 +468,16 @@ describe('Форма регистрации', () => {
         })
 
         fireEvent.click(screen.getByText('Войти'))
-        await waitFor(() => screen.getByText('Вход в систему'))
+        await waitFor(() => screen.getByText(LOGIN_DIALOG_TITLE))
 
         await switchToRegisterTab()
 
-        fireEvent.change(screen.getByPlaceholderText('Иван Иванов'), {
-            target: {value: 'Иван Иванов'},
+        fireEvent.change(screen.getByPlaceholderText(CUSTOMER_FULL_NAME), {
+            target: {value: CUSTOMER_FULL_NAME},
         })
-        const emailInputs = screen.getAllByPlaceholderText('your.email@example.com')
+        const emailInputs = screen.getAllByPlaceholderText(EMAIL_PLACEHOLDER)
         fireEvent.change(emailInputs[emailInputs.length - 1], {
-            target: {value: 'ivan@test.com'},
+            target: {value: CUSTOMER_EMAIL},
         })
         const passwordInputs = screen.getAllByPlaceholderText('••••••••')
         fireEvent.change(passwordInputs[passwordInputs.length - 2], {
@@ -473,7 +492,7 @@ describe('Форма регистрации', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByText('Иван Иванов')).toBeInTheDocument()
+            expect(screen.getByText(CUSTOMER_FULL_NAME)).toBeInTheDocument()
         })
     })
 
@@ -485,16 +504,16 @@ describe('Форма регистрации', () => {
         })
 
         fireEvent.click(screen.getByText('Войти'))
-        await waitFor(() => screen.getByText('Вход в систему'))
+        await waitFor(() => screen.getByText(LOGIN_DIALOG_TITLE))
 
         await switchToRegisterTab()
 
-        fireEvent.change(screen.getByPlaceholderText('Иван Иванов'), {
-            target: {value: 'Иван Иванов'},
+        fireEvent.change(screen.getByPlaceholderText(CUSTOMER_FULL_NAME), {
+            target: {value: CUSTOMER_FULL_NAME},
         })
-        const emailInputs = screen.getAllByPlaceholderText('your.email@example.com')
+        const emailInputs = screen.getAllByPlaceholderText(EMAIL_PLACEHOLDER)
         fireEvent.change(emailInputs[emailInputs.length - 1], {
-            target: {value: 'ivan@test.com'},
+            target: {value: CUSTOMER_EMAIL},
         })
         const passwordInputs = screen.getAllByPlaceholderText('••••••••')
         fireEvent.change(passwordInputs[passwordInputs.length - 2], {
@@ -508,7 +527,7 @@ describe('Форма регистрации', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Создать аккаунт'}))
         })
 
-        await waitFor(() => screen.getByText('Иван Иванов'))
+        await waitFor(() => screen.getByText(CUSTOMER_FULL_NAME))
         expect(localStorage.getItem('auth')).toBeNull()
     })
 
@@ -520,14 +539,14 @@ describe('Форма регистрации', () => {
         })
 
         fireEvent.click(screen.getByText('Войти'))
-        await waitFor(() => screen.getByText('Вход в систему'))
+        await waitFor(() => screen.getByText(LOGIN_DIALOG_TITLE))
 
         await switchToRegisterTab()
 
-        fireEvent.change(screen.getByPlaceholderText('Иван Иванов'), {
+        fireEvent.change(screen.getByPlaceholderText(CUSTOMER_FULL_NAME), {
             target: {value: 'Новый Пользователь'},
         })
-        const emailInputs = screen.getAllByPlaceholderText('your.email@example.com')
+        const emailInputs = screen.getAllByPlaceholderText(EMAIL_PLACEHOLDER)
         fireEvent.change(emailInputs[emailInputs.length - 1], {
             target: {value: 'new@test.com'},
         })

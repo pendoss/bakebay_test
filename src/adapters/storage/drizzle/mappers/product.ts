@@ -21,6 +21,7 @@ interface ProductRow {
     track_inventory: boolean | null
     low_stock_alert: boolean | null
     status: string | null
+    is_customizable?: boolean | null
 }
 
 interface ImageRow {
@@ -102,5 +103,6 @@ export function rowsToProduct(bundle: ProductRowBundle): Product {
             : null,
         categoryInfo: bundle.category ? {id: bundle.category.id, name: bundle.category.name} : null,
         rating: bundle.seller?.seller_rating ?? 4.5,
+        isCustomizable: bundle.product.is_customizable ?? false,
     }
 }

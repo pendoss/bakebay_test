@@ -6,6 +6,8 @@ export type {
     ProductCategoryRef,
     ProductStatus,
     ProductDraft,
+    ProductSearchMatch,
+    ProductSearchResult,
 } from './product'
 export {
     isOwnedBySeller,

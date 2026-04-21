@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import {db, sellers, products, users} from '@/src/adapters/storage/drizzle';
-import { eq } from 'drizzle-orm';
+import {NextResponse} from 'next/server';
+import {db, products, sellers, users} from '@/src/adapters/storage/drizzle';
+import {eq} from 'drizzle-orm';
 import {Encode} from '@/app/api/jwt';
 import {getAuthPayload} from '@/app/api/get-auth';
 import {cookies} from 'next/headers';
@@ -12,21 +12,16 @@ export async function GET(request: Request) {
 
         // If ID is provided, return a single seller
         if (id) {
-            const seller = await db.query.sellers.findFirst({
-                where: eq(sellers.seller_id, parseInt(id)),
-                with: {
-                    products: true,
-                },
-            });
-
-            if (!seller) {
+            const rows = await db.select().from(sellers).where(eq(sellers.seller_id, parseInt(id))).limit(1);
+            if (rows.length === 0) {
                 return NextResponse.json(
                     {error: 'Seller not found'},
                     {status: 404}
                 );
             }
-
-            return NextResponse.json(seller);
+            const sellerRow = rows[0];
+            const sellerProducts = await db.select().from(products).where(eq(products.seller_id, parseInt(id)));
+            return NextResponse.json({...sellerRow, products: sellerProducts});
         }
 
         const userId = url.searchParams.get('userId');
@@ -51,16 +46,16 @@ export async function GET(request: Request) {
 }
 
 interface sellerRegisterData {
-  seller_name: string,
-  description: string,
-  location: string,
-  website: string,
-  contact_name: string,
-  contact_email: string,
-  contact_number: string,
-  inn: string,
-  about_products: string,
-  image_url: string,
+    seller_name: string,
+    description: string,
+    location: string,
+    website: string,
+    contact_name: string,
+    contact_email: string,
+    contact_number: string,
+    inn: string,
+    about_products: string,
+    image_url: string,
 }
 
 export async function POST(request: Request) {

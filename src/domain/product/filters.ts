@@ -11,11 +11,11 @@ export interface ProductFilters {
 
 export function matchesFilters(product: Product, filters: ProductFilters): boolean {
     const {priceRange, rating, dietary} = filters
-    if (priceRange) {
-        if (product.price < priceRange[0] || product.price > priceRange[1]) return false
+    if (priceRange && (product.price < priceRange[0] || product.price > priceRange[1])) {
+        return false
     }
-    if (rating && rating > 0) {
-        if (!product.rating || product.rating < rating) return false
+    if (rating && rating > 0 && (!product.rating || product.rating < rating)) {
+        return false
     }
     if (dietary && dietary.length > 0) {
         if (product.dietary.length === 0) return false

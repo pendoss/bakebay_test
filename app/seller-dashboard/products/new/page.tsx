@@ -2,7 +2,8 @@
 
 import {ChangeEvent, DragEvent, FormEvent, useRef, useState} from 'react'
 import {useRouter} from 'next/navigation'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import Image from 'next/image'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
@@ -19,42 +20,42 @@ import {createProduct} from '@/app/actions/product'
 
 // Define interfaces for the product page
 interface ProductImage {
-  url: string;
-  file: File;
-  name: string;
+    url: string;
+    file: File;
+    name: string;
 }
 
 interface ProductIngredient {
-  name: string;
-  amount: string;
-  unit: string;
+    name: string;
+    amount: string;
+    unit: string;
 }
 
 interface Product {
-  name: string;
-  description: string;
-  category: string;
-  status: string;
-  price: number;
-  cost: number;
-  inventory: number;
-  sku: string;
-  weight: number;
-  size: string;
-  storageInstructions: string;
-  shelfLife: number;
-  trackInventory: boolean;
-  lowStockAlert: boolean;
-  dietaryInfo: string[];
-  images: ProductImage[];
-  ingredients: ProductIngredient[];
-  sellerId?: number;
+    name: string;
+    description: string;
+    category: string;
+    status: string;
+    price: number;
+    cost: number;
+    inventory: number;
+    sku: string;
+    weight: number;
+    size: string;
+    storageInstructions: string;
+    shelfLife: number;
+    trackInventory: boolean;
+    lowStockAlert: boolean;
+    dietaryInfo: string[];
+    images: ProductImage[];
+    ingredients: ProductIngredient[];
+    sellerId?: number;
 }
 
-export default function NewProductPage() {
+const NewProductPage = observer(function NewProductPage() {
     const router = useRouter()
     const {toast} = useToast()
-    const {sellerId} = useUser()
+    const sellerId = useSellerId()
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
     const [images, setImages] = useState<ProductImage[]>([])
     const [ingredients, setIngredients] = useState<ProductIngredient[]>([])
@@ -290,16 +291,16 @@ export default function NewProductPage() {
             <Tabs defaultValue='basic' className='w-full'>
                 <TabsList className='w-full sm:w-auto grid grid-cols-4 sm:flex'>
                     <TabsTrigger value='basic' className='flex-1 sm:flex-auto'>
-              Основная информация
+                        Основная информация
                     </TabsTrigger>
                     <TabsTrigger value='details' className='flex-1 sm:flex-auto'>
-              Детали
+                        Детали
                     </TabsTrigger>
                     <TabsTrigger value='pricing' className='flex-1 sm:flex-auto'>
-              Цены
+                        Цены
                     </TabsTrigger>
                     <TabsTrigger value='images' className='flex-1 sm:flex-auto'>
-              Изображения
+                        Изображения
                     </TabsTrigger>
                 </TabsList>
 
@@ -476,12 +477,13 @@ export default function NewProductPage() {
                                             className='flex items-center gap-1'
                                         >
                                             <Plus className='h-4 w-4'/>
-                        Добавить
+                                            Добавить
                                         </Button>
                                     </div>
 
                                     <div className='text-sm text-muted-foreground'>
-                      Добавление ингредиентов помогает отслеживать, что вам нужно для каждого заказа, и эффективно управлять запасами.
+                                        Добавление ингредиентов помогает отслеживать, что вам нужно для каждого заказа,
+                                        и эффективно управлять запасами.
                                     </div>
                                 </div>
 
@@ -744,7 +746,7 @@ export default function NewProductPage() {
                                         />
                                         <Button type='button' variant='outline'
                                                 onClick={() => fileInputRef.current?.click()}>
-                        Выбрать изображения
+                                            Выбрать изображения
                                         </Button>
                                     </div>
                                 </div>
@@ -798,7 +800,7 @@ export default function NewProductPage() {
                                                     {index === 0 && (
                                                         <div
                                                             className='absolute bottom-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded shadow-sm'>
-                                      Главное изображение
+                                                            Главное изображение
                                                         </div>
                                                     )}
                                                     <div
@@ -817,7 +819,7 @@ export default function NewProductPage() {
                     <div className='mt-6 flex justify-end gap-4'>
                         <Button type='button' variant='outline'
                                 onClick={() => router.push('/seller-dashboard/products')}>
-                Отмена
+                            Отмена
                         </Button>
                         <Button type='submit' disabled={isSubmitting}>
                             {isSubmitting ? 'Создание...' : 'Создать товар'}
@@ -827,4 +829,5 @@ export default function NewProductPage() {
             </Tabs>
         </div>
     )
-}
+})
+export default NewProductPage

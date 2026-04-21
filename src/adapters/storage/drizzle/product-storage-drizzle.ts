@@ -1,4 +1,4 @@
-import {eq, count} from 'drizzle-orm'
+import {eq, count, sql} from 'drizzle-orm'
 import {
     db,
     products as productsTable,
@@ -14,7 +14,13 @@ import type {
     ProductImageInput,
     ProductUpdateInput,
 } from '@/src/application/ports/product-storage'
-import type {Product, ProductDraft, ProductIngredient} from '@/src/domain/product'
+import type {
+    Product,
+    ProductDraft,
+    ProductIngredient,
+    ProductSearchMatch,
+    ProductSearchResult
+} from '@/src/domain/product'
 import type {ProductId, SellerId} from '@/src/domain/shared/id'
 import {asProductId} from '@/src/domain/shared/id'
 import {rowsToProduct} from './mappers/product'
@@ -74,6 +80,124 @@ export function productStorageDrizzle(): ProductStorage {
                     })
                 }),
             )
+        },
+
+        async search(query: string, limit = 20): Promise<ProductSearchResult> {
+            const normalized = query.trim().toLowerCase()
+            if (normalized.length === 0) {
+                return {query: normalized, results: [], suggestions: []}
+            }
+
+            const rows = await db.execute<{
+                product_id: number
+                seller_id: number | null
+                product_name: string
+                price: number
+                cost: number | null
+                short_desc: string
+                long_desc: string
+                category: string
+                storage_conditions: string
+                stock: number | null
+                category_id: number | null
+                sku: string | null
+                weight: number | null
+                size: string | null
+                shelf_life: number | null
+                track_inventory: boolean | null
+                low_stock_alert: boolean | null
+                status: string | null
+                is_customizable: boolean
+                score: number
+                seller_id_out: number | null
+                seller_name_out: string | null
+                seller_rating_out: number | null
+                category_id_out: number | null
+                category_name_out: string | null
+            }>(sql`
+                SELECT
+                    p.*,
+                    greatest(
+                        similarity(lower(p.product_name), ${normalized}),
+                        similarity(lower(coalesce(p.short_desc, '')), ${normalized}) * 0.5
+                    ) AS score,
+                    s.seller_id AS seller_id_out,
+                    s.seller_name AS seller_name_out,
+                    s.seller_rating AS seller_rating_out,
+                    c.id AS category_id_out,
+                    c.name AS category_name_out
+                FROM products p
+                LEFT JOIN sellers s ON s.seller_id = p.seller_id
+                LEFT JOIN categories c ON c.id = p.category_id
+                WHERE
+                    lower(p.product_name) % ${normalized}
+                    OR lower(coalesce(p.short_desc, '')) % ${normalized}
+                    OR lower(p.product_name) ILIKE ${'%' + normalized + '%'}
+                ORDER BY score DESC
+                LIMIT ${limit}
+            `)
+            const rowsArr = (rows as unknown as { rows?: unknown[] }).rows ?? (rows as unknown as unknown[])
+            const typedRows = rowsArr as Array<{
+                product_id: number
+                seller_id: number | null
+                product_name: string
+                price: number
+                cost: number | null
+                short_desc: string
+                long_desc: string
+                category: string
+                storage_conditions: string
+                stock: number | null
+                category_id: number | null
+                sku: string | null
+                weight: number | null
+                size: string | null
+                shelf_life: number | null
+                track_inventory: boolean | null
+                low_stock_alert: boolean | null
+                status: string | null
+                is_customizable: boolean
+                score: number
+                seller_id_out: number | null
+                seller_name_out: string | null
+                seller_rating_out: number | null
+                category_id_out: number | null
+                category_name_out: string | null
+            }>
+
+            const buildMatches = async (list: typeof typedRows): Promise<ProductSearchMatch[]> =>
+                Promise.all(
+                    list.map(async (row) => {
+                        const [images, dietary] = await Promise.all([
+                            loadImages(row.product_id),
+                            loadDietary(row.product_id),
+                        ])
+                        const product = rowsToProduct({
+                            product: row,
+                            images,
+                            dietary,
+                            seller: row.seller_id_out !== null
+                                ? {
+                                    seller_id: row.seller_id_out,
+                                    seller_name: row.seller_name_out ?? '',
+                                    seller_rating: row.seller_rating_out,
+                                }
+                                : null,
+                            category: row.category_id_out !== null
+                                ? {id: row.category_id_out, name: row.category_name_out ?? ''}
+                                : null,
+                        })
+                        return {product, score: Number(row.score ?? 0)}
+                    }),
+                )
+
+            const strong = typedRows.filter((r) => Number(r.score) > 0.2)
+            const weak = typedRows.filter((r) => Number(r.score) > 0.1 && Number(r.score) <= 0.2)
+
+            const results = await buildMatches(strong)
+            const suggestions = results.length < 3 ? await buildMatches(weak.slice(0, 5)) : []
+
+            return {query: normalized, results, suggestions}
         },
 
         async listBySeller(sellerId: SellerId): Promise<Product[]> {

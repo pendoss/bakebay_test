@@ -1,7 +1,8 @@
 'use client'
 
 import {useEffect, useState} from 'react'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {Avatar, AvatarFallback} from '@/components/ui/avatar'
 import {Badge} from '@/components/ui/badge'
 import {Button} from '@/components/ui/button'
@@ -26,8 +27,8 @@ interface Review {
     reply_date?: string | Date | null;
 }
 
-export default function ReviewsPage() {
-    const {sellerId} = useUser()
+const ReviewsPage = observer(function ReviewsPage() {
+    const sellerId = useSellerId()
     const [reviews, setReviews] = useState<Review[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -156,7 +157,7 @@ export default function ReviewsPage() {
             </Tabs>
         </div>
     )
-}
+})
 
 function ReviewCard({review, onReply}: { review: Review; onReply: (id: number, text: string) => void }) {
     const [replyText, setReplyText] = useState('')
@@ -226,7 +227,10 @@ function ReviewCard({review, onReply}: { review: Review; onReply: (id: number, t
                             <p className='text-sm'>{review.seller_reply}</p>
                             {review.reply_date && (
                                 <p className='text-xs text-muted-foreground mt-2'>
-                        Ответ дан {formatDistanceToNow(new Date(review.reply_date), {addSuffix: true, locale: ru})}
+                                    Ответ дан {formatDistanceToNow(new Date(review.reply_date), {
+                                    addSuffix: true,
+                                    locale: ru
+                                })}
                                 </p>
                             )}
                         </div>
@@ -245,7 +249,7 @@ function ReviewCard({review, onReply}: { review: Review; onReply: (id: number, t
                                 {isSubmitting ? 'Отправка...' : 'Отправить ответ'}
                             </Button>
                             <Button variant='outline' size='sm' onClick={() => setReplyText('')}>
-                Очистить
+                                Очистить
                             </Button>
                         </div>
                     </div>
@@ -254,3 +258,5 @@ function ReviewCard({review, onReply}: { review: Review; onReply: (id: number, t
         </Card>
     )
 }
+
+export default ReviewsPage

@@ -3,11 +3,12 @@
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
 import {SellersList} from '@/components/sellers-list'
 import {BecomeSellerForm} from '@/components/become-seller-form'
-import {useUser} from '@/contexts/user-context';
+import {observer} from 'mobx-react-lite'
+import {useCurrentUser} from '@/src/adapters/ui/react/stores'
 
-export default function SellersPage() {
+const SellersPage = observer(function SellersPage() {
 
-    const {user} = useUser();
+    const user = useCurrentUser()
     return (
         <div className='container py-10 px-4 md:px-6'>
             <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8'>
@@ -35,7 +36,7 @@ export default function SellersPage() {
                             <div className='mb-8 text-center'>
                                 <h2 className='text-2xl font-bold mb-2'>Присоединяйтесь к нашему маркетплейсу</h2>
                                 <p className='text-muted-foreground'>
-                                Поделитесь своими сладкими творениями с нашим сообществом и развивайте свой бизнес
+                                    Поделитесь своими сладкими творениями с нашим сообществом и развивайте свой бизнес
                                 </p>
                             </div>
                             <BecomeSellerForm/>
@@ -45,4 +46,5 @@ export default function SellersPage() {
             )}
         </div>
     )
-}
+})
+export default SellersPage

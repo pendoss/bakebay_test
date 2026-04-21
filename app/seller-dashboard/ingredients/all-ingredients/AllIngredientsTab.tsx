@@ -1,7 +1,7 @@
 'use client'
 
 import {useEffect, useMemo, useState} from 'react'
-import {Pencil, Check, X} from 'lucide-react'
+import {Check, Pencil, X} from 'lucide-react'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
@@ -9,7 +9,8 @@ import {StatusBadge} from '@/components/StatusBadge'
 import {fetchIngredients} from '@/app/actions/fetchIngredients'
 import {exportPurchaseList} from '@/app/actions/exportData'
 import {downloadCsv} from '@/lib/downloadCsv'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {useIngredientAlerts} from '@/hooks/use-ingredient-alerts'
 import {Ingredient} from '../types'
 
@@ -20,8 +21,8 @@ type EditForm = {
     purchase_price: number
 }
 
-export function AllIngredientsTab() {
-    const {sellerId} = useUser()
+export const AllIngredientsTab = observer(function AllIngredientsTab() {
+    const sellerId = useSellerId()
     const [ingredients, setIngredients] = useState<Ingredient[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const [isLoading, setIsLoading] = useState(true)
@@ -114,9 +115,10 @@ export function AllIngredientsTab() {
                     <div className='text-center py-8'>Загрузка ингредиентов...</div>
                 ) : (
                     <div className='rounded-md border overflow-x-auto'>
-                        <div className='grid grid-cols-12 gap-2 p-4 font-medium border-b min-w-[800px]'>
+                        <div className='grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-4 font-medium border-b min-w-[880px]'>
                             <div className='col-span-2'>Название</div>
                             <div className='col-span-1'>В наличии</div>
+                            <div className='col-span-1'>Зарез.</div>
                             <div className='col-span-1'>Ед.</div>
                             <div className='col-span-2'>Объем закупки</div>
                             <div className='col-span-2'>Цена закупки</div>
@@ -126,7 +128,7 @@ export function AllIngredientsTab() {
                             <div className='col-span-1'></div>
                         </div>
 
-                        <div className='divide-y min-w-[800px]'>
+                        <div className='divide-y min-w-[880px]'>
                             {filtered.length > 0 ? (
                                 filtered.map(ingredient => {
                                     const isEditing = editingId === ingredient.ingredient_id
@@ -141,7 +143,7 @@ export function AllIngredientsTab() {
                                     return (
                                         <div
                                             key={ingredient.ingredient_id}
-                                            className='grid grid-cols-12 gap-2 p-3 items-center'
+                                            className='grid grid-cols-[repeat(13,minmax(0,1fr))] gap-2 p-3 items-center'
                                         >
                                             <div className='col-span-2 font-medium'>{ingredient.name}</div>
 
@@ -159,6 +161,10 @@ export function AllIngredientsTab() {
                                                 ) : (
                                                     ingredient.stock
                                                 )}
+                                            </div>
+
+                                            <div className='col-span-1 text-sm text-muted-foreground'>
+                                                {ingredient.reserved > 0 ? ingredient.reserved : '—'}
                                             </div>
 
                                             <div className='col-span-1'>{ingredient.unit}</div>
@@ -261,7 +267,7 @@ export function AllIngredientsTab() {
                                     )
                                 })
                             ) : (
-                                <div className='text-center py-8 col-span-12'>Ингредиенты не найдены</div>
+                                <div className='text-center py-8'>Ингредиенты не найдены</div>
                             )}
                         </div>
                     </div>
@@ -275,4 +281,4 @@ export function AllIngredientsTab() {
             </CardContent>
         </Card>
     )
-}
+})

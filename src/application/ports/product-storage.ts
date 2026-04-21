@@ -1,4 +1,4 @@
-import type {Product, ProductDraft, ProductIngredient, ProductImage} from '@/src/domain/product'
+import type {Product, ProductDraft, ProductIngredient, ProductImage, ProductSearchResult} from '@/src/domain/product'
 import type {ProductId, SellerId} from '@/src/domain/shared/id'
 
 export interface ProductListFilters {
@@ -36,6 +36,8 @@ export interface ProductStorage {
     findById(id: ProductId): Promise<Product | null>
 
     list(filters: ProductListFilters): Promise<Product[]>
+
+    search(query: string, limit?: number): Promise<ProductSearchResult>
 
     listBySeller(sellerId: SellerId): Promise<Product[]>
 

@@ -1,7 +1,8 @@
 'use client'
 
 import {useEffect, useState} from 'react'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
 import {Overview} from '@/components/seller-dashboard/overview'
@@ -44,7 +45,7 @@ interface Analytics {
     }[]
 }
 
-function ChangeIndicator({ value }: { value: number }) {
+function ChangeIndicator({value}: { value: number }) {
     if (value === 0) return <span className='text-xs text-muted-foreground'>без изменений</span>
     const Icon = value > 0 ? TrendingUp : TrendingDown
     const color = value > 0 ? 'text-green-600' : 'text-red-500'
@@ -60,8 +61,8 @@ function KpiSkeleton() {
     return <Skeleton className='h-8 w-24 mt-1'/>
 }
 
-export default function SellerDashboardPage() {
-    const {sellerId} = useUser()
+const SellerDashboardPage = observer(function SellerDashboardPage() {
+    const sellerId = useSellerId()
     const [analytics, setAnalytics] = useState<Analytics | null>(null)
     const [loading, setLoading] = useState(true)
 
@@ -322,4 +323,5 @@ export default function SellerDashboardPage() {
             </Tabs>
         </div>
     )
-}
+})
+export default SellerDashboardPage

@@ -1,7 +1,8 @@
 'use client'
 
 import {useState} from 'react'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useIsAuthenticated} from '@/src/adapters/ui/react/stores'
 import {Button} from '@/components/ui/button'
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from '@/components/ui/dialog'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
@@ -21,8 +22,8 @@ interface ReviewDialogProps {
     items: ReviewItem[];
 }
 
-export function ReviewDialog({open, onOpenChange, items}: ReviewDialogProps) {
-    const {isAuthenticated} = useUser()
+export const ReviewDialog = observer(function ReviewDialog({open, onOpenChange, items}: ReviewDialogProps) {
+    const isAuthenticated = useIsAuthenticated()
     const [selectedProductId, setSelectedProductId] = useState<string>(
         items[0]?.id ? String(items[0].id) : ''
     )
@@ -143,4 +144,4 @@ export function ReviewDialog({open, onOpenChange, items}: ReviewDialogProps) {
             </DialogContent>
         </Dialog>
     )
-}
+})

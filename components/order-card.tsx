@@ -8,62 +8,51 @@ import {Badge} from '@/components/ui/badge'
 import {Separator} from '@/components/ui/separator'
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from '@/components/ui/collapsible'
 import {OrderTimeline} from '@/components/order-timeline'
-import {ChevronDown, ChevronUp, Package, RefreshCw, XCircle, MessageSquare, Star} from 'lucide-react'
-import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
+import {ChevronDown, ChevronUp, MessageSquare, Package, RefreshCw, Star, XCircle} from 'lucide-react'
+import {observer} from 'mobx-react-lite'
+import {useCartActions} from '@/src/adapters/ui/react/stores'
 import {asProductId} from '@/src/domain/shared/id'
 import {useToast} from '@/hooks/use-toast'
 import {OrderStatus} from '@/app/orders/page';
 import {ReviewDialog} from '@/components/review-dialog';
 
-// Define the OrderStatus type to match the one in other files
-
-// Переводы статусов заказа
 export const statusTranslations: Record<OrderStatus, string> = {
-    placed: 'Оформлен',
-    confirmed: 'Подтвержден',
-    preparing: 'Готовится',
-    delivering: 'Доставляется',
-    delivered: 'Доставлен',
-    cancelled: 'Отменен',
     ordering: 'Оформляется',
     processing: 'Обрабатывается',
     payed: 'Оплачен',
     processed: 'Обработан',
     in_progress: 'В процессе',
+    delivering: 'Доставляется',
+    delivered: 'Доставлен',
 }
 
-// Цвета для статусов
 export const statusColors: Record<OrderStatus, string> = {
-    placed: 'bg-lemon-meringue text-secondary',
-    confirmed: 'bg-lavender-dessert text-secondary',
-    preparing: 'bg-mint-frosting text-secondary',
-    delivered: 'bg-strawberry-cream text-secondary',
-    cancelled: 'bg-muted text-muted-foreground',
     ordering: 'bg-lemon-meringue text-secondary',
     processing: 'bg-lavender-dessert text-secondary',
     payed: 'bg-mint-frosting text-secondary',
     processed: 'bg-mint-frosting text-secondary',
     in_progress: 'bg-mint-frosting text-secondary',
     delivering: 'bg-caramel-light text-secondary',
+    delivered: 'bg-strawberry-cream text-secondary',
 }
 
 
 interface OrderCardProps {
     order: {
-    id: string;
-    date: string;
-    orderStatus: OrderStatus;
-    totalPrice: number;
-    address: string;
-    paymentMethod: string;
-    cancellationReason ? : string;
-    user_id: number;
-    items: Array <OrderItems> ;
-    statusHistory: Array < {
-        status: OrderStatus;
-        completed ? : boolean;
-        date ? : string | null;
-    } > ;
+        id: string;
+        date: string;
+        orderStatus: OrderStatus;
+        totalPrice: number;
+        address: string;
+        paymentMethod: string;
+        cancellationReason?: string;
+        user_id: number;
+        items: Array<OrderItems>;
+        statusHistory: Array<{
+            status: OrderStatus;
+            completed?: boolean;
+            date?: string | null;
+        }>;
     }
 
 }
@@ -72,13 +61,13 @@ export type OrderItems = {
     id?: number;
     name: string;
     price: number;
-    image ? : string;
+    image?: string;
     quantity: number;
 }
-export function OrderCard({ order } : OrderCardProps) {
+export const OrderCard = observer(function OrderCard({order}: OrderCardProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
-    const {addItem} = useCart()
+    const {addItem} = useCartActions()
     const {toast} = useToast()
 
     const handleRepeatOrder = () => {
@@ -176,12 +165,6 @@ export function OrderCard({ order } : OrderCardProps) {
                             </div>
                         </div>
 
-                        {order.orderStatus === 'cancelled' && (
-                            <div className='bg-muted/30 p-3 rounded-md'>
-                                <h5 className='font-medium mb-1'>Причина отмены</h5>
-                                <p className='text-muted-foreground'>{order.cancellationReason}</p>
-                            </div>
-                        )}
                     </CollapsibleContent>
                 </Collapsible>
             </CardContent>
@@ -205,7 +188,7 @@ export function OrderCard({ order } : OrderCardProps) {
                     </>
                 )}
 
-                {['placed', 'confirmed'].includes(order.orderStatus) && (
+                {['ordering', 'processing'].includes(order.orderStatus) && (
                     <Button variant='outline' className='text-destructive gap-1'>
                         <XCircle className='h-4 w-4 mr-1'/>
                         Отменить заказ
@@ -217,7 +200,7 @@ export function OrderCard({ order } : OrderCardProps) {
                     Связаться с поддержкой
                 </Button>
 
-                {['shipping', 'preparing'].includes(order.orderStatus) && (
+                {['in_progress', 'delivering'].includes(order.orderStatus) && (
                     <Button variant='outline' className='gap-1'>
                         <Package className='h-4 w-4 mr-1'/>
                         Отследить доставку
@@ -226,4 +209,4 @@ export function OrderCard({ order } : OrderCardProps) {
             </CardFooter>
         </Card>
     )
-}
+})

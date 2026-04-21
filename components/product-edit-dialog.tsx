@@ -3,7 +3,8 @@
 import React, {ChangeEvent, DragEvent, useEffect, useRef, useState} from 'react'
 import {useRouter} from 'next/navigation'
 import Image from 'next/image'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {Input} from '@/components/ui/input'
@@ -23,12 +24,13 @@ import {asSellerId} from '@/src/domain/shared/id'
 
 
 interface ProductImage {
-  url: string;
+    url: string;
     file?: File;
-  name: string;
+    name: string;
     isExisting?: boolean;
     s3_key?: string;
 }
+
 // Default product structure
 const defaultProduct = {
     id: 0,
@@ -51,15 +53,19 @@ const defaultProduct = {
 }
 
 interface ProductEditDialogProps {
-  productId: number | null
-  isOpen: boolean
-  onOpenChangeAction: (open: boolean) => void
+    productId: number | null
+    isOpen: boolean
+    onOpenChangeAction: (open: boolean) => void
 }
 
-export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: ProductEditDialogProps) {
+export const ProductEditDialog = observer(function ProductEditDialog({
+                                                                         productId,
+                                                                         isOpen,
+                                                                         onOpenChangeAction
+                                                                     }: ProductEditDialogProps) {
     const router = useRouter()
     const {toast} = useToast()
-    const {sellerId} = useUser()
+    const sellerId = useSellerId()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [productData, setProductData] = useState(defaultProduct)
@@ -344,19 +350,19 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
                     <Tabs defaultValue='basic' className='w-full'>
                         <TabsList className='w-full sm:w-auto grid grid-cols-5 sm:flex'>
                             <TabsTrigger value='basic' className='flex-1 sm:flex-auto'>
-                Основная информация
+                                Основная информация
                             </TabsTrigger>
                             <TabsTrigger value='details' className='flex-1 sm:flex-auto'>
-                Детали
+                                Детали
                             </TabsTrigger>
                             <TabsTrigger value='ingredients' className='flex-1 sm:flex-auto'>
-                Ингредиенты
+                                Ингредиенты
                             </TabsTrigger>
                             <TabsTrigger value='pricing' className='flex-1 sm:flex-auto'>
-                Цены
+                                Цены
                             </TabsTrigger>
                             <TabsTrigger value='images' className='flex-1 sm:flex-auto'>
-                Изображения
+                                Изображения
                             </TabsTrigger>
                         </TabsList>
 
@@ -658,7 +664,7 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
                                                     className='flex items-center gap-1'
                                                 >
                                                     <Plus className='h-4 w-4'/>
-                          Добавить
+                                                    Добавить
                                                 </Button>
                                             </div>
                                         </div>
@@ -812,7 +818,7 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
                                                 />
                                                 <Button type='button' variant='outline'
                                                         onClick={() => fileInputRef.current?.click()}>
-                        Выбрать изображения
+                                                    Выбрать изображения
                                                 </Button>
                                             </div>
                                         </div>
@@ -866,7 +872,7 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
                                                             {index === 0 && (
                                                                 <div
                                                                     className='absolute bottom-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded shadow-sm'>
-                                      Главное изображение
+                                                                    Главное изображение
                                                                 </div>
                                                             )}
                                                             <div
@@ -884,7 +890,7 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
 
                             <div className='mt-6 flex justify-end gap-4'>
                                 <Button type='button' variant='outline' onClick={() => onOpenChangeAction(false)}>
-                  Отмена
+                                    Отмена
                                 </Button>
                                 <Button type='submit' disabled={isSubmitting}>
                                     {isSubmitting ? 'Сохранение...' : 'Сохранить изменения'}
@@ -896,4 +902,4 @@ export function ProductEditDialog({ productId, isOpen, onOpenChangeAction }: Pro
             </DialogContent>
         </Dialog>
     )
-}
+})

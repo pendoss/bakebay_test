@@ -1,7 +1,8 @@
 'use client'
 
 import {useEffect, useState} from 'react'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {Badge} from '@/components/ui/badge'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card'
@@ -17,25 +18,25 @@ import {exportOrderSmeta} from '@/app/actions/exportData'
 import {downloadCsv} from '@/lib/downloadCsv'
 
 interface OrderItem {
-  id: number;
-  name: string;
-  quantity: number;
-  price: number;
+    id: number;
+    name: string;
+    quantity: number;
+    price: number;
 }
 
 export interface OrderFull {
-  id: string;
-  date: string;
-  customer: {
-    name: string;
-    email: string;
-      address: string;
-  };
-  items: OrderItem[];
-  total: number;
-  status: string;
-  paymentMethod: string;
-  address: string;
+    id: string;
+    date: string;
+    customer: {
+        name: string;
+        email: string;
+        address: string;
+    };
+    items: OrderItem[];
+    total: number;
+    status: string;
+    paymentMethod: string;
+    address: string;
 }
 
 const ALL_STATUSES: { value: string; label: string }[] = [
@@ -55,8 +56,8 @@ const KANBAN_COLUMNS = [
     {key: 'done', label: 'Доставлены', statuses: ['delivered']},
 ]
 
-export default function SellerOrdersPage() {
-    const {sellerId} = useUser()
+const SellerOrdersPage = observer(function SellerOrdersPage() {
+    const sellerId = useSellerId()
     const [orders, setOrders] = useState<OrderFull[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -112,8 +113,8 @@ export default function SellerOrdersPage() {
         const searchLower = searchTerm.toLowerCase()
         return (
             order.id.toLowerCase().includes(searchLower) ||
-      order.customer.name.toLowerCase().includes(searchLower) ||
-      order.customer.email.toLowerCase().includes(searchLower)
+            order.customer.name.toLowerCase().includes(searchLower) ||
+            order.customer.email.toLowerCase().includes(searchLower)
         )
     })
 
@@ -160,7 +161,7 @@ export default function SellerOrdersPage() {
                         onClick={() => setViewMode('list')}
                     >
                         <LayoutList className='h-4 w-4 mr-1'/>
-                    Список
+                        Список
                     </Button>
                     <Button
                         variant={viewMode === 'kanban' ? 'default' : 'outline'}
@@ -168,7 +169,7 @@ export default function SellerOrdersPage() {
                         onClick={() => setViewMode('kanban')}
                     >
                         <LayoutDashboard className='h-4 w-4 mr-1'/>
-                    Канбан
+                        Канбан
                     </Button>
                 </div>
             </div>
@@ -251,7 +252,7 @@ export default function SellerOrdersPage() {
             )}
         </div>
     )
-}
+})
 
 function KanbanBoard({orders, onStatusChange}: {
     orders: OrderFull[];
@@ -330,7 +331,10 @@ function getNextStatuses(current: string): { value: string; label: string }[] {
     return ALL_STATUSES.filter(s => next.includes(s.value))
 }
 
-function OrderCard({ order, onStatusChange }: { order: OrderFull; onStatusChange: (orderId: string, newStatus: string) => void }) {
+function OrderCard({order, onStatusChange}: {
+    order: OrderFull;
+    onStatusChange: (orderId: string, newStatus: string) => void
+}) {
     return (
         <Card>
             <CardHeader className='pb-2'>
@@ -408,10 +412,12 @@ function OrderCard({ order, onStatusChange }: { order: OrderFull; onStatusChange
                             downloadCsv(csv, `смета_заказ_${order.id}.csv`)
                         }}
                     >
-                    Скачать смету
+                        Скачать смету
                     </Button>
                 </div>
             </CardContent>
         </Card>
     )
 }
+
+export default SellerOrdersPage

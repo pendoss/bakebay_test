@@ -29,3 +29,8 @@ node_modules/
 .swc/
 .*.env
 tsconfig.tsbuildinfo
+
+# Локальные артефакты e2e
+e2e_tests_plan.md
+playwright-report/
+test-results/
