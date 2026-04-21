@@ -1,9 +1,10 @@
 'use client'
 
+import {Suspense} from 'react'
 import {useSearchParams} from 'next/navigation'
 import {ChatInbox} from '@/components/chat-inbox'
 
-export default function CustomerChatsPage() {
+function CustomerChatsContent() {
     const params = useSearchParams()
     const threadParam = params.get('thread')
     const initial = threadParam ? parseInt(threadParam, 10) : null
@@ -18,5 +19,13 @@ export default function CustomerChatsPage() {
             </header>
             <ChatInbox initialThreadId={initial}/>
         </div>
+    )
+}
+
+export default function CustomerChatsPage() {
+    return (
+        <Suspense fallback={null}>
+            <CustomerChatsContent/>
+        </Suspense>
     )
 }
