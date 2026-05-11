@@ -102,6 +102,8 @@ export function ingredientStorageDrizzle(): IngredientStorage {
             keys: ReadonlyArray<string>,
         ): Promise<Record<string, RawStockEntry>> {
             if (keys.length === 0) return {}
+            const keysList = sql.join(keys.map((k) => sql`${k}`), sql`, `)
+            // language=PostgreSQL
             const res = await db.execute(sql`
                 SELECT pi.name,
                        MAX(COALESCE(pi.stock, 0)) AS stock,
@@ -109,7 +111,7 @@ export function ingredientStorageDrizzle(): IngredientStorage {
                 FROM product_ingredients pi
                          JOIN products p ON pi.product_id = p.product_id
                 WHERE p.seller_id = ${sellerId as unknown as number}
-                  AND pi.name IN ${keys as string[]}
+                  AND pi.name IN (${keysList})
                 GROUP BY pi.name
             `)
             const out: Record<string, RawStockEntry> = {}
