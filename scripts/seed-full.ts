@@ -69,12 +69,12 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 800,
         short_desc: 'Ярчайший вкус медовый пахлавы по традиционным восточным рецептам',
         long_desc: 'Ярчайший вкус медовый пахлавы по традиционным восточным рецептам',
-        category: 'Выпечка',
+        category: 'Pastries',
         storage_conditions: '',
         shelf_life: 0,
         size: 'medium',
         stock: 1,
-        dietary: ['Содержит орехи'],
+        dietary: ['Contains Nuts', 'Содержит орехи'],
         is_customizable: false
     },
     {
@@ -83,12 +83,12 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 780,
         short_desc: 'Первый веганский шоколадный брауни',
         long_desc: 'Первый веганский шоколадный брауни, который сочетает в себе всё самое полезное и вкусное! Насыщенный вкус шоколада, тающий во рту.',
-        category: 'Шоколад',
+        category: 'Chocolates',
         storage_conditions: '',
         shelf_life: 0,
         size: 'small',
         stock: 3,
-        dietary: ['Веганское', 'Без молочных продуктов'],
+        dietary: ['Vegan', 'Dairy-Free', 'Веганское', 'Без молочных продуктов'],
         is_customizable: false
     },
     {
@@ -97,7 +97,7 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 1300,
         short_desc: 'Нежнейшие булочки синнабон',
         long_desc: 'Нежнейшие булочки синнабон, которые покорят сердце любого!',
-        category: 'Выпечка',
+        category: 'Pastries',
         storage_conditions: '',
         shelf_life: 0,
         size: 'large',
@@ -111,12 +111,12 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 500,
         short_desc: 'Отличный десерт для любого события!',
         long_desc: 'Отличный десерт для любого события!',
-        category: 'Печенье',
+        category: 'Tarts',
         storage_conditions: '',
         shelf_life: 0,
         size: 'small',
         stock: 5,
-        dietary: ['Может содержать орехи', 'Содержит молочные продукты'],
+        dietary: ['Contains Nuts', 'Может содержать орехи', 'Содержит молочные продукты'],
         is_customizable: false
     },
     {
@@ -125,12 +125,12 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 1600,
         short_desc: 'Нежные капкейки по традиционному американскому рецепту',
         long_desc: 'Нежные капкейки по традиционному американскому рецепту теста "красный бархат".',
-        category: 'Капкейки',
+        category: 'Cupcakes',
         storage_conditions: 'Хранить в холодильнике',
         shelf_life: 4,
         size: '',
         stock: 2,
-        dietary: ['Может содержать орехи', 'Содержит молочные продукты'],
+        dietary: ['Contains Nuts', 'Может содержать орехи', 'Содержит молочные продукты'],
         is_customizable: false
     },
     {
@@ -139,12 +139,12 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 900,
         short_desc: 'Изысканный вкус тирамису',
         long_desc: 'Изысканный вкус тирамису, приготовленный по традиционному рецепту.',
-        category: 'Итальянские десерты',
+        category: 'Italian Desserts',
         storage_conditions: '',
         shelf_life: 0,
         size: 'small',
         stock: 4,
-        dietary: ['Содержит молочные продукты', 'Содержит орехи'],
+        dietary: ['Contains Nuts', 'Содержит молочные продукты', 'Содержит орехи'],
         is_customizable: false
     },
     {
@@ -153,12 +153,12 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 2500,
         short_desc: 'Французский десерт макарун',
         long_desc: 'Всеми известный французский десерт — макарун. За уши не оттянешь.',
-        category: 'Выпечка',
+        category: 'Cookies',
         storage_conditions: '',
         shelf_life: 0,
         size: 'small',
         stock: 1,
-        dietary: ['Содержит молочные продукты', 'Может содержать орехи'],
+        dietary: ['Gluten-Free', 'Contains Nuts', 'Содержит молочные продукты', 'Может содержать орехи'],
         is_customizable: false
     },
     {
@@ -167,7 +167,7 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 2000,
         short_desc: 'Нежнейший лимонный пирог с безе',
         long_desc: 'Нежнейший лимонный пирог с безе с лёгкой кислинкой.',
-        category: 'Выпечка',
+        category: 'Pastries',
         storage_conditions: 'Хранить в холодильнике',
         shelf_life: 3,
         size: 'medium',
@@ -181,7 +181,7 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 3500,
         short_desc: 'Насыщенный шоколадный торт',
         long_desc: 'Шоколадный торт, который унесёт вас в мир детства и фантазии.',
-        category: 'Торты',
+        category: 'Cakes',
         storage_conditions: '',
         shelf_life: 0,
         size: '',
@@ -195,7 +195,7 @@ const SELLER1_PRODUCTS: ProductSeed[] = [
         price: 2750,
         short_desc: 'Нежный сливочный чизкейк с клубникой',
         long_desc: 'Нежный сливочный вкус чизкейка в сочетании с ярким и сладким вкусом клубники.',
-        category: 'Торты',
+        category: 'Cakes',
         storage_conditions: '',
         shelf_life: 0,
         size: 'large',
@@ -214,7 +214,7 @@ const SELLER7_PRODUCTS: Array<ProductSeed & { imageKey: string }> = [
         price: 4200,
         short_desc: 'Классика, переосмысленная шефом',
         long_desc: 'Многослойный Наполеон с заварным кремом и щепоткой ванили из Мадагаскара.',
-        category: 'Торты',
+        category: 'Cakes',
         storage_conditions: 'Хранить в холодильнике',
         shelf_life: 3,
         size: 'large',
@@ -229,7 +229,7 @@ const SELLER7_PRODUCTS: Array<ProductSeed & { imageKey: string }> = [
         price: 950,
         short_desc: 'Французские пирожные с цедрой лимона',
         long_desc: 'Воздушные мадлен по семейному рецепту с лимонной цедрой.',
-        category: 'Печенье',
+        category: 'Cookies',
         storage_conditions: '',
         shelf_life: 7,
         size: 'small',
@@ -244,12 +244,12 @@ const SELLER7_PRODUCTS: Array<ProductSeed & { imageKey: string }> = [
         price: 420,
         short_desc: 'Эклер с кремом из фисташковой пасты',
         long_desc: 'Хрустящее заварное тесто и нежный фисташковый крем.',
-        category: 'Выпечка',
+        category: 'Pastries',
         storage_conditions: 'Хранить в холодильнике',
         shelf_life: 2,
         size: 'small',
         stock: 8,
-        dietary: ['Содержит молочные продукты', 'Содержит орехи'],
+        dietary: ['Contains Nuts', 'Содержит молочные продукты', 'Содержит орехи'],
         is_customizable: false,
         imageKey: '36_0'
     },
@@ -259,7 +259,7 @@ const SELLER7_PRODUCTS: Array<ProductSeed & { imageKey: string }> = [
         price: 15000,
         short_desc: 'Многоярусный торт под ваше торжество',
         long_desc: 'Многоярусный торт с авторским декором и индивидуальным вкусом.',
-        category: 'Торты',
+        category: 'Cakes',
         storage_conditions: 'Хранить в холодильнике',
         shelf_life: 2,
         size: 'large',
@@ -274,7 +274,7 @@ const SELLER7_PRODUCTS: Array<ProductSeed & { imageKey: string }> = [
         price: 1800,
         short_desc: 'Набор из 6 капкейков на ваш выбор',
         long_desc: 'Шесть капкейков разных вкусов. Выберите сами или доверьтесь шефу.',
-        category: 'Капкейки',
+        category: 'Cupcakes',
         storage_conditions: 'Хранить в холодильнике',
         shelf_life: 3,
         size: 'medium',
@@ -289,12 +289,12 @@ const SELLER7_PRODUCTS: Array<ProductSeed & { imageKey: string }> = [
         price: 690,
         short_desc: 'Веганский брауни без сахара',
         long_desc: 'Шоколадный брауни на финиковом сиропе, без сахара и молочных продуктов.',
-        category: 'Шоколад',
+        category: 'Brownies',
         storage_conditions: '',
         shelf_life: 5,
         size: 'small',
         stock: 6,
-        dietary: ['Веганское', 'Без молочных продуктов', 'Без сахара'],
+        dietary: ['Vegan', 'Dairy-Free', 'Gluten-Free', 'Веганское', 'Без молочных продуктов', 'Без сахара'],
         is_customizable: false,
         imageKey: '32_0'
     },
@@ -586,14 +586,12 @@ async function main(): Promise<void> {
     console.log('[seed-full] products for seller_1 (10 заявленных)...')
     const seller1ProductIds: Record<number, number> = {}
     for (const seed of SELLER1_PRODUCTS) {
-        const imageKey = `${seed.id}_0`
-        const pid = await createProduct({
+        seller1ProductIds[seed.id] = await createProduct({
             seed,
             sellerId: seller1Id,
-            imageKey,
+            imageKey: `${seed.id}_0`,
             imageName: `IMG_${seed.id}.JPG`,
         })
-        seller1ProductIds[seed.id] = pid
     }
 
     console.log(`[seed-full] products for seller_7 (seller_id=${seller7Id})...`)
@@ -781,29 +779,26 @@ async function main(): Promise<void> {
     }
 
     // Сценарий C: с тредом кастомизации (свадебный торт)
-    let customizationThreadId = 0
+    let customizationThreadId: number
     {
         const [thread] = await db.insert(customizationThreads).values({
             status: 'awaiting_seller_finalize',
         }).returning({customization_thread_id: customizationThreads.customization_thread_id})
         customizationThreadId = thread.customization_thread_id
 
-        const [offerV1] = await db.insert(customizationOffers).values({
+        await db.insert(customizationOffers).values({
             thread_id: customizationThreadId,
             version: 1,
             price_delta: 3500,
             spec_snapshot: {tiers: 3, style: 'rustic', flowers: 'living', notes: 'нужны живые цветы'},
-        }).returning({customization_offer_id: customizationOffers.customization_offer_id})
-        const [offerV2] = await db.insert(customizationOffers).values({
+        })
+        await db.insert(customizationOffers).values({
             thread_id: customizationThreadId,
             version: 2,
             price_delta: 4200,
             spec_snapshot: {tiers: 3, style: 'rustic', flowers: 'living', topper: 'gold', notes: 'добавим золото'},
             superseded_by_offer_id: null,
-        }).returning({customization_offer_id: customizationOffers.customization_offer_id})
-
-        // помечаем что v1 заменён v2
-        // (для простоты: для теста достаточно факта существования двух офферов)
+        })
 
         await db.insert(customizationMessages).values([
             {
@@ -984,10 +979,32 @@ async function main(): Promise<void> {
         },
     ])
 
+    console.log('[seed-full] активные legacy-заказы (status=ordering) для вкладок ингредиентов кондитера_7...')
+    // Страница «Управление ингредиентами» (by-order / shopping-list) фильтрует legacy `orders`
+    // по status === 'ordering' и считает ингредиенты через product_ingredients.
+    // Без таких заказов вкладки показывают "Нет активных заказов".
+    const activeIngredientOrders: Array<{ productId: number; qty: number; customer: number }> = [
+        {productId: seller7ProductIds[0], qty: 2, customer: customer1Id}, // Наполеон
+        {productId: seller7ProductIds[1], qty: 6, customer: customer2Id}, // Мадлен
+        {productId: seller7ProductIds[3], qty: 1, customer: customer3Id}, // Свадебный
+        {productId: seller7ProductIds[4], qty: 3, customer: customer1Id}, // Капкейки
+    ]
+    for (const {productId, qty, customer} of activeIngredientOrders) {
+        const [ord] = await db.insert(orders).values({
+            date: now,
+            order_status: 'ordering',
+            user_id: customer,
+            total_price: 0,
+            address: 'Москва, ул. Покупателя, 5',
+            payment_method: 'card',
+        }).returning({order_id: orders.order_id})
+        await db.insert(orderItems).values({order_id: ord.order_id, product_id: productId, quantity: qty})
+    }
+
     console.log('[seed-full] legacy orders за 12 месяцев (для дашборд-аналитики и /orders)...')
     // Аналитика в app/api/seller/analytics/route.ts читает legacy `orders` + `order_items`,
     // считает выручку и заказы по месяцам — без исторических заказов графики будут пустыми.
-    const legacyStatuses = ['delivered', 'in_progress', 'processing', 'processed', 'delivering', 'payed'] as const
+    const legacyStatuses = ['delivered', 'in_progress', 'processing', 'processed', 'delivering', 'payed', 'ordering'] as const
     const customers = [customer1Id, customer2Id, customer3Id]
     // Распределяем заказы по последним 12 месяцам
     for (let monthsAgo = 0; monthsAgo < 12; monthsAgo++) {

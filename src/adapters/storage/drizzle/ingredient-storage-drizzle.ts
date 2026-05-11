@@ -1,10 +1,6 @@
 import {and, eq, sql} from 'drizzle-orm'
 import {db, productIngredients} from '@/src/adapters/storage/drizzle'
-import type {
-    IngredientStorage,
-    IngredientUpdate,
-    RawStockEntry,
-} from '@/src/application/ports/ingredient-storage'
+import type {IngredientStorage, IngredientUpdate, RawStockEntry,} from '@/src/application/ports/ingredient-storage'
 import type {Ingredient, StockStatus} from '@/src/domain/ingredient'
 import type {RequiredIngredient} from '@/src/domain/seller-order'
 import type {IngredientId, ProductId, SellerId, SellerOrderId} from '@/src/domain/shared/id'
@@ -44,19 +40,25 @@ export function ingredientStorageDrizzle(): IngredientStorage {
     return {
         async listBySeller(sellerId: SellerId): Promise<Ingredient[]> {
             const res = await db.execute(sql`
-				WITH first_per_ingredient AS (
-					SELECT MIN(pi.ingredient_id) AS ingredient_id
-					FROM product_ingredients pi
-					JOIN products p ON pi.product_id = p.product_id
-					WHERE p.seller_id = ${sellerId as unknown as number}
-					GROUP BY pi.name
-				)
-				SELECT pi.ingredient_id, pi.product_id, pi.name, pi.amount, pi.stock, pi.unit,
-				       pi.alert, pi.status, pi.purchase_qty, pi.purchase_price
-				FROM product_ingredients pi
-				JOIN first_per_ingredient fpi ON pi.ingredient_id = fpi.ingredient_id
-				ORDER BY pi.name
-			`)
+                WITH first_per_ingredient AS (SELECT MIN(pi.ingredient_id) AS ingredient_id
+                                              FROM product_ingredients pi
+                                                       JOIN products p ON pi.product_id = p.product_id
+                                              WHERE p.seller_id = ${sellerId as unknown as number}
+                                              GROUP BY pi.name)
+                SELECT pi.ingredient_id,
+                       pi.product_id,
+                       pi.name,
+                       pi.amount,
+                       pi.stock,
+                       pi.unit,
+                       pi.alert,
+                       pi.status,
+                       pi.purchase_qty,
+                       pi.purchase_price
+                FROM product_ingredients pi
+                         JOIN first_per_ingredient fpi ON pi.ingredient_id = fpi.ingredient_id
+                ORDER BY pi.name
+            `)
             return (res.rows as unknown as IngredientRow[]).map(rowToIngredient)
         },
 
@@ -105,13 +107,13 @@ export function ingredientStorageDrizzle(): IngredientStorage {
                        MAX(COALESCE(pi.stock, 0)) AS stock,
                        MAX(COALESCE(pi.alert, 0)) AS alert
                 FROM product_ingredients pi
-                JOIN products p ON pi.product_id = p.product_id
+                         JOIN products p ON pi.product_id = p.product_id
                 WHERE p.seller_id = ${sellerId as unknown as number}
-                  AND pi.name = ANY(${keys as string[]})
+                  AND pi.name IN ${keys as string[]}
                 GROUP BY pi.name
             `)
             const out: Record<string, RawStockEntry> = {}
-            for (const row of res.rows as Array<{name: string; stock: number; alert: number}>) {
+            for (const row of res.rows as Array<{ name: string; stock: number; alert: number }>) {
                 out[row.name] = {stock: Number(row.stock), alertThreshold: Number(row.alert)}
             }
             return out
@@ -121,12 +123,12 @@ export function ingredientStorageDrizzle(): IngredientStorage {
             const res = await db.execute(sql`
                 SELECT pi.name, pi.unit, SUM(pi.amount * soi.quantity) AS total
                 FROM seller_order_items soi
-                JOIN product_ingredients pi ON pi.product_id = soi.product_id
+                         JOIN product_ingredients pi ON pi.product_id = soi.product_id
                 WHERE soi.seller_order_id = ${sellerOrderId as unknown as number}
                   AND pi.is_optional = false
                 GROUP BY pi.name, pi.unit
             `)
-            return (res.rows as Array<{name: string; unit: string; total: number}>).map((r) => ({
+            return (res.rows as Array<{ name: string; unit: string; total: number }>).map((r) => ({
                 key: r.name,
                 name: r.name,
                 unit: r.unit,
@@ -137,13 +139,12 @@ export function ingredientStorageDrizzle(): IngredientStorage {
         async decrementStockByKey(sellerId: SellerId, key: string, amount: number): Promise<void> {
             await db.execute(sql`
                 UPDATE product_ingredients pi
-                SET stock = GREATEST(0, COALESCE(pi.stock, 0) - ${amount}),
+                SET stock  = GREATEST(0, COALESCE(pi.stock, 0) - ${amount}),
                     status = CASE
-                        WHEN GREATEST(0, COALESCE(pi.stock, 0) - ${amount}) <= 0 THEN 'out'
-                        WHEN GREATEST(0, COALESCE(pi.stock, 0) - ${amount}) <= COALESCE(pi.alert, 0) THEN 'low'
-                        ELSE 'ok'
-                    END
-                FROM products p
+                                 WHEN GREATEST(0, COALESCE(pi.stock, 0) - ${amount}) <= 0 THEN 'out'
+                                 WHEN GREATEST(0, COALESCE(pi.stock, 0) - ${amount}) <= COALESCE(pi.alert, 0) THEN 'low'
+                                 ELSE 'ok'
+                        END FROM products p
                 WHERE pi.product_id = p.product_id
                   AND p.seller_id = ${sellerId as unknown as number}
                   AND pi.name = ${key}
