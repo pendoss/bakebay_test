@@ -33,7 +33,7 @@ export interface ThreadDTO {
     readonly messages: ReadonlyArray<MessageDTO>
 }
 
-export function useCustomizationThread(threadId: number | null, pollMs = 3000) {
+export function useCustomizationThread(threadId: number | null, pollMs = 5000) {
     const [thread, setThread] = useState<ThreadDTO | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -44,7 +44,10 @@ export function useCustomizationThread(threadId: number | null, pollMs = 3000) {
             if (!options.silent) setLoading(true)
             try {
                 const res = await fetch(`/api/customization/threads/${threadId}`, {credentials: 'include'})
-                if (!res.ok) throw new Error(`Failed to load thread: ${res.status}`)
+                if (!res.ok) {
+                    if (!options.silent) setError(`Failed to load thread: ${res.status}`)
+                    return
+                }
                 const data = (await res.json()) as ThreadDTO
                 setThread(data)
                 setError(null)

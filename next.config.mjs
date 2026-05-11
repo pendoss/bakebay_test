@@ -14,6 +14,11 @@ const nextConfig = {
             {protocol: 'http', hostname: 'localhost', pathname: '/**'},
             {protocol: 'http', hostname: '127.0.0.1', pathname: '/**'},
         ],
+        // Картинки товаров на S3 практически не меняются — кешируем оптимизированные
+        // варианты на 30 дней. По умолчанию Next.js держит 60с, и если S3 отдаёт без
+        // Cache-Control, каждое посещение страницы шлёт запрос к /_next/image и далее к S3.
+        minimumCacheTTL: 60 * 60 * 24 * 30,
+        formats: ['image/avif', 'image/webp'],
     },
     experimental: {
         serverActions: {

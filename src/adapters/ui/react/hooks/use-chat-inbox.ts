@@ -26,7 +26,7 @@ export interface ChatInboxPayload {
     readonly viewerSellerName: string | null
 }
 
-export function useChatInbox(pollMs = 3000) {
+export function useChatInbox(pollMs = 15000) {
     const [payload, setPayload] = useState<ChatInboxPayload | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -35,7 +35,10 @@ export function useChatInbox(pollMs = 3000) {
         if (!silent) setLoading(true)
         try {
             const res = await fetch('/api/customization/threads', {credentials: 'include'})
-            if (!res.ok) throw new Error(`Failed to load inbox: ${res.status}`)
+            if (!res.ok) {
+                if (!silent) setError(`Failed to load inbox: ${res.status}`)
+                return
+            }
             const data = (await res.json()) as ChatInboxPayload
             setPayload(data)
             setError(null)

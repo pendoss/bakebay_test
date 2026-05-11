@@ -24,7 +24,9 @@ const ROUTES: ReadonlyArray<Route> = [
 ]
 
 function useKitchenBadgeCount(): number {
-    const {payload} = useChatInbox()
+    // Бейдж в навигации нужен только для подсветки "есть непрочитанные" — раз в 60с достаточно,
+    // чтобы не флудить /api/customization/threads с каждой страницы дашборда.
+    const {payload} = useChatInbox(60000)
     return (
         payload?.threads.filter((t) => t.status === 'open' || t.status === 'awaiting_seller_finalize').length ?? 0
     )
