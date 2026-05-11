@@ -8,6 +8,7 @@ export interface Ingredient {
     alert: number
     purchase_qty: number
     purchase_price: number
+    reserved: number
 }
 
 export interface OrderItem {

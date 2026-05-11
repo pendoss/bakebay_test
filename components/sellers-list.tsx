@@ -8,249 +8,252 @@ import {Button} from '@/components/ui/button'
 import {Star} from 'lucide-react'
 import {useRouter} from 'next/navigation'
 import {Skeleton} from '@/components/ui/skeleton'
-import {useUser} from '@/contexts/user-context';
+import {observer} from 'mobx-react-lite'
+import {useCurrentUser} from '@/src/adapters/ui/react/stores'
 import {cn} from '@/lib/utils'
 
 interface Seller {
-  seller_id: number;
-  seller_name: string;
-  seller_rating: number;
-  description: string;
-  location: string;
-  website?: string;
-  contact_name: string;
-  contact_email: string;
-  contact_number: string;
-  inn?: string;
-  about_products?: string;
-  image_url?: string;
-  user_id?: number;
-  // Derived fields (not in DB but calculated for display)
-  productsCount?: number;
-  joinedDate?: string;
-  specialties?: string[];
-  image?: string;
+    seller_id: number;
+    seller_name: string;
+    seller_rating: number;
+    description: string;
+    location: string;
+    website?: string;
+    contact_name: string;
+    contact_email: string;
+    contact_number: string;
+    inn?: string;
+    about_products?: string;
+    image_url?: string;
+    user_id?: number;
+    // Derived fields (not in DB but calculated for display)
+    productsCount?: number;
+    joinedDate?: string;
+    specialties?: string[];
+    image?: string;
 }
 
-export function SellersList() {
-  const router = useRouter()
-  const [sellers, setSellers] = useState<Seller[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const {user} = useUser();
+export const SellersList = observer(function SellersList() {
+    const router = useRouter()
+    const [sellers, setSellers] = useState<Seller[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const user = useCurrentUser()
 
-  const currentUserId = user?.user_id
+    const currentUserId = user?.user_id
 
-  const isMySellerCard = (seller: Seller) => {
-    if (!currentUserId) return false
-    if (!seller.user_id) return false
-    return seller.user_id === currentUserId
-  }
+    const isMySellerCard = (seller: Seller) => {
+        if (!currentUserId) return false
+        if (!seller.user_id) return false
+        return seller.user_id === currentUserId
+    }
 
-  useEffect(() => {
-    const fetchSellers = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch('/api/sellers')
+    useEffect(() => {
+        const fetchSellers = async () => {
+            try {
+                setLoading(true)
+                const response = await fetch('/api/sellers')
 
-        if (!response.ok) {
-          console.error('Error fetching sellers:', response.status, response.statusText)
-          setError(`Failed to fetch sellers: ${response.status} ${response.statusText}`)
-          return
-        }
+                if (!response.ok) {
+                    console.error('Error fetching sellers:', response.status, response.statusText)
+                    setError(`Failed to fetch sellers: ${response.status} ${response.statusText}`)
+                    return
+                }
 
-        const data = await response.json()
-        console.log(data)
+                const data = await response.json()
+                console.log(data)
 
-        const formattedSellers = data.map((seller: Seller) => ({
-          ...seller,
-          // Format created_at timestamp to a readable date if available, or use placeholder
-          joinedDate: 'Недавно',
-          image: seller.image_url || '/placeholder.svg?height=300&width=300',
-          specialties: getSpecialties(seller),
-          productsCount: 0 // Will be updated after fetching product counts
-        }))
+                const formattedSellers = data.map((seller: Seller) => ({
+                    ...seller,
+                    // Format created_at timestamp to a readable date if available, or use placeholder
+                    joinedDate: 'Недавно',
+                    image: seller.image_url || '/placeholder.svg?height=300&width=300',
+                    specialties: getSpecialties(seller),
+                    productsCount: 0 // Will be updated after fetching product counts
+                }))
 
-        // Get product counts for each seller
-        for (const seller of formattedSellers) {
-          try {
-            const countResponse = await fetch(`/api/products/count?sellerId=${seller.seller_id}`)
-            if (countResponse.ok) {
-              const {count} = await countResponse.json()
-              seller.productsCount = count
+                // Get product counts for each seller
+                for (const seller of formattedSellers) {
+                    try {
+                        const countResponse = await fetch(`/api/products/count?sellerId=${seller.seller_id}`)
+                        if (countResponse.ok) {
+                            const {count} = await countResponse.json()
+                            seller.productsCount = count
+                        }
+                    } catch (error) {
+                        console.error(`Failed to fetch product count for seller ${seller.seller_id}:`, error)
+                    }
+                }
+
+                setSellers(formattedSellers)
+            } catch (error) {
+                console.error('Error fetching sellers:', error)
+                setError(error instanceof Error ? error.message : 'Failed to load sellers')
+            } finally {
+                setLoading(false)
             }
-          } catch (error) {
-            console.error(`Failed to fetch product count for seller ${seller.seller_id}:`, error)
-          }
         }
 
-        setSellers(formattedSellers)
-      } catch (error) {
-        console.error('Error fetching sellers:', error)
-        setError(error instanceof Error ? error.message : 'Failed to load sellers')
-      } finally {
-        setLoading(false)
-      }
+        fetchSellers()
+    }, [])
+
+    // Helper function to generate specialties based on seller data
+    const getSpecialties = (seller: Seller) => {
+        const specialties = []
+
+        if (seller.about_products) {
+            // Extract keywords from about_products
+            const keywords = seller.about_products.toLowerCase()
+
+            if (keywords.includes('торт')) specialties.push('Торты')
+            if (keywords.includes('печенье')) specialties.push('Печенье')
+            if (keywords.includes('пирог')) specialties.push('Пироги')
+            if (keywords.includes('органич')) specialties.push('Органик')
+            if (keywords.includes('веган')) specialties.push('Веганское')
+            if (keywords.includes('безглютен')) specialties.push('Без глютена')
+        }
+
+        // If no specialties detected, add a default one based on location
+        if (specialties.length === 0) {
+            specialties.push(`Кондитерские изделия`)
+        }
+
+        return specialties
     }
 
-    fetchSellers()
-  }, [])
-
-  // Helper function to generate specialties based on seller data
-  const getSpecialties = (seller: Seller) => {
-    const specialties = []
-
-    if (seller.about_products) {
-      // Extract keywords from about_products
-      const keywords = seller.about_products.toLowerCase()
-
-      if (keywords.includes('торт')) specialties.push('Торты')
-      if (keywords.includes('печенье')) specialties.push('Печенье')
-      if (keywords.includes('пирог')) specialties.push('Пироги')
-      if (keywords.includes('органич')) specialties.push('Органик')
-      if (keywords.includes('веган')) specialties.push('Веганское')
-      if (keywords.includes('безглютен')) specialties.push('Без глютена')
+    const handleViewProducts = (sellerId: number) => {
+        router.push(`/catalog?sellerId=${sellerId}`)
     }
 
-    // If no specialties detected, add a default one based on location
-    if (specialties.length === 0) {
-      specialties.push(`Кондитерские изделия`)
+    // Show loading skeleton
+    if (loading) {
+        return (
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+                {[1, 2, 3, 4, 5, 6].map((index) => (
+                    <Card key={index} className='overflow-hidden'>
+                        <Skeleton className='aspect-[3/2] w-full'/>
+                        <CardHeader className='min-h-[150px]'>
+                            <div className='flex justify-between items-start'>
+                                <Skeleton className='h-6 w-3/4'/>
+                                <Skeleton className='h-4 w-16'/>
+                            </div>
+                            <Skeleton className='h-4 w-full mt-2'/>
+                            <Skeleton className='h-4 w-full mt-1'/>
+                        </CardHeader>
+                        <CardContent>
+                            <div className='grid gap-2'>
+                                <div className='flex items-center justify-between'>
+                                    <Skeleton className='h-4 w-1/3'/>
+                                    <Skeleton className='h-4 w-1/3'/>
+                                </div>
+                                <div className='flex items-center justify-between'>
+                                    <Skeleton className='h-4 w-1/3'/>
+                                    <Skeleton className='h-4 w-1/3'/>
+                                </div>
+                                <div className='flex items-center justify-between'>
+                                    <Skeleton className='h-4 w-1/3'/>
+                                    <Skeleton className='h-4 w-1/3'/>
+                                </div>
+                                <div className='flex flex-wrap gap-1 mt-2'>
+                                    <Skeleton className='h-5 w-16'/>
+                                    <Skeleton className='h-5 w-20'/>
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Skeleton className='h-10 w-full'/>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+        )
     }
 
-    return specialties
-  }
+    // Show error message
+    if (error) {
+        return (
+            <div className='text-center py-12'>
+                <h3 className='text-lg font-medium mb-2'>Не удалось загрузить продавцов</h3>
+                <p className='text-muted-foreground mb-4'>{error}</p>
+                <Button onClick={() => window.location.reload()}>Попробовать снова</Button>
+            </div>
+        )
+    }
 
-  const handleViewProducts = (sellerId: number) => {
-    router.push(`/catalog?sellerId=${sellerId}`)
-  }
+    // Show empty state
+    if (sellers.length === 0) {
+        return (
+            <div className='text-center py-12'>
+                <h3 className='text-lg font-medium mb-2'>Продавцы не найдены</h3>
+                <p className='text-muted-foreground mb-4'>На данный момент в нашем маркетплейсе нет продавцов.</p>
+                <Button onClick={() => router.push('/sellers?tab=become')}>Стать первым продавцом</Button>
+            </div>
+        )
+    }
 
-  // Show loading skeleton
-  if (loading) {
     return (
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-          {[1, 2, 3, 4, 5, 6].map((index) => (
-              <Card key={index} className='overflow-hidden'>
-                <Skeleton className='aspect-[3/2] w-full'/>
-                <CardHeader className='min-h-[150px]'>
-                  <div className='flex justify-between items-start'>
-                    <Skeleton className='h-6 w-3/4'/>
-                    <Skeleton className='h-4 w-16'/>
-                  </div>
-                  <Skeleton className='h-4 w-full mt-2'/>
-                  <Skeleton className='h-4 w-full mt-1'/>
-                </CardHeader>
-                <CardContent>
-                  <div className='grid gap-2'>
-                    <div className='flex items-center justify-between'>
-                      <Skeleton className='h-4 w-1/3'/>
-                      <Skeleton className='h-4 w-1/3'/>
-                    </div>
-                    <div className='flex items-center justify-between'>
-                      <Skeleton className='h-4 w-1/3'/>
-                      <Skeleton className='h-4 w-1/3'/>
-                    </div>
-                    <div className='flex items-center justify-between'>
-                      <Skeleton className='h-4 w-1/3'/>
-                      <Skeleton className='h-4 w-1/3'/>
-                    </div>
-                    <div className='flex flex-wrap gap-1 mt-2'>
-                      <Skeleton className='h-5 w-16'/>
-                      <Skeleton className='h-5 w-20'/>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Skeleton className='h-10 w-full'/>
-                </CardFooter>
-              </Card>
-          ))}
-        </div>
-    )
-  }
-
-  // Show error message
-  if (error) {
-    return (
-        <div className='text-center py-12'>
-          <h3 className='text-lg font-medium mb-2'>Не удалось загрузить продавцов</h3>
-          <p className='text-muted-foreground mb-4'>{error}</p>
-          <Button onClick={() => window.location.reload()}>Попробовать снова</Button>
-        </div>
-    )
-  }
-
-  // Show empty state
-  if (sellers.length === 0) {
-    return (
-        <div className='text-center py-12'>
-          <h3 className='text-lg font-medium mb-2'>Продавцы не найдены</h3>
-          <p className='text-muted-foreground mb-4'>На данный момент в нашем маркетплейсе нет продавцов.</p>
-          <Button onClick={() => router.push('/sellers?tab=become')}>Стать первым продавцом</Button>
-        </div>
-    )
-  }
-
-  return (
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-        {sellers.map((seller) => (
-            <Card
-                key={seller.seller_id}
-                className={cn(
-                    'overflow-hidden',
-                    isMySellerCard(seller) && 'ring-1 ring-primary/20'
-                )}
-            >
-              <div className='aspect-[3/2] relative'>
-                <Image src={seller.image || '/placeholder.svg'} alt={seller.seller_name} fill className='object-cover'/>
-                {isMySellerCard(seller) && (
-                    <Badge className='absolute left-3 top-3 bg-primary text-primary-foreground'>
-                  Ваш магазин
-                    </Badge>
-                )}
-              </div>
-              <CardHeader className='min-h-[150px]'>
-                <div className='flex justify-between items-start'>
-                  <CardTitle>{seller.seller_name}</CardTitle>
-                  <div className='flex items-center gap-1'>
-                    <Star className='h-4 w-4 fill-primary text-primary'/>
-                    <span className='text-sm font-medium'>{seller.seller_rating?.toFixed(1) || 'Новый'}</span>
-                  </div>
-                </div>
-                <CardDescription>{seller.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className='grid gap-2'>
-                  <div className='flex items-center justify-between text-sm'>
-                    <span className='text-muted-foreground'>Местоположение:</span>
-                    <span>{seller.location}</span>
-                  </div>
-                  <div className='flex items-center justify-between text-sm'>
-                    <span className='text-muted-foreground'>Товары:</span>
-                    <span>{seller.productsCount}</span>
-                  </div>
-                  <div className='flex items-center justify-between text-sm'>
-                    <span className='text-muted-foreground'>Присоединился:</span>
-                    <span>{seller.joinedDate}</span>
-                  </div>
-                  <div className='flex flex-wrap gap-1 mt-2'>
-                    {seller.specialties?.map((specialty, index) => (
-                        <Badge key={index} variant='secondary' className='text-xs'>
-                          {specialty}
-                        </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button
-                    className='w-full'
-                    onClick={() => handleViewProducts(seller.seller_id)}
+            {sellers.map((seller) => (
+                <Card
+                    key={seller.seller_id}
+                    className={cn(
+                        'overflow-hidden',
+                        isMySellerCard(seller) && 'ring-1 ring-primary/20'
+                    )}
                 >
-              Посмотреть товары
-                </Button>
-              </CardFooter>
-            </Card>
-        ))}
-      </div>
-  )
-}
+                    <div className='aspect-[3/2] relative'>
+                        <Image src={seller.image || '/placeholder.svg'} alt={seller.seller_name} fill
+                               className='object-cover'/>
+                        {isMySellerCard(seller) && (
+                            <Badge className='absolute left-3 top-3 bg-primary text-primary-foreground'>
+                                Ваш магазин
+                            </Badge>
+                        )}
+                    </div>
+                    <CardHeader className='min-h-[150px]'>
+                        <div className='flex justify-between items-start'>
+                            <CardTitle>{seller.seller_name}</CardTitle>
+                            <div className='flex items-center gap-1'>
+                                <Star className='h-4 w-4 fill-primary text-primary'/>
+                                <span
+                                    className='text-sm font-medium'>{seller.seller_rating?.toFixed(1) || 'Новый'}</span>
+                            </div>
+                        </div>
+                        <CardDescription>{seller.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className='grid gap-2'>
+                            <div className='flex items-center justify-between text-sm'>
+                                <span className='text-muted-foreground'>Местоположение:</span>
+                                <span>{seller.location}</span>
+                            </div>
+                            <div className='flex items-center justify-between text-sm'>
+                                <span className='text-muted-foreground'>Товары:</span>
+                                <span>{seller.productsCount}</span>
+                            </div>
+                            <div className='flex items-center justify-between text-sm'>
+                                <span className='text-muted-foreground'>Присоединился:</span>
+                                <span>{seller.joinedDate}</span>
+                            </div>
+                            <div className='flex flex-wrap gap-1 mt-2'>
+                                {seller.specialties?.map((specialty, index) => (
+                                    <Badge key={index} variant='secondary' className='text-xs'>
+                                        {specialty}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <Button
+                            className='w-full'
+                            onClick={() => handleViewProducts(seller.seller_id)}
+                        >
+                            Посмотреть товары
+                        </Button>
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+    )
+})

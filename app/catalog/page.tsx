@@ -7,6 +7,7 @@ export default function CatalogPage() {
 	const searchParams = useSearchParams()
 	const categoryParam = searchParams.get('category')
 	const sellerIdParam = searchParams.get('sellerId')
+	const searchParam = searchParams.get('q') ?? ''
 
 	const filters = useMemo(() => ({
 		priceRange: [0, 10000] as [number, number],
@@ -22,7 +23,7 @@ export default function CatalogPage() {
 				<h1 className='text-3xl font-bold tracking-tight mb-2'>Все товары</h1>
 				<p className='text-muted-foreground'>Просмотрите наш выбор вкусных сладостей</p>
 			</div>
-			<Catalog initialCategory={categoryParam} initialFilters={filters}/>
+			<Catalog initialCategory={categoryParam} initialFilters={filters} initialSearch={searchParam}/>
 		</div>
 	)
 }

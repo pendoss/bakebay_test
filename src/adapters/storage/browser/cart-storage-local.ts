@@ -31,16 +31,27 @@ function parseStored(raw: string): Cart {
     return EMPTY_CART
 }
 
+function randomClientId(): string {
+    const rnd =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : Math.random().toString(36).slice(2, 10)
+    return `${Date.now()}-${rnd}`
+}
+
 function fromLegacy(raw: unknown): CartItem {
     const r = raw as Partial<LegacyCartItem> & Partial<CartItem>
     const id = (r as LegacyCartItem).id ?? (r as CartItem).productId
     return {
+        clientId: typeof r.clientId === 'string' && r.clientId.length > 0 ? r.clientId : randomClientId(),
         productId: asProductId(Number(id)),
         name: String(r.name ?? ''),
         price: Number(r.price ?? 0),
         image: String(r.image ?? ''),
         seller: String(r.seller ?? ''),
         quantity: Number(r.quantity ?? 1),
+        optionSelections: Array.isArray(r.optionSelections) ? r.optionSelections : undefined,
+        customerNote: typeof r.customerNote === 'string' ? r.customerNote : undefined,
     }
 }
 

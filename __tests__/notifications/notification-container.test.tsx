@@ -50,19 +50,18 @@ describe("NotificationContainer", () => {
         expect(screen.getByText("Заказ")).toBeInTheDocument()
     })
 
-    it("позиционирует контейнер вверху по центру (top + left-1/2 + -translate-x-1/2)", () => {
+    it("позиционирует контейнер в правом верхнем углу (top + right)", () => {
         renderContainer()
         act(() => screen.getByTestId("add").click())
         const container = screen.getByLabelText("Уведомления")
-        expect(container.className).toContain("top-4")
-        expect(container.className).toContain("left-1/2")
-        expect(container.className).toContain("-translate-x-1/2")
+        expect(container.className).toContain("top-20")
+        expect(container.className).toContain("right-4")
     })
 
     it("содержит текст для перехода при наличии deeplink", () => {
         renderContainer()
         act(() => screen.getByTestId("add").click())
-        expect(screen.getByText("Нажмите для перехода →")).toBeInTheDocument()
+        expect(screen.getByText("Открыть")).toBeInTheDocument()
     })
 
     it("позволяет закрыть уведомление кнопкой X", () => {
@@ -70,6 +69,9 @@ describe("NotificationContainer", () => {
         act(() => screen.getByTestId("add").click())
         expect(screen.getByText("Заказ")).toBeInTheDocument()
         fireEvent.click(screen.getByLabelText("Закрыть уведомление"))
+        act(() => {
+            jest.advanceTimersByTime(250)
+        })
         expect(screen.queryByText("Заказ")).not.toBeInTheDocument()
     })
 

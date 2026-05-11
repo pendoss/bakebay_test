@@ -1,4 +1,13 @@
-import {addItem, applyPromo, clear, EMPTY_CART, isEmpty, itemsCount, removeItem, updateQuantity,} from '../cart'
+import {
+    addItem,
+    applyPromo,
+    clear,
+    EMPTY_CART,
+    isEmpty,
+    itemsCount,
+    removeItem,
+    updateQuantity,
+} from '../cart'
 import {calcTotals} from '../totals'
 import {asProductId} from '@/src/domain/shared/id'
 
@@ -22,14 +31,31 @@ describe('cart', () => {
         expect(c.items[0].quantity).toBe(3)
     })
 
-    it('removeItem drops matching productId', () => {
+    it('addItem assigns a stable clientId', () => {
         const c = addItem(EMPTY_CART, sample(1))
-        expect(removeItem(c, asProductId(1)).items).toHaveLength(0)
+        expect(c.items[0].clientId).toMatch(/\S+/)
+    })
+
+    it('removeItem drops matching line', () => {
+        const c = addItem(EMPTY_CART, sample(1))
+        expect(removeItem(c, c.items[0].clientId).items).toHaveLength(0)
+    })
+
+    it('removeItem only touches the matching variant', () => {
+        const withOption = {
+            ...sample(1),
+            optionSelections: [{groupId: 1, groupName: 'g', valueId: 9, label: 'L', priceDelta: 0}],
+        }
+        const c = addItem(addItem(EMPTY_CART, sample(1)), withOption)
+        expect(c.items).toHaveLength(2)
+        const next = removeItem(c, c.items[1].clientId)
+        expect(next.items).toHaveLength(1)
+        expect(next.items[0].optionSelections).toBeUndefined()
     })
 
     it('updateQuantity ignores qty < 1', () => {
         const c = addItem(EMPTY_CART, sample(1))
-        expect(updateQuantity(c, asProductId(1), 0)).toBe(c)
+        expect(updateQuantity(c, c.items[0].clientId, 0)).toBe(c)
     })
 
     it('clear returns empty cart', () => {
@@ -39,7 +65,7 @@ describe('cart', () => {
 
     it('itemsCount sums quantities', () => {
         const c = addItem(addItem(EMPTY_CART, sample(1)), sample(2))
-        expect(itemsCount(updateQuantity(c, asProductId(1), 4))).toBe(5)
+        expect(itemsCount(updateQuantity(c, c.items[0].clientId, 4))).toBe(5)
     })
 
     it('calcTotals: free shipping over 50', () => {

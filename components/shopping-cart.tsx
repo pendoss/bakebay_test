@@ -1,24 +1,35 @@
 'use client'
 
 import {useState} from 'react'
-import Image from 'next/image'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardFooter, CardHeader, CardTitle} from '@/components/ui/card'
 import {Input} from '@/components/ui/input'
 import {Separator} from '@/components/ui/separator'
-import {Minus, Plus, Trash2} from 'lucide-react'
+import {Lock} from 'lucide-react'
+import {CartItemRow} from '@/components/cart/cart-item-row'
+import {observer} from 'mobx-react-lite'
 import {useRouter} from 'next/navigation'
-import {useCart} from '@/src/adapters/ui/react/providers/cart-provider'
+import {
+    useCartActions,
+    useCartCount,
+    useCartItems,
+    useCartRaw,
+    useCartTotals,
+    useCurrentUser
+} from '@/src/adapters/ui/react/stores'
 import {EmptyCartError, useCheckout} from '@/src/adapters/ui/react/hooks/use-checkout'
 import {useToast} from '@/hooks/use-toast'
-import {useUser} from '@/contexts/user-context'
 import {useAuthDialog} from '@/src/adapters/ui/react/providers/auth-dialog-provider'
 
-export function ShoppingCart() {
+export const ShoppingCart = observer(function ShoppingCart() {
     const router = useRouter()
     const {toast} = useToast()
-    const {items, removeItem, updateQuantity, clear: clearCart, applyPromo, totals, itemsCount, cart} = useCart()
-    const {user} = useUser()
+    const items = useCartItems()
+    const totals = useCartTotals()
+    const itemsCount = useCartCount()
+    const cart = useCartRaw()
+    const {clear: clearCart, applyPromo} = useCartActions()
+    const user = useCurrentUser()
     const {requireAuth} = useAuthDialog()
     const [promoCode, setPromoCode] = useState('')
     const checkout = useCheckout()
@@ -26,12 +37,12 @@ export function ShoppingCart() {
 
     const performCheckout = async () => {
         try {
-            const {orderId} = await checkout()
+            const {customerOrderId} = await checkout()
             toast({
                 title: 'Заказ успешно оформлен',
-                description: `Ваш заказ #${orderId} был успешно создан.`,
+                description: `Ваш заказ #${customerOrderId} был успешно создан.`,
             })
-            router.push('/orders')
+            router.push('/orders-v2')
         } catch (err) {
             if (err instanceof EmptyCartError) {
                 toast({
@@ -74,58 +85,12 @@ export function ShoppingCart() {
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
             <div className='lg:col-span-2 space-y-4'>
                 {items.map((item) => (
-                    <Card key={item.productId} className='overflow-hidden'>
-                        <div className='flex flex-col sm:flex-row'>
-                            <div className='w-full sm:w-32 h-32 relative'>
-                                <Image src={item.image || '/placeholder.svg'} alt={item.name} fill
-                                       className='object-cover'/>
-                            </div>
-                            <div className='flex-1 p-4'>
-                                <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4'>
-                                    <div>
-                                        <h3 className='font-semibold text-lg'>{item.name}</h3>
-                                        <p className='text-sm text-muted-foreground'>Продавец: {item.seller}</p>
-                                    </div>
-                                    <div
-                                        className='text-lg font-semibold'>{(item.price * item.quantity).toFixed(2)} руб.
-                                    </div>
-                                </div>
-                                <div className='flex justify-between items-center mt-4'>
-                                    <div className='flex items-center'>
-                                        <Button
-                                            variant='outline'
-                                            size='icon'
-                                            className='h-8 w-8 rounded-full'
-                                            onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                                        >
-                                            <Minus className='h-3 w-3'/>
-                                            <span className='sr-only'>Уменьшить количество</span>
-                                        </Button>
-                                        <span className='w-12 text-center'>{item.quantity}</span>
-                                        <Button
-                                            variant='outline'
-                                            size='icon'
-                                            className='h-8 w-8 rounded-full'
-                                            onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                                        >
-                                            <Plus className='h-3 w-3'/>
-                                            <span className='sr-only'>Увеличить количество</span>
-                                        </Button>
-                                    </div>
-                                    <Button variant='ghost' size='sm' className='text-destructive'
-                                            onClick={() => removeItem(item.productId)}>
-                                        <Trash2 className='h-4 w-4 mr-1'/>
-                    Удалить
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
+                    <CartItemRow key={item.clientId} item={item}/>
                 ))}
 
                 <div className='flex justify-between items-center'>
                     <Button variant='outline' onClick={() => router.push('/catalog')}>
-            Продолжить покупки
+                        Продолжить покупки
                     </Button>
                     <Button
                         variant='ghost'
@@ -137,7 +102,7 @@ export function ShoppingCart() {
                             })
                         }}
                     >
-            Очистить корзину
+                        Очистить корзину
                     </Button>
                 </div>
             </div>
@@ -187,35 +152,36 @@ export function ShoppingCart() {
                                 />
                                 <Button variant='outline' onClick={applyPromoCode}
                                         disabled={promoApplied || promoCode.trim() === ''}>
-                  Применить
+                                    Применить
                                 </Button>
                             </div>
 
                             {promoApplied &&
                                 <div className='text-sm text-green-600 mb-4'>Промокод успешно применен!</div>
                             }
-                            {user ? (
-                                <Button className='w-full' onClick={performCheckout}>
-                                    Перейти к оформлению
-                                </Button>
-                            ) : (
-                                <Button
-                                    className='w-full'
-                                    onClick={() => requireAuth(performCheckout)}
-                                >
-                                    Зарегестрируйтесь или войдите, чтобы оформить заказ
-                                </Button>
+                            <Button
+                                className='w-full'
+                                onClick={() => (user ? performCheckout() : requireAuth(performCheckout))}
+                            >
+                                Перейти к оформлению
+                            </Button>
+                            {!user && (
+                                <p className='mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground'>
+                                    <Lock className='h-3 w-3'/>
+                                    Нужно войти — после входа вы вернётесь сюда
+                                </p>
                             )}
 
                         </div>
                     </CardContent>
                     <CardFooter className='text-xs text-muted-foreground'>
                         <p>
-              Переходя к оформлению, вы соглашаетесь с нашими условиями обслуживания и политикой конфиденциальности.
+                            Переходя к оформлению, вы соглашаетесь с нашими условиями обслуживания и политикой
+                            конфиденциальности.
                         </p>
                     </CardFooter>
                 </Card>
             </div>
         </div>
     )
-}
+})

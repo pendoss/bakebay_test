@@ -52,6 +52,18 @@ export interface Product {
     seller: ProductSeller | null
     categoryInfo: ProductCategoryRef | null
     rating: number
+    isCustomizable: boolean
+}
+
+export interface ProductSearchMatch {
+    readonly product: Product
+    readonly score: number
+}
+
+export interface ProductSearchResult {
+    readonly query: string
+    readonly results: ReadonlyArray<ProductSearchMatch>
+    readonly suggestions: ReadonlyArray<ProductSearchMatch>
 }
 
 export function isOwnedBySeller(product: Pick<Product, 'sellerId'>, sellerId: SellerId | null): boolean {

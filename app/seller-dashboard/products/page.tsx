@@ -1,6 +1,6 @@
 'use client'
 
-import {useState, useEffect} from 'react'
+import {useEffect, useState} from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {Button} from '@/components/ui/button'
@@ -20,22 +20,25 @@ import {Badge} from '@/components/ui/badge'
 import {EllipsisVertical, Plus, Star} from 'lucide-react'
 import {fetchProducts} from '@/app/actions/fetchProducts'
 import {ProductEditDialog} from '@/components/product-edit-dialog'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {exportProductSmeta} from '@/app/actions/exportData'
 import {downloadCsv} from '@/lib/downloadCsv'
 
 // Define interface for product objects
 interface Product {
-  id: number;
-  name: string;
-  price: number;
-  inventory: number;
-  category: string;
-  image: string;
-  status: string;
-  rating: number;
-  sales: number;
+    id: number;
+    name: string;
+    price: number;
+    inventory: number;
+    category: string;
+    image: string;
+    status: string;
+    rating: number;
+    sales: number;
 }
+
+const PLACEHOLDER_IMAGE = '/placeholder.svg?height=200&width=200'
 
 // Пример данных для резервного отображения
 const exampleProducts: Product[] = [
@@ -45,7 +48,7 @@ const exampleProducts: Product[] = [
         price: 24.99,
         inventory: 15,
         category: 'Торты',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Активен',
         rating: 4.8,
         sales: 32,
@@ -56,7 +59,7 @@ const exampleProducts: Product[] = [
         price: 22.99,
         inventory: 8,
         category: 'Торты',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Активен',
         rating: 4.7,
         sales: 24,
@@ -67,7 +70,7 @@ const exampleProducts: Product[] = [
         price: 18.99,
         inventory: 20,
         category: 'Печенье',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Активен',
         rating: 4.9,
         sales: 21,
@@ -78,7 +81,7 @@ const exampleProducts: Product[] = [
         price: 16.99,
         inventory: 12,
         category: 'Выпечка',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Активен',
         rating: 4.6,
         sales: 18,
@@ -89,7 +92,7 @@ const exampleProducts: Product[] = [
         price: 8.99,
         inventory: 6,
         category: 'Итальянские десерты',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Мало на складе',
         rating: 4.7,
         sales: 15,
@@ -100,15 +103,15 @@ const exampleProducts: Product[] = [
         price: 15.99,
         inventory: 0,
         category: 'Капкейки',
-        image: '/placeholder.svg?height=200&width=200',
+        image: PLACEHOLDER_IMAGE,
         status: 'Нет в наличии',
         rating: 4.8,
         sales: 0,
     },
 ]
 
-export default function ProductsPage() {
-    const {sellerId} = useUser()
+const ProductsPage = observer(function ProductsPage() {
+    const sellerId = useSellerId()
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -155,7 +158,7 @@ export default function ProductsPage() {
             (statusFilter === 'low' && product.status === 'Мало на складе') ||
             (statusFilter === 'out' && product.status === 'Нет в наличии');
         const matchesCategory = categoryFilter === 'all' ||
-                           product.category.toLowerCase() === categoryFilter.toLowerCase();
+            product.category.toLowerCase() === categoryFilter.toLowerCase();
 
         return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -188,7 +191,7 @@ export default function ProductsPage() {
                 <Link href='/seller-dashboard/products/new'>
                     <Button className='flex items-center gap-1'>
                         <Plus className='h-4 w-4'/>
-            Добавить товар
+                        Добавить товар
                     </Button>
                 </Link>
             </div>
@@ -257,10 +260,10 @@ export default function ProductsPage() {
             <Tabs defaultValue='grid' className='w-full'>
                 <TabsList className='w-full sm:w-auto'>
                     <TabsTrigger value='grid' className='flex-1 sm:flex-auto'>
-            Сетка
+                        Сетка
                     </TabsTrigger>
                     <TabsTrigger value='list' className='flex-1 sm:flex-auto'>
-            Список
+                        Список
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value='grid' className='mt-4'>
@@ -270,7 +273,7 @@ export default function ProductsPage() {
                             <Link href='/seller-dashboard/products/new'>
                                 <Button size='sm'>
                                     <Plus className='h-4 w-4 mr-1'/>
-                  Добавить товар
+                                    Добавить товар
                                 </Button>
                             </Link>
                         </div>
@@ -351,7 +354,7 @@ export default function ProductsPage() {
                                             setIsEditDialogOpen(true);
                                         }}
                                     >
-                    Управление товаром
+                                        Управление товаром
                                     </Button>
                                 </CardFooter>
                             </Card>
@@ -365,7 +368,7 @@ export default function ProductsPage() {
                             <Link href='/seller-dashboard/products/new'>
                                 <Button size='sm'>
                                     <Plus className='h-4 w-4 mr-1'/>
-                  Добавить товар
+                                    Добавить товар
                                 </Button>
                             </Link>
                         </div>
@@ -460,4 +463,5 @@ export default function ProductsPage() {
             />
         </div>
     )
-}
+})
+export default ProductsPage

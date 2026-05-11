@@ -11,11 +11,14 @@ import {Textarea} from './ui/textarea'
 import {Checkbox} from './ui/checkbox'
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from './ui/form'
 import {AlertCircle} from 'lucide-react'
+import {observer} from 'mobx-react-lite'
 import {useToast} from '@/hooks/use-toast'
-import {useUser} from '@/contexts/user-context'
+import {useCurrentUser, useIsUserLoading, useUserActions} from '@/src/adapters/ui/react/stores'
 
-export function BecomeSellerForm() {
-    const {user, refreshUser, isLoading} = useUser()
+export const BecomeSellerForm = observer(function BecomeSellerForm() {
+    const user = useCurrentUser()
+    const isLoading = useIsUserLoading()
+    const {refreshUser} = useUserActions()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const router = useRouter()
     const {toast} = useToast()
@@ -271,7 +274,7 @@ export function BecomeSellerForm() {
                     <div className='flex items-center space-x-2'>
                         <Checkbox id='terms' required/>
                         <Label htmlFor='terms' className='text-sm'>
-              Я принимаю условия использования и политику конфиденциальности
+                            Я принимаю условия использования и политику конфиденциальности
                         </Label>
                     </div>
 
@@ -282,4 +285,4 @@ export function BecomeSellerForm() {
             </Form>
         </Card>
     )
-}
+})

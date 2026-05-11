@@ -93,6 +93,15 @@
   }
 }
 
+@keyframes bb-notif-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 /* Address section animated border */
 @property --border-angle {
     syntax: "<angle>";

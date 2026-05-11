@@ -1,9 +1,10 @@
 'use client'
 
 import {createContext, type ReactNode, useCallback, useContext, useRef, useState} from 'react'
+import {observer} from 'mobx-react-lite'
 import {useRouter} from 'next/navigation'
 import {AuthDialog} from '@/components/auth-dialog'
-import {useUser} from '@/contexts/user-context'
+import {useCurrentUser, useUserActions} from '@/src/adapters/ui/react/stores'
 
 type PendingAction = () => void | Promise<void>
 
@@ -20,10 +21,11 @@ export function useAuthDialog() {
     return ctx
 }
 
-export function AuthDialogProvider({children}: { children: ReactNode }) {
+export const AuthDialogProvider = observer(function AuthDialogProvider({children}: { children: ReactNode }) {
     const [isOpen, setIsOpen] = useState(false)
     const pendingRef = useRef<PendingAction | null>(null)
-    const {user, login} = useUser()
+    const user = useCurrentUser()
+    const {login} = useUserActions()
     const router = useRouter()
 
     const open = useCallback(() => {
@@ -60,4 +62,4 @@ export function AuthDialogProvider({children}: { children: ReactNode }) {
             <AuthDialog isOpen={isOpen} setIsOpen={handleOpenChange} onAuthSuccess={handleAuthSuccess}/>
         </AuthDialogContext.Provider>
     )
-}
+})

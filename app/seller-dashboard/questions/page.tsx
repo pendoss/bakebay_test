@@ -14,18 +14,20 @@ import {useToast} from '@/hooks/use-toast'
 
 // Define Question type
 interface Question {
-  id: number;
-  customer: {
-    name: string;
-    initials: string;
-  };
-  product: string;
-  question: string;
-  date: Date;
-  status: string;
-  answer?: string;
-  answerDate?: Date;
+    id: number;
+    customer: {
+        name: string;
+        initials: string;
+    };
+    product: string;
+    question: string;
+    date: Date;
+    status: string;
+    answer?: string;
+    answerDate?: Date;
 }
+
+const STATUS_UNANSWERED = 'Без ответа'
 
 // Пример данных
 const initialQuestions: Question[] = [
@@ -35,7 +37,7 @@ const initialQuestions: Question[] = [
         product: 'Шоколадный торт',
         question: 'Подходит ли этот торт для человека с аллергией на орехи?',
         date: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 часа назад
-        status: 'Без ответа',
+        status: STATUS_UNANSWERED,
     },
     {
         id: 2,
@@ -43,7 +45,7 @@ const initialQuestions: Question[] = [
         product: 'Ассорти макарон',
         question: 'Как долго эти макароны остаются свежими?',
         date: new Date(Date.now() - 1000 * 60 * 60 * 12), // 12 часов назад
-        status: 'Без ответа',
+        status: STATUS_UNANSWERED,
     },
     {
         id: 3,
@@ -125,13 +127,13 @@ export default function QuestionsPage() {
             <Tabs defaultValue='all' className='w-full'>
                 <TabsList className='w-full sm:w-auto grid grid-cols-3 sm:flex'>
                     <TabsTrigger value='all' className='flex-1 sm:flex-auto'>
-            Все вопросы
+                        Все вопросы
                     </TabsTrigger>
                     <TabsTrigger value='unanswered' className='flex-1 sm:flex-auto'>
-            Без ответа
+                        Без ответа
                     </TabsTrigger>
                     <TabsTrigger value='answered' className='flex-1 sm:flex-auto'>
-            Отвеченные
+                        Отвеченные
                     </TabsTrigger>
                 </TabsList>
 
@@ -151,7 +153,7 @@ export default function QuestionsPage() {
 
                 <TabsContent value='unanswered' className='mt-4 space-y-4'>
                     {questions
-                        .filter((q) => q.status === 'Без ответа')
+                        .filter((q) => q.status === STATUS_UNANSWERED)
                         .map((question) => (
                             <QuestionCard
                                 key={question.id}
@@ -186,14 +188,22 @@ export default function QuestionsPage() {
 }
 
 interface QuestionCardProps {
-  question: Question,
-  onAnswer: () => void,
-  selectedQuestion: Question | null,
-  answerText: string,
-  setAnswerText: (text: string) => void,
-  handleAnswer: (questionId: number) => void,
+    question: Question,
+    onAnswer: () => void,
+    selectedQuestion: Question | null,
+    answerText: string,
+    setAnswerText: (text: string) => void,
+    handleAnswer: (questionId: number) => void,
 }
-function QuestionCard({ question, onAnswer, selectedQuestion, answerText, setAnswerText, handleAnswer } : QuestionCardProps) {
+
+function QuestionCard({
+                          question,
+                          onAnswer,
+                          selectedQuestion,
+                          answerText,
+                          setAnswerText,
+                          handleAnswer
+                      }: QuestionCardProps) {
     const isSelected = selectedQuestion && selectedQuestion.id === question.id
 
     return (
@@ -213,7 +223,8 @@ function QuestionCard({ question, onAnswer, selectedQuestion, answerText, setAns
                             </div>
                         </div>
                     </div>
-                    <Badge variant={question.status === 'Без ответа' ? 'outline' : 'default'}>{question.status}</Badge>
+                    <Badge
+                        variant={question.status === STATUS_UNANSWERED ? 'outline' : 'default'}>{question.status}</Badge>
                 </div>
             </CardHeader>
             <CardContent className='space-y-4'>
@@ -231,11 +242,11 @@ function QuestionCard({ question, onAnswer, selectedQuestion, answerText, setAns
                             <p className='text-sm'>{question.answer}</p>
                             {question.answerDate ? (
                                 <p className='text-xs text-muted-foreground mt-2'>
-                  Отвечено {formatDistanceToNow(question.answerDate, { addSuffix: true, locale: ru })}
+                                    Отвечено {formatDistanceToNow(question.answerDate, {addSuffix: true, locale: ru})}
                                 </p>
                             ) : (
                                 <p className='text-xs text-muted-foreground mt-2'>
-                  Ответ не отправлен
+                                    Ответ не отправлен
                                 </p>
                             )}
 
@@ -243,9 +254,9 @@ function QuestionCard({ question, onAnswer, selectedQuestion, answerText, setAns
                     </div>
                 )}
 
-                {question.status === 'Без ответа' && !isSelected && (
+                {question.status === STATUS_UNANSWERED && !isSelected && (
                     <Button size='sm' onClick={onAnswer}>
-            Ответить на вопрос
+                        Ответить на вопрос
                     </Button>
                 )}
 
@@ -259,10 +270,10 @@ function QuestionCard({ question, onAnswer, selectedQuestion, answerText, setAns
                         />
                         <div className='flex gap-2'>
                             <Button size='sm' onClick={() => handleAnswer(question.id)}>
-                Отправить ответ
+                                Отправить ответ
                             </Button>
                             <Button variant='outline' size='sm' onClick={() => setAnswerText('')}>
-                Очистить
+                                Очистить
                             </Button>
                         </div>
                     </div>

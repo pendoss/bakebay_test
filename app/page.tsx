@@ -4,6 +4,7 @@ import {Button} from '@/components/ui/button'
 import {Card, CardContent} from '@/components/ui/card'
 import {Badge} from '@/components/ui/badge'
 import {Clock, Star, ShieldCheck, ChevronRight, Cake, Utensils, Gift, Cookie} from 'lucide-react'
+import {publicS3Url} from '@/src/adapters/storage/s3'
 
 export default function Home() {
 	return (
@@ -46,7 +47,7 @@ export default function Home() {
 										<div key={i}
 											 className='w-8 h-8 rounded-full border-2 border-primary/20 overflow-hidden'>
 											<Image
-												src={'https://' + process.env.S3_ENDPOINT + '/' + process.env.S3_BUCKET_NAME + '/' + 'user_placeholder_' + `${i}` + '.jpeg'}
+												src='/placeholder-user.jpg'
 												alt={`Клиент ${i}`} width={32} height={32}/>
 										</div>
 									))}
@@ -59,7 +60,7 @@ export default function Home() {
 						<div
 							className='relative h-[400px] md:h-[450px] rounded-2xl overflow-hidden shadow-xl flex items-center justify-center bg-[#ecf3f7]'>
 							<Image
-								src={'https://' + process.env.S3_ENDPOINT + '/' + process.env.S3_BUCKET_NAME + '/' + 'BakeBay_logo.png'}
+								src={publicS3Url('BakeBay_logo.png', '/placeholder-logo.png')}
 								alt='Витрина вкусных тортов'
 								sizes='(max-width: 500px), 100vw, 33vw'
 								width={500}
@@ -136,7 +137,7 @@ export default function Home() {
 					<div className='grid grid-cols-1 md:grid-cols-2 gap-12 items-center'>
 						<div className='relative h-[373px] rounded-2xl overflow-hidden shadow-xl'>
 							<Image
-								src={`https://${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET_NAME}/main_page_team.jpg`}
+								src={publicS3Url('main_page_team.jpg', '/placeholder.jpg')}
 								alt='Витрина вкусных тортов'
 								width={652}
 								height={1000}

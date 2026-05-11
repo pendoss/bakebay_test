@@ -24,6 +24,7 @@ export const products = pgTable('products', {
     track_inventory: boolean().default(true),
     low_stock_alert: boolean().default(false),
     status: varchar().default('active'),
+    is_customizable: boolean().notNull().default(false),
 })
 
 

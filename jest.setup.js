@@ -1,1 +1,10 @@
-// import '@testing-library/jest-dom/extend-expect';
+// Fallback env for tests that transitively import S3/DB adapters.
+process.env.DATABASE_URL ||= 'postgresql://test:test@localhost:5432/test'
+process.env.JWT_SECRET_KEY ||= 'test-placeholder-secret-key'
+process.env.SECRET ||= '0'
+process.env.S3_ENDPOINT ||= 'localhost'
+process.env.S3_ACCESS_KEY ||= 'placeholder'
+process.env.S3_SECRET_KEY ||= 'placeholder'
+process.env.S3_BUCKET_NAME ||= 'bakebay'
+process.env.S3_PORT ||= '9000'
+process.env.S3_USE_SSL ||= 'false'

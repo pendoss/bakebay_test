@@ -35,6 +35,7 @@ const sampleProduct = (over: Partial<Product> = {}): Product => ({
     seller: null,
     categoryInfo: null,
     rating: 4.5,
+    isCustomizable: false,
     ...over,
 })
 

@@ -8,12 +8,13 @@ import {Input} from '@/components/ui/input'
 import {Label} from '@/components/ui/label'
 import {Checkbox} from '@/components/ui/checkbox'
 import {ScrollArea} from '@/components/ui/scroll-area'
-import {useUser} from '@/contexts/user-context'
+import {observer} from 'mobx-react-lite'
+import {useSellerId} from '@/src/adapters/ui/react/stores'
 import {useActiveOrders} from '../useActiveOrders'
 import {CheckedIngredientsType} from '../types'
 
-export function ShoppingListTab() {
-    const {sellerId} = useUser()
+export const ShoppingListTab = observer(function ShoppingListTab() {
+    const sellerId = useSellerId()
     const {allIngredients, isLoading} = useActiveOrders(sellerId)
     const [searchTerm, setSearchTerm] = useState('')
     const [checkedIngredients, setCheckedIngredients] = useState<CheckedIngredientsType>({})
@@ -129,4 +130,4 @@ export function ShoppingListTab() {
             </CardContent>
         </Card>
     )
-}
+})

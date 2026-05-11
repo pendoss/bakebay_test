@@ -46,6 +46,7 @@ function toListResponse(product: Product) {
             s3_key: img.s3Key,
         })),
         image: product.mainImage,
+        is_customizable: product.isCustomizable,
     }
 }
 
@@ -78,6 +79,7 @@ function toSingleResponse(product: Product) {
             s3_key: img.s3Key,
         })),
         image: product.mainImage,
+        is_customizable: product.isCustomizable,
     }
 }
 
@@ -87,12 +89,29 @@ export async function GET(request: Request) {
     const categoryName = url.searchParams.get('category')
     const sellerParam = url.searchParams.get('seller')
     const countOnly = url.searchParams.get('count')
+    const searchQuery = url.searchParams.get('q')
     const deps = {productStorage: productStorage()}
 
     try {
         if (countOnly === 'true' && sellerParam) {
             const counter = await countProductsBySeller(asSellerId(parseInt(sellerParam, 10)), deps)
             return NextResponse.json({count: counter})
+        }
+
+        if (searchQuery !== null) {
+            const storage = productStorage()
+            const result = await storage.search(searchQuery)
+            return NextResponse.json({
+                query: result.query,
+                results: result.results.map((m) => ({
+                    ...toListResponse(m.product),
+                    score: m.score,
+                })),
+                suggestions: result.suggestions.map((m) => ({
+                    ...toListResponse(m.product),
+                    score: m.score,
+                })),
+            })
         }
 
         if (id) {

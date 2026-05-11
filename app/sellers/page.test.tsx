@@ -15,16 +15,24 @@ jest.mock('next/navigation', () => ({
     },
 }));
 
-jest.mock('@/contexts/user-context', () => ({
-    useUser: () => ({
-        user: null,
-        sellerId: null,
-        isLoading: false,
-        isAuthenticated: false,
-        login: jest.fn(),
-        logout: jest.fn(),
-        refreshUser: jest.fn(),
-    })
+jest.mock('@/src/adapters/ui/react/stores', () => ({
+    useCurrentUser: () => null,
+    useSellerId: () => null,
+    useIsUserLoading: () => false,
+    useIsAuthenticated: () => false,
+    useUserActions: () => ({login: jest.fn(), logout: jest.fn(), refreshUser: jest.fn()}),
+    useCartItems: () => [],
+    useCartTotals: () => ({subtotal: 0, discount: 0, shipping: 0, tax: 0, total: 0}),
+    useCartCount: () => 0,
+    useCartRaw: () => ({items: [], promoCode: null}),
+    useCartActions: () => ({
+        addItem: jest.fn(),
+        removeItem: jest.fn(),
+        updateQuantity: jest.fn(),
+        clear: jest.fn(),
+        applyPromo: jest.fn(),
+        setCart: jest.fn()
+    }),
 }))
 
 describe('SellersPage', () => {

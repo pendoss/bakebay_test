@@ -15,6 +15,6 @@ export const sellers = pgTable('sellers',
         inn: varchar(),
         about_products: text(),
         image_url: text(),
-        user_id: integer().references(() => users.user_id)
-
+        user_id: integer().references(() => users.user_id),
+        commission_rate: real().notNull().default(0.1),
     })
